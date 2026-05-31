@@ -1,7 +1,4 @@
-/* ════════════════════════════════════════
-   HIDE & SEEK MRPD — Feuille de style
-   Thème LSPD / Mission Row PD
-   ════════════════════════════════════════ */
+/* style.css — Event Hide & Seek MRPD */
 
 :root {
   --navy: #0a1628;
@@ -26,14 +23,13 @@ body {
   user-select: none;
 }
 
-/* Fond quadrillé */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px),
-    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px);
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,.015) 40px, rgba(255,255,255,.015) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,.015) 40px, rgba(255,255,255,.015) 41px);
   pointer-events: none;
   z-index: 0;
 }
@@ -46,7 +42,6 @@ body::before {
   z-index: 1;
 }
 
-/* ── HEADER ── */
 .header {
   text-align: center;
   padding: 48px 0 36px;
@@ -59,8 +54,8 @@ body::before {
   font-size: 11px;
   letter-spacing: 3px;
   color: var(--gold);
-  background: rgba(201,162,39,0.1);
-  border: 1px solid rgba(201,162,39,0.3);
+  background: rgba(201,162,39,.1);
+  border: 1px solid rgba(201,162,39,.3);
   padding: 5px 18px;
   text-transform: uppercase;
   margin-bottom: 20px;
@@ -70,7 +65,7 @@ body::before {
   font-size: 72px;
   line-height: 1;
   margin-bottom: 12px;
-  filter: drop-shadow(0 0 20px rgba(201,162,39,0.4));
+  filter: drop-shadow(0 0 20px rgba(201,162,39,.4));
   animation: float 3s ease-in-out infinite;
 }
 
@@ -83,12 +78,11 @@ h1 {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 72px;
   letter-spacing: 4px;
-  line-height: 0.9;
+  line-height: .9;
   background: linear-gradient(135deg, var(--white) 30%, var(--gold-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: none;
 }
 
 .subtitle {
@@ -98,6 +92,19 @@ h1 {
   color: var(--gray);
   margin-top: 10px;
   text-transform: uppercase;
+}
+
+.date-banner {
+  display: inline-block;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: var(--gold-light);
+  background: rgba(37,99,199,.12);
+  border: 1px solid rgba(201,162,39,.4);
+  padding: 8px 28px;
+  margin-top: 20px;
+  box-shadow: 0 0 24px rgba(201,162,39,.12);
 }
 
 .header-divider {
@@ -120,28 +127,14 @@ h1 {
   letter-spacing: 2px;
 }
 
-.date-banner {
-  display: inline-block;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 30px;
-  letter-spacing: 3px;
-  color: var(--gold-light);
-  background: rgba(37,99,199,0.12);
-  border: 1px solid rgba(201,162,39,0.4);
-  padding: 8px 28px;
-  margin-top: 20px;
-  box-shadow: 0 0 24px rgba(201,162,39,0.12);
-}
-
-/* ── SECTIONS ── */
 .section {
   margin-bottom: 32px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
   border-left: 3px solid var(--accent);
   padding: 24px 28px;
   position: relative;
-  transition: border-color 0.3s;
+  transition: border-color .3s;
 }
 .section:hover { border-left-color: var(--gold); }
 
@@ -157,14 +150,19 @@ h1 {
 }
 .section-title .icon { font-size: 20px; }
 
-.section p, .section li {
+.section p,
+.section li {
   font-size: 16px;
   line-height: 1.7;
-  color: rgba(244,246,251,0.85);
+  color: rgba(244,246,251,.85);
   font-weight: 600;
 }
 .section ul { list-style: none; }
-.section ul li { padding-left: 20px; position: relative; margin-bottom: 6px; }
+.section ul li {
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 6px;
+}
 .section ul li::before {
   content: '▸';
   position: absolute;
@@ -175,13 +173,9 @@ h1 {
 .note { margin-top: 12px; font-size: 14px; color: var(--gray); }
 .lead { margin-bottom: 12px; }
 
-.highlight {
-  color: var(--gold-light);
-  font-weight: 700;
-}
+.highlight { color: var(--gold-light); font-weight: 700; }
 .danger-text { color: var(--danger); font-weight: 700; }
 
-/* ── ROUNDS ── */
 .rounds-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -190,13 +184,13 @@ h1 {
 }
 
 .round-card {
-  background: linear-gradient(135deg, rgba(37,99,199,0.15), rgba(37,99,199,0.05));
-  border: 1px solid rgba(37,99,199,0.4);
+  background: linear-gradient(135deg, rgba(37,99,199,.15), rgba(37,99,199,.05));
+  border: 1px solid rgba(37,99,199,.4);
   padding: 20px 16px;
   text-align: center;
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s, border-color 0.2s;
+  transition: transform .2s, border-color .2s;
 }
 .round-card:hover {
   transform: translateY(-3px);
@@ -205,7 +199,9 @@ h1 {
 .round-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 2px;
   background: var(--accent);
 }
@@ -231,7 +227,6 @@ h1 {
 }
 .round-emoji { font-size: 22px; margin-bottom: 4px; }
 
-/* ── SI TROUVÉ ── */
 .choice-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -240,22 +235,21 @@ h1 {
 }
 .choice-card {
   padding: 16px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,.1);
   text-align: center;
   font-size: 15px;
   font-weight: 700;
 }
 .choice-card.hunt {
-  border-color: rgba(201,162,39,0.4);
-  background: rgba(201,162,39,0.07);
+  border-color: rgba(201,162,39,.4);
+  background: rgba(201,162,39,.07);
 }
 .choice-card.wait {
-  border-color: rgba(37,99,199,0.4);
-  background: rgba(37,99,199,0.07);
+  border-color: rgba(37,99,199,.4);
+  background: rgba(37,99,199,.07);
 }
 .choice-card .choice-icon { font-size: 28px; display: block; margin-bottom: 6px; }
 
-/* ── RÉCOMPENSES ── */
 .prizes-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -266,21 +260,21 @@ h1 {
 .prize-card {
   padding: 22px 12px;
   text-align: center;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,.08);
   position: relative;
   overflow: hidden;
 }
 .prize-card.gold {
-  background: linear-gradient(135deg, rgba(201,162,39,0.2), rgba(201,162,39,0.05));
-  border-color: rgba(201,162,39,0.5);
+  background: linear-gradient(135deg, rgba(201,162,39,.2), rgba(201,162,39,.05));
+  border-color: rgba(201,162,39,.5);
 }
 .prize-card.silver {
-  background: linear-gradient(135deg, rgba(180,180,200,0.15), rgba(180,180,200,0.03));
-  border-color: rgba(180,180,200,0.3);
+  background: linear-gradient(135deg, rgba(180,180,200,.15), rgba(180,180,200,.03));
+  border-color: rgba(180,180,200,.3);
 }
 .prize-card.bronze {
-  background: linear-gradient(135deg, rgba(180,100,30,0.15), rgba(180,100,30,0.03));
-  border-color: rgba(180,100,30,0.3);
+  background: linear-gradient(135deg, rgba(180,100,30,.15), rgba(180,100,30,.03));
+  border-color: rgba(180,100,30,.3);
 }
 .prize-medal { font-size: 36px; display: block; margin-bottom: 8px; }
 .prize-rank {
@@ -296,10 +290,9 @@ h1 {
   margin-top: 4px;
 }
 
-/* ── SCORING ── */
 .scoring-box {
-  background: rgba(45,206,137,0.07);
-  border: 1px solid rgba(45,206,137,0.25);
+  background: rgba(45,206,137,.07);
+  border: 1px solid rgba(45,206,137,.25);
   padding: 16px 20px;
   margin-top: 12px;
   display: flex;
@@ -307,14 +300,17 @@ h1 {
   gap: 14px;
 }
 .scoring-box .sc-icon { font-size: 28px; }
-.scoring-box p { font-size: 15px; color: rgba(244,246,251,0.9); font-weight: 600; }
+.scoring-box p {
+  font-size: 15px;
+  color: rgba(244,246,251,.9);
+  font-weight: 600;
+}
 .scoring-box strong { color: var(--green); }
 
-/* ── FOOTER ── */
 .footer {
   margin-top: 48px;
   padding-top: 24px;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255,255,255,.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -332,17 +328,15 @@ h1 {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 20px;
   letter-spacing: 3px;
-  color: rgba(201,162,39,0.4);
+  color: rgba(201,162,39,.4);
 }
 
-/* ── PROHIBITIONS ── */
 .prohib-list li::before { content: '✕'; color: var(--danger) !important; }
 
-/* ── ANIMATION D'APPARITION (gérée par script.js) ── */
 .reveal {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition: opacity .6s ease, transform .6s ease;
 }
 .reveal.visible {
   opacity: 1;
