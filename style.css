@@ -184,11 +184,9 @@ h1 {
   opacity: .55;
   filter: grayscale(.4);
 }
-.event-card.card-archived:hover {
+a.event-card.card-archived:hover {
   opacity: .85;
   filter: grayscale(0);
-  transform: translateY(-4px);
-  border-left-color: var(--gold);
 }
 
 .event-icon { font-size: 38px; margin-bottom: 12px; }
