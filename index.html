@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="portal">
 <div class="page">
 
   <div class="header reveal">
@@ -17,58 +17,11 @@
     <div class="header-divider"><span>★ MRD EVENTS ★</span></div>
   </div>
 
-  <div class="section-label reveal">🔴 Événements Actifs</div>
-  <div class="events-grid">
-    <a class="event-card card-live reveal" href="cache-cache/">
-      <div class="event-icon">🔦</div>
-      <div class="event-badges">
-        <span class="event-status status-live">● Live</span>
-        <span class="event-date">📅 Mercredi 03/05/26</span>
-      </div>
-      <div class="event-title">Hide &amp; Seek MRPD</div>
-      <div class="event-desc">Cache-cache en 3 rounds dans le nouveau poste</div>
-      <div class="event-arrow">Voir le règlement ▸</div>
-    </a>
-  </div>
-
-  <div class="section-label reveal">🟡 À Venir</div>
-  <div class="events-grid">
-    <div class="event-card card-soon reveal">
-      <div class="event-icon">🤫</div>
-      <div class="event-title">Code Silence</div>
-      <div class="event-arrow">Prochainement</div>
-    </div>
-    <div class="event-card card-soon reveal">
-      <div class="event-icon">🏃</div>
-      <div class="event-title">Marathon</div>
-      <div class="event-arrow">Prochainement</div>
-    </div>
-    <div class="event-card card-soon reveal">
-      <div class="event-icon">🎯</div>
-      <div class="event-title">Open House</div>
-      <div class="event-arrow">Prochainement</div>
-    </div>
-  </div>
-
-  <div class="section-label reveal">📁 Archives</div>
-  <div class="events-grid">
-    <div class="event-card card-archived no-link reveal">
-      <div class="event-icon">💯</div>
-      <div class="event-title">Soirée à point</div>
-      <div class="event-desc">Pas de page disponible.</div>
-      <div class="event-arrow">Terminé</div>
-    </div>
-    <a class="event-card card-archived reveal" href="...">
-      <div class="event-icon">📁</div>
-      <div class="event-title">...</div>
-      <div class="event-desc">...</div>
-      <div class="event-arrow">Revoir l'événement ▸</div>
-    </a>
-  </div>
+  <div id="events-root"></div>
 
   <div class="footer">
     <div class="footer-left">
-      Officier Andrea BIANCHI · Commanding Officer MRD<br>
+      Sergeant Andrea BIANCHI · Commanding Officer MRD<br>
       Mission Row Police Department
     </div>
     <div class="footer-right">LSPD · MRPD</div>

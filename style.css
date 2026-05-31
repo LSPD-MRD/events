@@ -1,4 +1,5 @@
-/* style.css — Portail Évènementiel MRD */
+/* style.css — Site Évènementiel MRD (général : portail + pages event) */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
 
 :root {
   --navy: #0a1628;
@@ -17,9 +18,10 @@
 body {
   background: var(--navy);
   color: var(--white);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  user-select: none;
 }
 
 body::before {
@@ -34,21 +36,23 @@ body::before {
 }
 
 .page {
-  max-width: 920px;
+  max-width: 860px;
   margin: 0 auto;
   padding: 40px 32px 60px;
   position: relative;
   z-index: 1;
 }
+body.portal .page { max-width: 920px; }
 
 .header {
   text-align: center;
-  padding: 56px 0 36px;
+  padding: 48px 0 36px;
+  position: relative;
 }
 
 .badge {
   display: inline-block;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Space Grotesk', monospace;
   font-size: 11px;
   letter-spacing: 3px;
   color: var(--gold);
@@ -73,8 +77,8 @@ body::before {
 }
 
 h1 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 76px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 74px;
   letter-spacing: 4px;
   line-height: .9;
   background: linear-gradient(135deg, var(--white) 30%, var(--gold-light));
@@ -84,12 +88,25 @@ h1 {
 }
 
 .subtitle {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Space Grotesk', monospace;
   font-size: 13px;
   letter-spacing: 4px;
   color: var(--gray);
   margin-top: 10px;
   text-transform: uppercase;
+}
+
+.date-banner {
+  display: inline-block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: var(--gold-light);
+  background: rgba(37,99,199,.12);
+  border: 1px solid rgba(201,162,39,.4);
+  padding: 8px 28px;
+  margin-top: 20px;
+  box-shadow: 0 0 24px rgba(201,162,39,.12);
 }
 
 .header-divider {
@@ -106,14 +123,63 @@ h1 {
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
 .header-divider span {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Space Grotesk', monospace;
   font-size: 11px;
   color: var(--gold);
   letter-spacing: 2px;
 }
 
+.section {
+  margin-bottom: 32px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-left: 3px solid var(--accent);
+  padding: 24px 28px;
+  position: relative;
+  transition: border-color .3s;
+}
+.section:hover { border-left-color: var(--gold); }
+
+.section-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title .icon { font-size: 20px; }
+
+.section p,
+.section li {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(244,246,251,.85);
+  font-weight: 600;
+}
+.section ul { list-style: none; }
+.section ul li {
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 6px;
+}
+.section ul li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+}
+
+.note { margin-top: 12px; font-size: 14px; color: var(--gray); }
+.lead { margin-bottom: 14px; }
+
+.highlight { color: var(--gold-light); font-weight: 700; }
+.danger-text { color: var(--danger); font-weight: 700; }
+
 .section-label {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 24px;
   letter-spacing: 3px;
   color: var(--gold);
@@ -136,13 +202,14 @@ h1 {
 }
 
 .event-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
   color: inherit;
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.08);
   border-left: 3px solid var(--accent);
-  padding: 24px;
+  padding: 30px;
   position: relative;
   overflow: hidden;
   transition: transform .25s, border-color .25s, background .25s;
@@ -152,6 +219,11 @@ h1 {
   border-left-color: var(--gold);
   background: rgba(255,255,255,.05);
 }
+
+.event-card.card-live:hover {
+  border-left-color: #097969; 
+}
+
 .event-card::before {
   content: '';
   position: absolute;
@@ -161,6 +233,12 @@ h1 {
   height: 60px;
   background: radial-gradient(circle at top right, rgba(201,162,39,.12), transparent 70%);
 }
+
+.event-card.no-link {
+  cursor: default;
+  pointer-events: none;
+}
+
 .event-card.card-live {
   border-left-color: var(--green);
 }
@@ -184,9 +262,11 @@ h1 {
   opacity: .55;
   filter: grayscale(.4);
 }
-a.event-card.card-archived:hover {
+.event-card.card-archived:hover {
   opacity: .85;
   filter: grayscale(0);
+  transform: translateY(-4px);
+  border-left-color: var(--gold);
 }
 
 .event-icon { font-size: 38px; margin-bottom: 12px; }
@@ -200,7 +280,7 @@ a.event-card.card-archived:hover {
 
 .event-status {
   display: inline-block;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Space Grotesk', monospace;
   font-size: 10px;
   letter-spacing: 2px;
   padding: 3px 10px;
@@ -229,7 +309,7 @@ a.event-card.card-archived:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Space Grotesk', monospace;
   font-size: 11px;
   letter-spacing: 1px;
   color: var(--gold-light);
@@ -240,7 +320,7 @@ a.event-card.card-archived:hover {
 }
 
 .event-title {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 26px;
   letter-spacing: 2px;
   line-height: 1;
@@ -255,8 +335,9 @@ a.event-card.card-archived:hover {
 }
 
 .event-arrow {
-  margin-top: 14px;
-  font-family: 'Share Tech Mono', monospace;
+  margin-top: auto;
+  padding-top: 14px;
+  font-family: 'Space Grotesk', monospace;
   font-size: 12px;
   color: var(--gold);
   letter-spacing: 1px;
@@ -267,8 +348,302 @@ a.event-card.card-archived:hover {
 }
 .event-card:hover .event-arrow { gap: 12px; }
 
+.rounds-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+.round-card {
+  background: linear-gradient(135deg, rgba(37,99,199,.15), rgba(37,99,199,.05));
+  border: 1px solid rgba(37,99,199,.4);
+  padding: 20px 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+.round-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold);
+}
+.round-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.round-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--gray);
+  margin-bottom: 6px;
+}
+.round-floor {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px;
+  color: var(--white);
+  line-height: 1;
+}
+.round-label {
+  font-size: 13px;
+  color: var(--gray);
+  margin-top: 4px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.round-emoji { font-size: 22px; margin-bottom: 4px; }
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.choice-card {
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.1);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+}
+.choice-card.hunt {
+  border-color: rgba(201,162,39,.4);
+  background: rgba(201,162,39,.07);
+}
+.choice-card.wait {
+  border-color: rgba(37,99,199,.4);
+  background: rgba(37,99,199,.07);
+}
+.choice-card .choice-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+
+.prizes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+.prize-card {
+  padding: 22px 12px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  overflow: hidden;
+}
+.prize-card.gold {
+  background: linear-gradient(135deg, rgba(201,162,39,.2), rgba(201,162,39,.05));
+  border-color: rgba(201,162,39,.5);
+}
+.prize-card.silver {
+  background: linear-gradient(135deg, rgba(180,180,200,.15), rgba(180,180,200,.03));
+  border-color: rgba(180,180,200,.3);
+}
+.prize-card.bronze {
+  background: linear-gradient(135deg, rgba(180,100,30,.15), rgba(180,100,30,.03));
+  border-color: rgba(180,100,30,.3);
+}
+.prize-medal { font-size: 36px; display: block; margin-bottom: 8px; }
+.prize-rank {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: var(--gray);
+}
+.prize-amount {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  color: var(--gold-light);
+  margin-top: 4px;
+}
+
+.scoring-box {
+  background: rgba(45,206,137,.07);
+  border: 1px solid rgba(45,206,137,.25);
+  padding: 16px 20px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.scoring-box .sc-icon { font-size: 28px; }
+.scoring-box p {
+  font-size: 15px;
+  color: rgba(244,246,251,.9);
+  font-weight: 600;
+}
+.scoring-box strong { color: var(--green); }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.info-cell {
+  background: linear-gradient(135deg, rgba(37,99,199,.12), rgba(37,99,199,.04));
+  border: 1px solid rgba(37,99,199,.3);
+  padding: 16px 18px;
+}
+.info-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.info-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(244,246,251,.9);
+  line-height: 1.5;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.timeline-item {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+  background: rgba(255,255,255,.02);
+  border-left: 2px solid var(--gold);
+  padding: 14px 18px;
+}
+.timeline-time {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--gold-light);
+  min-width: 130px;
+  display: flex;
+  align-items: center;
+}
+.timeline-body { flex: 1; }
+.timeline-act {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+}
+.timeline-resp {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--gray);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.role-col {
+  padding: 18px 20px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.role-col.mrd {
+  background: linear-gradient(135deg, rgba(201,162,39,.12), rgba(201,162,39,.03));
+  border-color: rgba(201,162,39,.4);
+}
+.role-col.div {
+  background: linear-gradient(135deg, rgba(37,99,199,.12), rgba(37,99,199,.03));
+  border-color: rgba(37,99,199,.4);
+}
+.role-head {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.stand {
+  border: 1px solid rgba(255,255,255,.08);
+  border-left: 3px solid var(--accent);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  transition: border-color .25s;
+}
+.stand:hover { border-left-color: var(--gold); }
+.stand-head {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.stand-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 20px;
+  border-radius: 2px;
+}
+.stand-games {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.game {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(244,246,251,.85);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.5;
+}
+.game::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+}
+.game strong { color: var(--gold-light); }
+.game.bonus {
+  background: rgba(45,206,137,.07);
+  border: 1px solid rgba(45,206,137,.25);
+  padding: 10px 14px 10px 28px;
+}
+.game.bonus::before { left: 12px; color: var(--green); }
+
+.stand-score {
+  font-size: 13px;
+  color: var(--gray);
+  line-height: 1.5;
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 12px;
+}
+.score-tag {
+  display: inline-block;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--green);
+  background: rgba(45,206,137,.1);
+  border: 1px solid rgba(45,206,137,.3);
+  padding: 2px 8px;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
+.prohib-list li::before { content: '✕'; color: var(--danger) !important; }
+
 .footer {
-  margin-top: 56px;
+  margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid rgba(255,255,255,.08);
   display: flex;
@@ -278,14 +653,14 @@ a.event-card.card-archived:hover {
   gap: 12px;
 }
 .footer-left {
-  font-family: 'Share Tech Mono', monospace;
+  font-family: 'Space Grotesk', monospace;
   font-size: 11px;
   color: var(--gray);
   letter-spacing: 1px;
   line-height: 1.8;
 }
 .footer-right {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 20px;
   letter-spacing: 3px;
   color: rgba(201,162,39,.4);
@@ -299,4 +674,11 @@ a.event-card.card-archived:hover {
 .reveal.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .info-grid,
+  .role-grid { grid-template-columns: 1fr; }
+  .timeline-item { flex-direction: column; gap: 6px; }
+  .timeline-time { min-width: 0; }
 }
