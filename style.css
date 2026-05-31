@@ -161,10 +161,34 @@ h1 {
   height: 60px;
   background: radial-gradient(circle at top right, rgba(201,162,39,.12), transparent 70%);
 }
-.event-card.disabled {
-  opacity: .55;
-  cursor: not-allowed;
+.event-card.card-live {
+  border-left-color: var(--green);
+}
+.event-card.card-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(45,206,137,.06), transparent 60%);
   pointer-events: none;
+}
+
+.event-card.card-soon {
+  border-left-color: var(--gold);
+  opacity: .82;
+  cursor: default;
+  pointer-events: none;
+}
+
+.event-card.card-archived {
+  border-left-color: var(--gray);
+  opacity: .55;
+  filter: grayscale(.4);
+}
+.event-card.card-archived:hover {
+  opacity: .85;
+  filter: grayscale(0);
+  transform: translateY(-4px);
+  border-left-color: var(--gold);
 }
 
 .event-icon { font-size: 38px; margin-bottom: 12px; }
