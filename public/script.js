@@ -1,7 +1,7 @@
 const EVENTS = [
   {
     status: 'live',
-    href: 'cache-cache/',
+    href: '../cache-cache/',
     icon: '🔦',
     title: 'HIDE & SEEK MRPD',
     desc: 'Cache-cache en 3 rounds dans le nouveau poste Mission Row.',
@@ -21,7 +21,7 @@ const EVENTS = [
   },
   {
     status: 'live',
-    href: 'open-house/',
+    href: '../open-house/',
     icon: '🎉',
     title: 'OPEN HOUSE',
     desc: 'Portes ouvertes multi-divisions avec mini-jeux et système de points.',
