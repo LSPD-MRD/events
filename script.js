@@ -26,6 +26,12 @@ const EVENTS = [
     title: 'OPEN HOUSE',
     desc: 'Portes ouvertes multi-divisions avec mini-jeux et système de points.',
     date: 'XXXXXX XX/06/26'
+  },
+  {
+    status: 'archived',
+    icon: '💯',
+    title: 'SOIREE A POINTS',
+    desc: 'Soirée avec système de points et classement'
   }
 ];
 
@@ -35,7 +41,7 @@ const GROUPS = [
   { status: 'archived', label: '⚫ ARCHIVES' }
 ];
 
-const STATUS_TEXT = { live: '● Live', archived: 'Archivé' };
+const STATUS_TEXT = { live: '● Live'};
 const ARROW_TEXT = { live: 'Voir le détail ▸', soon: 'Prochainement...', archived: "Revoir l'événement ▸" };
 
 function buildCard(ev) {
@@ -50,7 +56,7 @@ function buildCard(ev) {
     badges = '<div class="event-badges"><span class="event-status status-live">' + STATUS_TEXT.live + '</span>' +
       (ev.date ? '<br><span class="event-date">📅 ' + ev.date + '</span>' : '') + '</div>';
   } else {
-    badges = '<span class="event-status status-' + ev.status + '">' + STATUS_TEXT[ev.status] + '</span>';
+    badges = '';
   }
 
   el.innerHTML =
