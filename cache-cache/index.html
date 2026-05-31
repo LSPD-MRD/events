@@ -5,332 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hide & Seek MRPD</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --navy: #0a1628;
-    --blue: #1a3a6b;
-    --gold: #c9a227;
-    --gold-light: #f0c842;
-    --white: #f4f6fb;
-    --gray: #8a9bb5;
-    --accent: #2563c7;
-    --danger: #e63946;
-    --green: #2dce89;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--navy);
-    color: var(--white);
-    font-family: 'Rajdhani', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-    user-select: none;
-  }
-
-  /* Background pattern */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px),
-      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .page {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 40px 32px 60px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* ── HEADER ── */
-  .header {
-    text-align: center;
-    padding: 48px 0 36px;
-    position: relative;
-  }
-
-  .badge {
-    display: inline-block;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    background: rgba(201,162,39,0.1);
-    border: 1px solid rgba(201,162,39,0.3);
-    padding: 5px 18px;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-
-  .shield {
-    font-size: 72px;
-    line-height: 1;
-    margin-bottom: 12px;
-    filter: drop-shadow(0 0 20px rgba(201,162,39,0.4));
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-
-  h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 72px;
-    letter-spacing: 4px;
-    line-height: 0.9;
-    background: linear-gradient(135deg, var(--white) 30%, var(--gold-light));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
-  }
-
-  .subtitle {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 4px;
-    color: var(--gray);
-    margin-top: 10px;
-    text-transform: uppercase;
-  }
-
-  .header-divider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 28px;
-  }
-  .header-divider::before,
-  .header-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  }
-  .header-divider span {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--gold);
-    letter-spacing: 2px;
-  }
-
-  /* ── SECTIONS ── */
-  .section {
-    margin-bottom: 32px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-left: 3px solid var(--accent);
-    padding: 24px 28px;
-    position: relative;
-    transition: border-color 0.3s;
-  }
-  .section:hover { border-left-color: var(--gold); }
-
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .section-title .icon { font-size: 20px; }
-
-  .section p, .section li {
-    font-size: 16px;
-    line-height: 1.7;
-    color: rgba(244,246,251,0.85);
-    font-weight: 600;
-  }
-  .section ul { list-style: none; }
-  .section ul li { padding-left: 20px; position: relative; margin-bottom: 6px; }
-  .section ul li::before {
-    content: '▸';
-    position: absolute;
-    left: 0;
-    color: var(--gold);
-  }
-
-  .highlight {
-    color: var(--gold-light);
-    font-weight: 700;
-  }
-  .danger-text { color: var(--danger); font-weight: 700; }
-
-  /* ── ROUNDS TABLE ── */
-  .rounds-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-top: 8px;
-  }
-
-  .round-card {
-    background: linear-gradient(135deg, rgba(37,99,199,0.15), rgba(37,99,199,0.05));
-    border: 1px solid rgba(37,99,199,0.4);
-    padding: 20px 16px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s;
-  }
-  .round-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--gold);
-  }
-  .round-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--accent);
-  }
-  .round-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--gray);
-    margin-bottom: 6px;
-  }
-  .round-floor {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
-    color: var(--white);
-    line-height: 1;
-  }
-  .round-label {
-    font-size: 13px;
-    color: var(--gray);
-    margin-top: 4px;
-    font-weight: 600;
-    letter-spacing: 1px;
-  }
-  .round-emoji { font-size: 22px; margin-bottom: 4px; }
-
-  /* ── RULES FOUND ── */
-  .choice-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 12px;
-  }
-  .choice-card {
-    padding: 16px;
-    border: 1px solid rgba(255,255,255,0.1);
-    text-align: center;
-    font-size: 15px;
-    font-weight: 700;
-  }
-  .choice-card.hunt {
-    border-color: rgba(201,162,39,0.4);
-    background: rgba(201,162,39,0.07);
-  }
-  .choice-card.wait {
-    border-color: rgba(37,99,199,0.4);
-    background: rgba(37,99,199,0.07);
-  }
-  .choice-card .choice-icon { font-size: 28px; display: block; margin-bottom: 6px; }
-
-  /* ── PRIZES ── */
-  .prizes-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 8px;
-  }
-
-  .prize-card {
-    padding: 22px 12px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.08);
-    position: relative;
-    overflow: hidden;
-  }
-  .prize-card.gold {
-    background: linear-gradient(135deg, rgba(201,162,39,0.2), rgba(201,162,39,0.05));
-    border-color: rgba(201,162,39,0.5);
-  }
-  .prize-card.silver {
-    background: linear-gradient(135deg, rgba(180,180,200,0.15), rgba(180,180,200,0.03));
-    border-color: rgba(180,180,200,0.3);
-  }
-  .prize-card.bronze {
-    background: linear-gradient(135deg, rgba(180,100,30,0.15), rgba(180,100,30,0.03));
-    border-color: rgba(180,100,30,0.3);
-  }
-  .prize-medal { font-size: 36px; display: block; margin-bottom: 8px; }
-  .prize-rank {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px;
-    letter-spacing: 2px;
-    color: var(--gray);
-  }
-  .prize-amount {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    color: var(--gold-light);
-    margin-top: 4px;
-  }
-
-  /* ── SCORING ── */
-  .scoring-box {
-    background: rgba(45,206,137,0.07);
-    border: 1px solid rgba(45,206,137,0.25);
-    padding: 16px 20px;
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .scoring-box .sc-icon { font-size: 28px; }
-  .scoring-box p { font-size: 15px; color: rgba(244,246,251,0.9); font-weight: 600; }
-  .scoring-box strong { color: var(--green); }
-
-  /* ── FOOTER ── */
-  .footer {
-    margin-top: 48px;
-    padding-top: 24px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .footer-left {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--gray);
-    letter-spacing: 1px;
-    line-height: 1.8;
-  }
-  .footer-right {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px;
-    letter-spacing: 3px;
-    color: rgba(201,162,39,0.4);
-  }
-
-  /* ── PROHIBITIONS ── */
-  .prohib-list li::before { content: '✕'; color: var(--danger) !important; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="page">
 
   <!-- HEADER -->
-  <div class="header">
+  <div class="header reveal">
     <div class="shield">🛡️</div>
     <div class="badge">Mission Row Police Department · MRD Event</div>
     <h1>Hide &amp; Seek<br>MRPD</h1>
@@ -338,23 +19,23 @@
   </div>
 
   <!-- PRÉSENTATION -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">📋</span> Présentation</div>
     <p>Événement de cache-cache organisé par la <span class="highlight">Media Relations Division</span> au sein du nouveau bâtiment MRPD. L'événement se déroule en <span class="highlight">3 rounds</span>, un par étage, et donne lieu à un classement final cumulé.</p>
   </div>
 
   <!-- ZONES INTERDITES -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">🚫</span> Zones Interdites</div>
     <ul class="prohib-list">
       <li>Se cacher <span class="danger-text">à l'air libre</span>, en dehors des murs ou à l'extérieur du bâtiment</li>
       <li>Se cacher <span class="danger-text">dans les escaliers</span> reliant les étages</li>
     </ul>
-    <p style="margin-top:12px; font-size:14px; color: var(--gray);">⚠️ Toute cachette invalide = élimination immédiate du round en cours.</p>
+    <p class="note">⚠️ Toute cachette invalide = élimination immédiate du round en cours.</p>
   </div>
 
   <!-- ROUNDS -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">🗺️</span> Les 3 Rounds</div>
     <div class="rounds-grid">
       <div class="round-card">
@@ -376,13 +57,13 @@
         <div class="round-label">Premier étage</div>
       </div>
     </div>
-    <p style="margin-top:14px; font-size:14px; color: var(--gray);">Le chercheur est désigné par l'organisateur en début de chaque round. Les participants disposent d'un temps défini pour se cacher avant le lancement.</p>
+    <p class="note">Le chercheur est désigné par l'organisateur en début de chaque round. Les participants disposent d'un temps défini pour se cacher avant le lancement.</p>
   </div>
 
   <!-- RÈGLES SI TROUVÉ -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">👀</span> Si vous êtes trouvé...</div>
-    <p style="margin-bottom:12px;">Un participant découvert a le choix entre deux options :</p>
+    <p class="lead">Un participant découvert a le choix entre deux options :</p>
     <div class="choice-grid">
       <div class="choice-card hunt">
         <span class="choice-icon">🔍</span>
@@ -396,7 +77,7 @@
   </div>
 
   <!-- CLASSEMENT -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">📊</span> Classement</div>
     <ul>
       <li>Un classement est établi à l'issue de <span class="highlight">chaque round</span> selon l'ordre de découverte</li>
@@ -410,7 +91,7 @@
   </div>
 
   <!-- RÉCOMPENSES -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">💰</span> Récompenses — Top 3</div>
     <div class="prizes-grid">
       <div class="prize-card gold">
@@ -432,7 +113,7 @@
   </div>
 
   <!-- DISPOSITIONS -->
-  <div class="section">
+  <div class="section reveal">
     <div class="section-title"><span class="icon">⚖️</span> Dispositions générales</div>
     <ul>
       <li>La MRD se réserve le droit de modifier les règles en cours d'événement</li>
@@ -443,8 +124,16 @@
 
   <!-- FOOTER -->
   <div class="footer">
+    <div class="footer-left">
+      Document officiel — Media Relations Division<br>
+      Officier Andrea BIANCHI · Commanding Officer, MRD<br>
+      Mission Row Police Department
+    </div>
+    <div class="footer-right">LSPD · MRPD</div>
   </div>
 
 </div>
+
+<script src="script.js"></script>
 </body>
 </html>
