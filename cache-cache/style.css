@@ -120,6 +120,19 @@ h1 {
   letter-spacing: 2px;
 }
 
+.date-banner {
+  display: inline-block;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 3px;
+  color: var(--gold-light);
+  background: rgba(37,99,199,0.12);
+  border: 1px solid rgba(201,162,39,0.4);
+  padding: 8px 28px;
+  margin-top: 20px;
+  box-shadow: 0 0 24px rgba(201,162,39,0.12);
+}
+
 /* ── SECTIONS ── */
 .section {
   margin-bottom: 32px;
