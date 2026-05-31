@@ -31,7 +31,7 @@ const EVENTS = [
     status: 'archived',
     icon: '💯',
     title: 'SOIREE A POINTS',
-    desc: 'Soirée avec système de points et classement'
+    desc: 'Shift du soir avec système de points et classement',
   }
 ];
 
@@ -48,6 +48,10 @@ function buildCard(ev) {
   const clickable = ev.href && ev.status !== 'soon';
   const tag = clickable ? 'a' : 'div';
   const el = document.createElement(tag);
+  const arrowText =
+  !clickable && ev.status === 'archived'
+    ? "Événement terminé"
+    : ARROW_TEXT[ev.status];
   el.className = 'event-card reveal card-' + ev.status + (clickable ? '' : ' no-link');
   if (clickable) el.href = ev.href;
 
@@ -64,7 +68,7 @@ function buildCard(ev) {
     badges +
     '<div class="event-title">' + ev.title + '</div>' +
     (ev.desc ? '<div class="event-desc">' + ev.desc + '</div>' : '') +
-    '<div class="event-arrow">' + ARROW_TEXT[ev.status] + '</div>';
+    '<div class="event-arrow">' + arrowText + '</div>';
 
   return el;
 }
