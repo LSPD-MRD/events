@@ -63,11 +63,12 @@ body.portal .page { max-width: 920px; }
   margin-bottom: 20px;
 }
 
-.shield {
-  font-size: 72px;
-  line-height: 1;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 0 20px rgba(201,162,39,.4));
+.header-logo {
+  display: block;
+  margin: 0 auto 16px;
+  width: 160px;
+  height: auto;
+  filter: drop-shadow(0 0 24px rgba(201,162,39,.5));
   animation: float 3s ease-in-out infinite;
 }
 
