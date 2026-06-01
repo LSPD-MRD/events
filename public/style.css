@@ -654,16 +654,17 @@ h1 {
 }
 .footer-left {
   font-family: 'Space Grotesk', monospace;
-  font-size: 11px;
+  font-size: 15px;
   color: var(--gray);
   letter-spacing: 1px;
   line-height: 1.8;
 }
 .footer-right {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
+  font-size: 15px;
   letter-spacing: 3px;
   color: rgba(201,162,39,.4);
+  margin-left: auto;
 }
 
 .reveal {
