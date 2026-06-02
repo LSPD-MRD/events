@@ -11,13 +11,15 @@ const EVENTS = [
     status: 'soon',
     icon: '🤫',
     title: 'CODE SILENCE',
-    desc: ''
+    desc: '',
+    href: 'escape-game/',
   },
   {
     status: 'soon',
     icon: '🏃',
     title: 'MARATHON',
-    desc: ''
+    desc: '',
+    href: '',
   },
   {
     status: 'live',
