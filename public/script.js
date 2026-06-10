@@ -1,6 +1,6 @@
 const EVENTS = [
   {
-    status: 'live',
+    status: 'archived',
     href: 'cache-cache/',
     icon: '🔦',
     title: 'HIDE & SEEK MRPD',
