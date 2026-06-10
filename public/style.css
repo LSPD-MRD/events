@@ -216,7 +216,6 @@ h1 {
   transition: transform .25s, border-color .25s, background .25s;
 }
 .event-card:hover {
-  transform: translateY(-4px);
   border-left-color: var(--gold);
   background: rgba(255,255,255,.05);
 }
@@ -266,7 +265,6 @@ h1 {
 .event-card.card-archived:hover {
   opacity: .85;
   filter: grayscale(0);
-  transform: translateY(-4px);
   border-left-color: var(--gold);
 }
 
