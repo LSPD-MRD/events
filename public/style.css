@@ -20,7 +20,7 @@ body {
   color: var(--white);
   font-family: 'Space Grotesk', sans-serif;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: visible;
   user-select: none;
 }
 
@@ -81,7 +81,8 @@ h1 {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 74px;
   letter-spacing: 4px;
-  line-height: .9;
+  line-height: 1.05;
+  padding-bottom: 8px;
   background: linear-gradient(135deg, var(--white) 30%, var(--gold-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
