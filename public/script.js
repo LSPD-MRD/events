@@ -41,7 +41,7 @@ const EVENTS = [
     icon: '🎤',
     title: 'FREDDY JOHNS LIVE',
     desc: 'Mini concert karaoké surprise. Répertoire gardé secret jusqu\'au dernier moment.',
-    date: 'Vendredi XX/06/26'
+    date: 'Vendredi 12/06/26'
   }
 ];
 
