@@ -40,7 +40,7 @@ const EVENTS = [
     href: 'concert/',
     icon: '🎤',
     title: 'FREDDY JOHNS LIVE',
-    desc: 'Mini concert karaoké surprise. Répertoire gardé secret jusqu\'au dernier moment.',
+    desc: 'Mini concert karaoké surprise. Sans inscription. RDV au Briefing',
     date: 'Vendredi 12/06/26'
   },
 ];
