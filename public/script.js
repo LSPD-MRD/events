@@ -34,6 +34,14 @@ const EVENTS = [
     icon: '💯',
     title: 'SOIREE A POINTS',
     desc: 'Shift du soir avec système de points et classement',
+  },
+  {
+    status: 'live',
+    href: 'concert/',
+    icon: '🎤',
+    title: 'FREDDY JOHNS LIVE',
+    desc: 'Mini concert karaoké surprise. Répertoire gardé secret jusqu\'au dernier moment.',
+    date: 'Vendredi XX/06/26'
   }
 ];
 
