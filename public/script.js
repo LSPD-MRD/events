@@ -39,7 +39,7 @@ const EVENTS = [
     status: 'live',
     href: 'concert/',
     icon: '🎤',
-    title: 'FREDDY JOHNS LIVE',
+    title: 'FREDDY JOHNS\' LIVE',
     desc: 'Mini concert karaoké surprise. Sans inscription. RDV au Briefing',
     date: 'Vendredi 12/06/26'
   },
