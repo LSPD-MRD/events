@@ -6,7 +6,6 @@
 <title>Panel Événements MRD</title>
 <link rel="icon" type="image/png" href="../public/Logo MRD V2.png">
 <style>
-/* panel/index.html — interface du builder d'événements MRD */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 :root{--navy:#0a1628;--blue:#1a3a6b;--gold:#c9a227;--gold-light:#f0c842;--white:#f4f6fb;--gray:#8a9bb5;--accent:#2563c7;--danger:#e63946;--green:#2dce89}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -246,7 +245,7 @@ const SAMPLE = {
 
 let ev, list = [], slugEdited = false, ys = 0, tm;
 
-const WORKER_URL = '';
+const WORKER_URL = 'https://mrd-panel.biscuitytb2102.workers.dev';
 
 const api = {
   cfg: () => {
@@ -323,7 +322,7 @@ const ghForm = () => {
     '<div class="row"><button class="pri" data-a="gsave">Enregistrer</button><button data-a="gtest">Tester</button></div><p class="hint">Le code est fourni par la MRD. Il reste dans ce navigateur.</p>';
 };
 
-const portal = async () => {
+  const portal = async () => {
   try { list = await loadList(); } catch (x) { return say(x.message, 'err'); }
   drawPortal();
 };
