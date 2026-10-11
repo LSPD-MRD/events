@@ -55,7 +55,7 @@ iframe{border:0;width:100%;background:var(--navy)}
     <div class="tabs">
       <button class="on" data-tab="edit">Éditeur</button>
       <button data-tab="portal">Portail</button>
-      <button data-tab="gh">GitHub</button>
+      <button data-tab="gh">Accès</button>
     </div>
     <div id="edit" class="tab">
       <div class="row">
@@ -71,7 +71,7 @@ iframe{border:0;width:100%;background:var(--navy)}
         <div class="row"><select id="addt"></select><button data-a="add">+ Ajouter</button></div>
       </fieldset>
       <div class="row">
-        <button class="pri" data-a="pub">Publier sur GitHub</button>
+        <button class="pri" data-a="pub">Publier</button>
         <button data-a="dlp">Télécharger index.html</button>
         <button data-a="cpe">Copier l'entrée portail</button>
       </div>
@@ -246,34 +246,28 @@ const SAMPLE = {
 
 let ev, list = [], slugEdited = false, ys = 0, tm;
 
-const gh = {
-  guess: () => {
-    const m = location.hostname.match(/^(.+)\.github\.io$/);
-    return { owner: m ? m[1] : '', repo: m ? location.pathname.split('/').filter(Boolean)[0] || '' : '', branch: 'main', token: '' };
+const WORKER_URL = '';
+
+const api = {
+  cfg: () => {
+    const s = JSON.parse(localStorage.getItem('mrdpanel') || '{}');
+    return { name: '', code: '', ...s, url: s.url || WORKER_URL };
   },
-  cfg: () => ({ ...gh.guess(), ...JSON.parse(localStorage.getItem('mrdgh') || '{}') }),
-  call: async (method, path, body) => {
-    const c = gh.cfg();
-    const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}` + (method === 'GET' ? `?ref=${c.branch}` : ''), {
-      method, cache: 'no-store',
-      headers: { Authorization: 'Bearer ' + c.token, Accept: 'application/vnd.github+json' },
-      body: body && JSON.stringify(body)
+  post: async (path, body) => {
+    const c = api.cfg();
+    if (!c.url || !c.code) throw new Error('URL du relais et code d\'accès requis (onglet Accès)');
+    const r = await fetch(c.url.replace(/\/$/, '') + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Access-Code': c.code },
+      body: JSON.stringify({ ...body, author: c.name })
     });
-    if (r.status === 404 && method === 'GET') return null;
-    if (!r.ok) throw new Error(r.status + ' ' + (await r.json()).message);
-    return r.json();
-  },
-  get: async p => { const f = await gh.call('GET', encodeURI(p)); return f && { sha: f.sha, text: dec(f.content) }; },
-  put: async (p, text, msg) => {
-    const f = await gh.get(p);
-    return gh.call('PUT', encodeURI(p), { message: msg, content: enc(text), branch: gh.cfg().branch, sha: f && f.sha });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status + ' ' + (j.error || 'erreur'));
+    return j;
   }
 };
 
-const loadList = async () => {
-  if (gh.cfg().token) return parse((await gh.get('public/events-data.js')).text);
-  return parse(await (await fetch('../public/events-data.js', { cache: 'no-store' })).text());
-};
+const loadList = async () => parse(await (await fetch('../public/events-data.js', { cache: 'no-store' })).text());
 
 const PV = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
 const draw = () => { clearTimeout(tm); tm = setTimeout(() => { $('#pv').srcdoc = page(ev).replace('</body>', PV + '</body>'); }, 250); };
@@ -323,10 +317,10 @@ const tab = n => {
 };
 
 const ghForm = () => {
-  const c = gh.cfg();
-  $('#gh').innerHTML = [['owner', 'Compte ou organisation'], ['repo', 'Dépôt'], ['branch', 'Branche'], ['token', 'Token (fine-grained, Contents : Read and write)']].map(([k, l]) =>
-    `<label>${l}<input data-g="${k}"${k === 'token' ? ' type="password"' : ''} value="${esc(c[k])}"></label>`).join('') +
-    '<div class="row"><button class="pri" data-a="gsave">Enregistrer</button><button data-a="gtest">Tester</button></div><p class="hint">Le token reste dans le localStorage de ce navigateur. Il n\'est jamais écrit dans le dépôt.</p>';
+  const c = api.cfg();
+  $('#gh').innerHTML = [['url', 'URL du relais', 'text'], ['code', 'Code d\'accès', 'password'], ['name', 'Ton pseudo (visible dans l\'historique)', 'text']].map(([k, l, t]) =>
+    `<label>${l}<input data-g="${k}" type="${t}" value="${esc(c[k])}"></label>`).join('') +
+    '<div class="row"><button class="pri" data-a="gsave">Enregistrer</button><button data-a="gtest">Tester</button></div><p class="hint">Le code est fourni par la MRD. Il reste dans ce navigateur.</p>';
 };
 
 const portal = async () => {
@@ -341,14 +335,9 @@ const drawPortal = () => {
 
 const pub = async () => {
   if (!ev.slug || !ev.meta.title) return say('Titre et dossier (slug) obligatoires', 'err');
-  if (!gh.cfg().token) return say('Renseigne le token dans l\'onglet GitHub, ou télécharge les fichiers.', 'err');
   if ((!ev.card.date || !ev.meta.date) && !confirm('Date manquante sur la carte ou sur la page. Publier quand même ?')) return;
   say('Publication en cours…');
-  await gh.put(`${ev.slug}/index.html`, page(ev), `Événement : ${ev.slug}`);
-  await gh.put(`${ev.slug}/event.json`, json(ev), `Config événement : ${ev.slug}`);
-  const l = await loadList(), entry = cardOf(ev), i = l.findIndex(x => x.href === entry.href);
-  if (i < 0) l.unshift(entry); else l[i] = entry;
-  await gh.put('public/events-data.js', serialize(l), `Portail : ${ev.slug}`);
+  await api.post('/publish', { slug: ev.slug, html: page(ev), config: json(ev), card: cardOf(ev) });
   say(`Publié. En ligne dans ~1 minute : ${location.origin}${location.pathname.replace(/panel\/.*$/, '')}${ev.slug}/`, 'ok');
 };
 
@@ -367,17 +356,11 @@ const A = {
   pub,
   gsave: () => {
     const c = {};
-    document.querySelectorAll('[data-g]').forEach(x => { c[x.dataset.g] = x.value.trim(); });
-    localStorage.setItem('mrdgh', JSON.stringify(c));
-    say('Connexion enregistrée', 'ok');
+    document.querySelectorAll('[data-g]').forEach(x => { if (x.value.trim()) c[x.dataset.g] = x.value.trim(); });
+    localStorage.setItem('mrdpanel', JSON.stringify(c));
+    say('Accès enregistré', 'ok');
   },
-  gtest: async () => {
-    const c = gh.cfg();
-    const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`, { headers: { Authorization: 'Bearer ' + c.token } });
-    const j = await r.json();
-    if (!r.ok) return say(j.message, 'err');
-    j.permissions && j.permissions.push ? say('Connexion OK, écriture autorisée', 'ok') : say('Connecté, mais écriture non autorisée', 'err');
-  },
+  gtest: async () => { A.gsave(); await api.post('/ping', {}); say('Accès valide', 'ok'); },
   pup: i => { move(list, i, -1); drawPortal(); },
   pdown: i => { move(list, i, 1); drawPortal(); },
   pdel: i => { if (confirm('Retirer du portail ? Les fichiers de la page restent dans le dépôt.')) { list.splice(i, 1); drawPortal(); } },
@@ -387,11 +370,7 @@ const A = {
     load(await r.json());
     tab('edit');
   },
-  psave: async () => {
-    if (!gh.cfg().token) return say('Token manquant : utilise le téléchargement.', 'err');
-    await gh.put('public/events-data.js', serialize(list), 'Portail : mise à jour');
-    say('Portail enregistré', 'ok');
-  },
+  psave: async () => { await api.post('/portal', { list }); say('Portail enregistré', 'ok'); },
   pdl: () => dl('events-data.js', serialize(list))
 };
 
