@@ -1,6 +1,6 @@
 const EVENTS = [
   {
-    "status": "archived",
+    "status": "soon",
     "href": "cache-cache/",
     "icon": "🔦",
     "title": "HIDE & SEEK MRPD",
@@ -22,7 +22,7 @@ const EVENTS = [
     "href": ""
   },
   {
-    "status": "live",
+    "status": "archived",
     "href": "open-house/",
     "icon": "🎉",
     "title": "OPEN HOUSE",
@@ -36,7 +36,7 @@ const EVENTS = [
     "desc": "Shift du soir avec système de points et classement"
   },
   {
-    "status": "live",
+    "status": "archived",
     "href": "concert/",
     "icon": "🎤",
     "title": "FREDDY JOHNS' LIVE",
