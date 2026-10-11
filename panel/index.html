@@ -3,413 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Événements MRD</title>
+<title>Panel Événements · MRD</title>
 <link rel="icon" type="image/png" href="../public/Logo MRD V2.png">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-:root{--navy:#0a1628;--blue:#1a3a6b;--gold:#c9a227;--gold-light:#f0c842;--white:#f4f6fb;--gray:#8a9bb5;--accent:#2563c7;--danger:#e63946;--green:#2dce89}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--navy);color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:14px}
-.app{display:grid;grid-template-columns:minmax(360px,500px) 1fr;height:100vh}
-.side{overflow-y:auto;padding:16px 18px 0;border-right:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02)}
-.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.top img{width:34px}
-.top b{color:var(--gold);letter-spacing:2px;font-size:15px}
-.tabs,.row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.row>*{flex:1;width:auto}
-button,select,input,textarea{font:inherit;color:var(--white)}
-button{background:rgba(37,99,199,.2);border:1px solid rgba(37,99,199,.5);padding:6px 12px;cursor:pointer}
-button:hover{border-color:var(--gold)}
-button.on,button.pri{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:700}
-input,select,textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);padding:7px 9px;margin:4px 0 10px}
-select option{background:var(--navy)}
-label{display:block;font-size:11px;letter-spacing:1px;color:var(--gray);text-transform:uppercase}
-label.chk{display:inline-flex;align-items:center;gap:6px;margin-right:12px;text-transform:none;letter-spacing:0;font-size:13px}
-.chk input{width:auto;margin:0}
-fieldset{border:1px solid rgba(201,162,39,.25);padding:12px;margin-bottom:14px}
-legend{color:var(--gold);padding:0 8px;letter-spacing:2px;font-size:12px}
-details{border:1px solid rgba(255,255,255,.1);border-left:3px solid var(--accent);margin-bottom:10px;background:rgba(255,255,255,.03)}
-summary{padding:9px 12px;cursor:pointer}
-summary em{color:var(--gray);font-size:11px;margin-left:8px}
-.in{padding:0 12px 10px}
-.hint{font-size:11px;color:var(--gray);margin:-6px 0 10px}
-.item{display:flex;gap:6px;align-items:center;padding:8px;border:1px solid rgba(255,255,255,.1);margin-bottom:6px}
-.item span{flex:1}
-.item select{width:auto;margin:0}
-.view{display:flex;flex-direction:column;background:#06101f;min-width:0}
-.bar{display:flex;gap:6px;padding:10px;border-bottom:1px solid rgba(255,255,255,.08)}
-.frame{flex:1;min-height:0;display:flex;justify-content:center;overflow:auto}
-iframe{border:0;width:100%;background:var(--navy)}
-#msg{position:sticky;bottom:0;margin:0 -18px;padding:10px 18px;background:#06101f;border-top:1px solid var(--gold);font-size:13px;min-height:38px}
-.ok{color:var(--green)}
-.err{color:var(--danger)}
-.hide{display:none}
-@media(max-width:900px){.app{grid-template-columns:1fr;height:auto}.view{height:90vh}.side{overflow:visible}}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="panel.css">
 </head>
 <body>
-<div class="app">
-  <div class="side">
-    <div class="top"><img src="../public/Logo MRD V2.png" alt=""><b>PANEL ÉVÉNEMENTS MRD</b></div>
-    <div class="tabs">
-      <button class="on" data-tab="edit">Éditeur</button>
-      <button data-tab="portal">Portail</button>
-      <button data-tab="gh">Accès</button>
-    </div>
-    <div id="edit" class="tab">
-      <div class="row">
-        <button data-a="new">Nouveau</button>
-        <button data-a="sample">Exemple</button>
-        <button data-a="imp">Importer</button>
-        <button data-a="exp">Exporter</button>
+<header class="topbar">
+  <div class="brand">
+    <img src="../public/Logo MRD V2.png" alt="">
+    <div><strong>Événements</strong><span>Media Relations Division</span></div>
+  </div>
+  <nav class="nav">
+    <button class="nav-item active" data-action="tab" data-tab="edit">Éditeur</button>
+    <button class="nav-item" data-action="tab" data-tab="portal">Portail</button>
+    <button class="nav-item" data-action="tab" data-tab="access">Accès</button>
+  </nav>
+  <div class="topbar-actions">
+    <span class="draft" id="draft"></span>
+    <button class="btn ghost only-compact" data-action="toggle-preview">Aperçu</button>
+    <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
+    <button class="btn primary" id="publish" data-action="publish">Publier</button>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="workspace">
+    <div class="panel" id="edit"></div>
+    <div class="panel" id="portal" hidden></div>
+    <div class="panel" id="access" hidden></div>
+  </div>
+  <aside class="preview">
+    <div class="preview-bar">
+      <div class="seg">
+        <button class="active" data-action="device" data-width="100%">Bureau</button>
+        <button data-action="device" data-width="390px">Mobile</button>
       </div>
-      <div id="fields"></div>
-      <fieldset>
-        <legend>SECTIONS</legend>
-        <div id="secs"></div>
-        <div class="row"><select id="addt"></select><button data-a="add">+ Ajouter</button></div>
-      </fieldset>
-      <div class="row">
-        <button class="pri" data-a="pub">Publier</button>
-        <button data-a="dlp">Télécharger index.html</button>
-        <button data-a="cpe">Copier l'entrée portail</button>
-      </div>
+      <span class="url" id="url"></span>
     </div>
-    <div id="portal" class="tab hide"></div>
-    <div id="gh" class="tab hide"></div>
-    <input type="file" id="file" accept=".json" class="hide">
-    <div id="msg"></div>
-  </div>
-  <div class="view">
-    <div class="bar">
-      <button data-w="100%">💻 Bureau</button>
-      <button data-w="390px">📱 Mobile</button>
+    <div class="stage">
+      <div class="device" id="device-frame"><iframe id="pv" sandbox="allow-scripts" title="Aperçu de la page"></iframe></div>
     </div>
-    <div class="frame"><iframe id="pv" sandbox="allow-scripts"></iframe></div>
-  </div>
-</div>
-<script>
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<span class="highlight">$1</span>').replace(/!!(.+?)!!/g, '<span class="danger-text">$1</span>');
-const strong = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-const lines = s => s.split('\n').map(l => l.trim()).filter(Boolean);
-const cols = l => l.split('|').map(c => c.trim());
-const blocks = s => s.split(/\n\s*---\s*\n/).map(lines).filter(b => b.length);
-const get = (o, p) => p.split('.').reduce((a, k) => a[k], o);
-const set = (o, p, v) => { const k = p.split('.'), l = k.pop(); k.reduce((a, x) => a[x], o)[l] = v; };
-const move = (a, i, d) => { const j = i + d; if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; };
-const slug = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const enc = s => btoa(unescape(encodeURIComponent(s)));
-const dec = s => decodeURIComponent(escape(atob(s.replace(/\n/g, ''))));
-const json = o => JSON.stringify(o, (k, v) => k === '_c' ? undefined : v, 2);
-const serialize = l => 'const EVENTS = ' + JSON.stringify(l, null, 2) + ';\n';
-const parse = t => JSON.parse(t.slice(t.indexOf('['), t.lastIndexOf(']') + 1));
-const say = (m, c = '') => { $('#msg').className = c; $('#msg').textContent = m; };
-const dl = (n, t) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' })); a.download = n; a.click(); };
+  </aside>
+</main>
 
-const T = {
-  text: ['Texte', 'Paragraphes séparés par une ligne vide. **doré** !!rouge!!'],
-  list: ['Liste', 'Un point par ligne. **doré** !!rouge!!'],
-  cards: ['Cartes', 'emoji | tag | libellé | gros texte (optionnel)'],
-  info: ['Infos', 'titre | valeur'],
-  timeline: ['Planning', 'horaire | activité | responsable'],
-  roles: ['Colonnes', 'Titre puis un point par ligne. Colonnes séparées par ---'],
-  choices: ['Choix', 'emoji | texte | wait (bleu) ou hunt (doré). Sans emoji : texte seul'],
-  prizes: ['Podium', 'emoji | rang | gain | gold, silver ou bronze'],
-  stands: ['Stands', 'Nom, puis : jeu | description, ★ bonus | description, score: barème. Stands séparés par ---'],
-  html: ['HTML libre', 'HTML inséré tel quel dans la section']
-};
-
-const F = [
-  ['PAGE', [['meta.title', 'Titre (retour à la ligne possible)', 't'], ['slug', 'Dossier (slug)'], ['meta.badge', 'Badge'], ['meta.date', 'Bandeau date'], ['meta.divider', 'Séparateur'], ['meta.pageTitle', 'Titre de l\'onglet (vide = auto)'], ['meta.logo', 'Chemin du logo'], ['meta.fl', 'Pied de page gauche'], ['meta.fr', 'Pied de page droit']]],
-  ['CARTE DU PORTAIL', [['card.status', 'Statut', 's'], ['card.icon', 'Icône'], ['card.title', 'Titre (vide = titre de la page)'], ['card.desc', 'Description'], ['card.date', 'Date affichée sur la carte']]]
-];
-
-const I = '      ';
-const R = {
-  text: s => {
-    const p = s.body.split(/\n\s*\n/).filter(x => x.trim()).map(x => '<p>' + fmt(x.trim()).replace(/\n/g, '<br>') + '</p>').join('\n' + I + '<br>\n' + I);
-    return p && s.italic ? '<i>\n' + I + p + '\n    </i>' : p;
-  },
-  list: s => '<ul' + (s.variant ? ' class="prohib-list"' : '') + '>\n' + lines(s.body).map(l => `${I}<li>${fmt(l)}</li>`).join('\n') + '\n    </ul>',
-  cards: s => '<div class="rounds-grid">\n' + lines(s.body).map(l => {
-    const [em, t, lb, big] = cols(l);
-    return `${I}<div class="round-card">\n${I}  <div class="round-emoji">${esc(em)}</div>\n${I}  <div class="round-num">${esc(t)}</div>\n` + (big ? `${I}  <div class="round-floor">${esc(big)}</div>\n` : '') + `${I}  <div class="round-label">${esc(lb)}</div>\n${I}</div>`;
-  }).join('\n') + '\n    </div>',
-  info: s => '<div class="info-grid">\n' + lines(s.body).map(l => {
-    const [a, b] = cols(l);
-    return `${I}<div class="info-cell">\n${I}  <div class="info-label">${esc(a)}</div>\n${I}  <div class="info-value">${fmt(b)}</div>\n${I}</div>`;
-  }).join('\n') + '\n    </div>',
-  timeline: s => '<div class="timeline">\n' + lines(s.body).map(l => {
-    const [a, b, c] = cols(l);
-    return `${I}<div class="timeline-item">\n${I}  <div class="timeline-time">${esc(a)}</div>\n${I}  <div class="timeline-body">\n${I}    <div class="timeline-act">${fmt(b)}</div>\n` + (c ? `${I}    <div class="timeline-resp">${esc(c)}</div>\n` : '') + `${I}  </div>\n${I}</div>`;
-  }).join('\n') + '\n    </div>',
-  roles: s => '<div class="role-grid">\n' + blocks(s.body).map((b, i) =>
-    `${I}<div class="role-col ${i ? 'div' : 'mrd'}">\n${I}  <div class="role-head">${esc(b[0])}</div>\n${I}  <ul>\n${b.slice(1).map(l => `${I}    <li>${fmt(l)}</li>`).join('\n')}\n${I}  </ul>\n${I}</div>`
-  ).join('\n') + '\n    </div>',
-  choices: s => '<div class="choice-grid">\n' + lines(s.body).map(l => {
-    const c = cols(l), k = /^(wait|hunt)$/.test(c[2]) ? c[2] : 'wait';
-    return `${I}<div class="choice-card ${k}">` + (c.length < 2 ? fmt(c[0]) : `<span class="choice-icon">${esc(c[0])}</span>${fmt(c[1])}`) + '</div>';
-  }).join('\n') + '\n    </div>',
-  prizes: s => '<div class="prizes-grid">\n' + lines(s.body).map((l, i) => {
-    const [m, r, a, t] = cols(l), k = /^(gold|silver|bronze)$/.test(t) ? t : ['gold', 'silver', 'bronze'][i] || 'gold';
-    return `${I}<div class="prize-card ${k}">\n${I}  <span class="prize-medal">${esc(m)}</span>\n${I}  <div class="prize-rank">${esc(r)}</div>\n${I}  <div class="prize-amount">${esc(a)}</div>\n${I}</div>`;
-  }).join('\n') + '\n    </div>',
-  stands: s => blocks(s.body).map((b, i) => {
-    const games = b.slice(1).filter(l => !/^score:/i.test(l)).map(l => {
-      const bonus = l[0] === '★', [a, d] = cols(bonus ? l.slice(1) : l);
-      return `${I}  <div class="game${bonus ? ' bonus' : ''}">` + (d === undefined ? fmt(a) : `<strong>${esc(a)}</strong> — ${fmt(d)}`) + '</div>';
-    }).join('\n');
-    const sc = b.find(l => /^score:/i.test(l));
-    return `<div class="stand">\n${I}<div class="stand-head"><span class="stand-num">${i + 1}</span> ${esc(b[0])}</div>\n${I}<div class="stand-games">\n${games}\n${I}</div>\n` + (sc ? `${I}<div class="stand-score">\n${I}  <span class="score-tag">Scoring</span>\n${I}  ${fmt(sc.replace(/^score:\s*/i, ''))}\n${I}</div>\n` : '') + '    </div>';
-  }).join('\n\n    '),
-  html: s => s.body
-};
-
-const sec = s => {
-  const [ic, ...tx] = cols(s.box || '');
-  const box = s.box ? `<div class="scoring-box">\n      <span class="sc-icon">${esc(ic)}</span>\n      <p>${strong(tx.join(' | '))}</p>\n    </div>` : '';
-  const parts = [s.lead && `<p class="lead">${fmt(s.lead)}</p>`, R[s.type](s), box, s.note && `<p class="note">${fmt(s.note)}</p>`].filter(Boolean);
-  return `  <div class="section reveal">\n    <div class="section-title"><span class="icon">${esc(s.icon)}</span> ${esc(s.title)}</div>\n    ${parts.join('\n    ')}\n  </div>`;
-};
-
-const page = e => {
-  const m = e.meta;
-  const head = [
-    `<img src="${esc(m.logo)}" alt="MRD Logo" class="header-logo">`,
-    m.badge && `<div class="badge">${esc(m.badge)}</div>`,
-    `<h1>${esc(m.title).replace(/\n/g, '<br>')}</h1>`,
-    m.date && `<div class="date-banner">${esc(m.date)}</div>`,
-    m.divider && `<div class="header-divider"><span>${esc(m.divider)}</span></div>`
-  ].filter(Boolean).join('\n    ');
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(m.pageTitle || 'Event - ' + m.title.replace(/\n/g, ' '))}</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="icon" type="image/png" href="${esc(m.logo)}">
-<link rel="stylesheet" href="../public/style.css">
-</head>
-<body>
-<div class="page">
-
-  <div class="header reveal">
-    ${head}
-  </div>
-
-${e.sections.map(sec).join('\n\n')}
-
-  <div class="footer">
-    <div class="footer-left">
-      ${esc(m.fl)}
-    </div>
-    <div class="footer-right">${esc(m.fr)}</div>
-  </div>
-
-</div>
-<script src="../public/script.js"><\/script>
-</body>
-</html>
-`;
-};
-
-const cardOf = e => {
-  const c = e.card, x = { status: c.status, href: e.slug + '/', icon: c.icon, title: c.title || e.meta.title.replace(/\n/g, ' ').toUpperCase(), desc: c.desc };
-  if (c.date) x.date = c.date;
-  return x;
-};
-
-const blank = () => ({
-  slug: '',
-  meta: { title: '', badge: 'Mission Row Police Department · MRD Event', date: '', divider: '★ RÈGLEMENT ★', pageTitle: '', logo: '../public/Logo MRD V2.png', fl: 'Sergeant Andrea BIANCHI · Commanding Officer MRD', fr: 'LSPD · MRPD' },
-  card: { status: 'soon', icon: '🎉', title: '', desc: '', date: '' },
-  sections: []
-});
-const newSec = type => ({ type, icon: '📋', title: 'Nouvelle section', body: '', lead: '', note: '', box: '', italic: false, variant: false });
-
-const SAMPLE = {
-  slug: 'hide-and-seek',
-  meta: { title: 'Hide & Seek\nMRPD', date: '📅 03 juin 2026 · 21h15 (après RC)' },
-  card: { status: 'live', icon: '🔦', desc: 'Cache-cache en 3 rounds dans le poste Mission Row.', date: 'Mercredi 03/06/26' },
-  sections: [
-    { type: 'text', icon: '📋', title: 'Présentation', body: 'Cache-cache organisé par la **Media Relations Division**, en **3 rounds**.', lead: '', note: '', box: '', italic: false, variant: false },
-    { type: 'list', icon: '🚫', title: 'Zones Interdites', body: 'Se cacher !!à l\'air libre!!\nSe cacher !!dans les escaliers!!', lead: '', note: '⚠️ Cachette invalide = élimination du round.', box: '', italic: false, variant: true },
-    { type: 'cards', icon: '🗺️', title: 'Les 3 Rounds', body: '🔦 | ROUND 1 | Sous-sol et parking | -1\n🚪 | ROUND 2 | Rez-de-chaussée | 0\n🏢 | ROUND 3 | Premier étage | 1', lead: '', note: '', box: '', italic: false, variant: false },
-    { type: 'list', icon: '📊', title: 'Notation', body: 'Un classement par **round**\nClassement final = **moyenne des 3 rounds**', lead: '', note: '', box: '🧮 | Score final = **(R1 + R2 + R3) ÷ 3**', italic: false, variant: false },
-    { type: 'prizes', icon: '💰', title: 'Classement - Top 3', body: '🥇 | 1ère place | À définir\n🥈 | 2ème place | À définir\n🥉 | 3ème place | À définir', lead: '', note: '', box: '', italic: false, variant: false }
-  ]
-};
-
-let ev, list = [], slugEdited = false, ys = 0, tm;
-
-const WORKER_URL = 'https://mrd-panel.biscuitytb2102.workers.dev';
-
-const api = {
-  cfg: () => {
-    const s = JSON.parse(localStorage.getItem('mrdpanel') || '{}');
-    return { name: '', code: '', ...s, url: s.url || WORKER_URL };
-  },
-  post: async (path, body) => {
-    const c = api.cfg();
-    if (!c.url || !c.code) throw new Error('URL du relais et code d\'accès requis (onglet Accès)');
-    const r = await fetch(c.url.replace(/\/$/, '') + path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Access-Code': c.code },
-      body: JSON.stringify({ ...body, author: c.name })
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(r.status + ' ' + (j.error || 'erreur'));
-    return j;
-  }
-};
-
-const loadList = async () => parse(await (await fetch('../public/events-data.js', { cache: 'no-store' })).text());
-
-const PV = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
-const draw = () => { clearTimeout(tm); tm = setTimeout(() => { $('#pv').srcdoc = page(ev).replace('</body>', PV + '</body>'); }, 250); };
-window.addEventListener('message', e => { if (e.source === $('#pv').contentWindow && typeof e.data === 'number') ys = e.data; });
-$('#pv').onload = () => $('#pv').contentWindow.postMessage(ys, '*');
-
-const secForm = (s, i) => `<details data-i="${i}"${s._c ? '' : ' open'}>
-<summary><b>${esc(s.icon)} ${esc(s.title)}</b><em>${T[s.type][0]}</em></summary>
-<div class="in">
-<div class="row"><input data-s="icon" value="${esc(s.icon)}" style="max-width:70px"><input data-s="title" value="${esc(s.title)}" placeholder="Titre"><select data-s="type">${Object.entries(T).map(([k, v]) => `<option value="${k}"${k === s.type ? ' selected' : ''}>${v[0]}</option>`).join('')}</select></div>
-<label>Chapeau (au-dessus du contenu)<input data-s="lead" value="${esc(s.lead)}"></label>
-<label>Contenu<textarea data-s="body" rows="6">${esc(s.body)}</textarea></label>
-<div class="hint">${esc(T[s.type][1])}</div>
-<label>Encadré vert : emoji | texte (**gras**)<input data-s="box" value="${esc(s.box)}"></label>
-<label>Note (en dessous)<input data-s="note" value="${esc(s.note)}"></label>
-<label class="chk"><input type="checkbox" data-s="italic"${s.italic ? ' checked' : ''}>Italique</label>
-<label class="chk"><input type="checkbox" data-s="variant"${s.variant ? ' checked' : ''}>Liste d'interdictions (✕)</label>
-<div class="row"><button data-a="up">↑</button><button data-a="down">↓</button><button data-a="dup">Dupliquer</button><button data-a="del">Supprimer</button></div>
-</div>
-</details>`;
-
-const secs = () => { $('#secs').innerHTML = ev.sections.map(secForm).join(''); };
-const mut = f => { f(); secs(); draw(); };
-
-const fill = () => {
-  $('#fields').innerHTML = F.map(([g, fs]) => `<fieldset><legend>${g}</legend>` + fs.map(([p, l, t]) => `<label>${l}` + (
-    t === 't' ? `<textarea data-p="${p}" rows="2"></textarea>` :
-    t === 's' ? `<select data-p="${p}"><option>live</option><option>soon</option><option>archived</option></select>` :
-    `<input data-p="${p}">`) + '</label>').join('') + '</fieldset>').join('');
-  document.querySelectorAll('[data-p]').forEach(x => { x.value = get(ev, x.dataset.p) || ''; });
-  secs();
-  draw();
-};
-
-const load = x => {
-  const b = blank();
-  ev = { ...b, ...x, meta: { ...b.meta, ...x.meta }, card: { ...b.card, ...x.card }, sections: x.sections || [] };
-  slugEdited = !!x.slug;
-  fill();
-};
-
-const tab = n => {
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('hide', x.id !== n));
-  document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('on', x.dataset.tab === n));
-  if (n === 'portal') portal();
-  if (n === 'gh') ghForm();
-};
-
-const ghForm = () => {
-  const c = api.cfg();
-  $('#gh').innerHTML = [['url', 'URL du relais', 'text'], ['code', 'Code d\'accès', 'password'], ['name', 'Ton pseudo (visible dans l\'historique)', 'text']].map(([k, l, t]) =>
-    `<label>${l}<input data-g="${k}" type="${t}" value="${esc(c[k])}"></label>`).join('') +
-    '<div class="row"><button class="pri" data-a="gsave">Enregistrer</button><button data-a="gtest">Tester</button></div><p class="hint">Le code est fourni par la MRD. Il reste dans ce navigateur.</p>';
-};
-
-  const portal = async () => {
-  try { list = await loadList(); } catch (x) { return say(x.message, 'err'); }
-  drawPortal();
-};
-
-const drawPortal = () => {
-  $('#portal').innerHTML = list.map((x, i) => `<div class="item" data-i="${i}"><span>${esc(x.icon)} ${esc(x.title)}</span><select data-l="status">${['live', 'soon', 'archived'].map(s => `<option${s === x.status ? ' selected' : ''}>${s}</option>`).join('')}</select><button data-a="pup">↑</button><button data-a="pdown">↓</button><button data-a="pedit">✎</button><button data-a="pdel">✕</button></div>`).join('') +
-    '<div class="row"><button class="pri" data-a="psave">Enregistrer le portail</button><button data-a="pdl">Télécharger events-data.js</button></div>';
-};
-
-const pub = async () => {
-  if (!ev.slug || !ev.meta.title) return say('Titre et dossier (slug) obligatoires', 'err');
-  if ((!ev.card.date || !ev.meta.date) && !confirm('Date manquante sur la carte ou sur la page. Publier quand même ?')) return;
-  say('Publication en cours…');
-  await api.post('/publish', { slug: ev.slug, html: page(ev), config: json(ev), card: cardOf(ev) });
-  say(`Publié. En ligne dans ~1 minute : ${location.origin}${location.pathname.replace(/panel\/.*$/, '')}${ev.slug}/`, 'ok');
-};
-
-const A = {
-  new: () => load({}),
-  sample: () => load(SAMPLE),
-  imp: () => $('#file').click(),
-  exp: () => dl((ev.slug || 'event') + '.json', json(ev)),
-  add: () => mut(() => ev.sections.push(newSec($('#addt').value))),
-  up: i => mut(() => move(ev.sections, i, -1)),
-  down: i => mut(() => move(ev.sections, i, 1)),
-  dup: i => mut(() => ev.sections.splice(i + 1, 0, { ...ev.sections[i] })),
-  del: i => mut(() => ev.sections.splice(i, 1)),
-  dlp: () => dl('index.html', page(ev)),
-  cpe: async () => { await navigator.clipboard.writeText(JSON.stringify(cardOf(ev), null, 2)); say('Entrée copiée', 'ok'); },
-  pub,
-  gsave: () => {
-    const c = {};
-    document.querySelectorAll('[data-g]').forEach(x => { if (x.value.trim()) c[x.dataset.g] = x.value.trim(); });
-    localStorage.setItem('mrdpanel', JSON.stringify(c));
-    say('Accès enregistré', 'ok');
-  },
-  gtest: async () => { A.gsave(); await api.post('/ping', {}); say('Accès valide', 'ok'); },
-  pup: i => { move(list, i, -1); drawPortal(); },
-  pdown: i => { move(list, i, 1); drawPortal(); },
-  pdel: i => { if (confirm('Retirer du portail ? Les fichiers de la page restent dans le dépôt.')) { list.splice(i, 1); drawPortal(); } },
-  pedit: async i => {
-    const r = await fetch('../' + list[i].href + 'event.json', { cache: 'no-store' });
-    if (!r.ok) return say('Pas de config pour cet événement (page faite à la main)', 'err');
-    load(await r.json());
-    tab('edit');
-  },
-  psave: async () => { await api.post('/portal', { list }); say('Portail enregistré', 'ok'); },
-  pdl: () => dl('events-data.js', serialize(list))
-};
-
-document.addEventListener('click', async e => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  if (b.dataset.tab) return tab(b.dataset.tab);
-  if (b.dataset.w) { $('#pv').style.width = b.dataset.w; return; }
-  const h = b.closest('[data-i]'), i = h ? +h.dataset.i : -1;
-  try { if (A[b.dataset.a]) await A[b.dataset.a](i); } catch (x) { say(x.message, 'err'); }
-});
-
-document.addEventListener('input', e => {
-  const t = e.target, v = t.type === 'checkbox' ? t.checked : t.value;
-  if (t.dataset.p) {
-    set(ev, t.dataset.p, v);
-    if (t.dataset.p === 'slug') slugEdited = true;
-    if (t.dataset.p === 'meta.title' && !slugEdited) { ev.slug = slug(v); $('[data-p="slug"]').value = ev.slug; }
-  } else if (t.dataset.s) {
-    const d = t.closest('details'), s = ev.sections[+d.dataset.i];
-    s[t.dataset.s] = v;
-    d.querySelector('summary b').textContent = `${s.icon} ${s.title}`;
-  } else return;
-  draw();
-});
-
-document.addEventListener('change', e => {
-  const t = e.target;
-  if (t.dataset.s === 'type') secs();
-  if (t.dataset.l) list[+t.closest('[data-i]').dataset.i].status = t.value;
-});
-
-document.addEventListener('toggle', e => {
-  const d = e.target;
-  if (d.tagName === 'DETAILS' && ev.sections[+d.dataset.i]) ev.sections[+d.dataset.i]._c = !d.open;
-}, true);
-
-$('#file').onchange = async e => { load(JSON.parse(await e.target.files[0].text())); e.target.value = ''; };
-$('#addt').innerHTML = Object.entries(T).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('');
-load({});
-</script>
+<div class="toasts" id="toasts"></div>
+<input type="file" id="file" accept=".json" hidden>
+<script src="generator.js"></script>
+<script src="panel.js"></script>
 </body>
 </html>

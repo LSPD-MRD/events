@@ -1,0 +1,345 @@
+const WORKER_URL = 'https://mrd-panel.biscuitytb2102.workers.dev';
+const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel' };
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const get = (o, p) => p.split('.').reduce((a, k) => a[k], o);
+const set = (o, p, v) => { const k = p.split('.'), l = k.pop(); k.reduce((a, x) => a[x], o)[l] = v; };
+const move = (a, i, d) => { const j = i + d; if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; };
+const slugify = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const json = o => JSON.stringify(o, (k, v) => k === '_c' ? undefined : v, 2);
+const serialize = l => 'const EVENTS = ' + JSON.stringify(l, null, 2) + ';\n';
+const parse = t => JSON.parse(t.slice(t.indexOf('['), t.lastIndexOf(']') + 1));
+const markActive = el => $$('button', el.parentElement).forEach(b => b.classList.toggle('active', b === el));
+
+const download = (name, text) => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+const toast = (message, kind = '') => {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = message;
+  $('#toasts').append(el);
+  setTimeout(() => el.remove(), kind === 'err' ? 6500 : 3500);
+};
+
+const blank = () => ({
+  slug: '',
+  meta: { title: '', badge: 'Mission Row Police Department · MRD Event', date: '', divider: '★ RÈGLEMENT ★', pageTitle: '', logo: '../public/Logo MRD V2.png', fl: 'Sergeant Andrea BIANCHI · Commanding Officer MRD', fr: 'LSPD · MRPD' },
+  card: { status: 'soon', icon: '🎉', title: '', desc: '', date: '' },
+  sections: []
+});
+const newSec = type => ({ type, icon: '📋', title: 'Nouvelle section', body: '', lead: '', note: '', box: '', italic: false, variant: false });
+
+const SAMPLE = {
+  slug: 'hide-and-seek',
+  meta: { title: 'Hide & Seek\nMRPD', date: '📅 03 juin 2026 · 21h15 (après RC)' },
+  card: { status: 'live', icon: '🔦', desc: 'Cache-cache en 3 rounds dans le poste Mission Row.', date: 'Mercredi 03/06/26' },
+  sections: [
+    { type: 'text', icon: '📋', title: 'Présentation', body: 'Cache-cache organisé par la **Media Relations Division**, en **3 rounds**.', lead: '', note: '', box: '', italic: false, variant: false },
+    { type: 'list', icon: '🚫', title: 'Zones Interdites', body: 'Se cacher !!à l\'air libre!!\nSe cacher !!dans les escaliers!!', lead: '', note: '⚠️ Cachette invalide = élimination du round.', box: '', italic: false, variant: true },
+    { type: 'cards', icon: '🗺️', title: 'Les 3 Rounds', body: '🔦 | ROUND 1 | Sous-sol et parking | -1\n🚪 | ROUND 2 | Rez-de-chaussée | 0\n🏢 | ROUND 3 | Premier étage | 1', lead: '', note: '', box: '', italic: false, variant: false },
+    { type: 'list', icon: '📊', title: 'Notation', body: 'Un classement par **round**\nClassement final = **moyenne des 3 rounds**', lead: '', note: '', box: '🧮 | Score final = **(R1 + R2 + R3) ÷ 3**', italic: false, variant: false },
+    { type: 'prizes', icon: '💰', title: 'Classement - Top 3', body: '🥇 | 1ère place | À définir\n🥈 | 2ème place | À définir\n🥉 | 3ème place | À définir', lead: '', note: '', box: '', italic: false, variant: false }
+  ]
+};
+
+const TYPES = {
+  text: { label: 'Texte', hint: 'Paragraphes séparés par une ligne vide. **doré** et !!rouge!! disponibles.' },
+  list: { label: 'Liste', hint: 'Un point par ligne. **doré** et !!rouge!! disponibles.' },
+  cards: { label: 'Cartes', hint: 'emoji | tag | libellé | gros texte (optionnel)' },
+  info: { label: 'Infos', hint: 'titre | valeur' },
+  timeline: { label: 'Planning', hint: 'horaire | activité | responsable' },
+  roles: { label: 'Colonnes', hint: 'Titre puis un point par ligne. Colonnes séparées par ---' },
+  choices: { label: 'Choix', hint: 'emoji | texte | wait (bleu) ou hunt (doré). Sans emoji : texte seul.' },
+  prizes: { label: 'Podium', hint: 'emoji | rang | gain | gold, silver ou bronze' },
+  stands: { label: 'Stands', hint: 'Nom, puis : jeu | description, ★ bonus | description, score: barème. Stands séparés par ---' },
+  html: { label: 'HTML libre', hint: 'HTML inséré tel quel dans la section. Les scripts sont refusés.' }
+};
+const STATUS = { live: 'Actif', soon: 'À venir', archived: 'Archivé' };
+const PREVIEW_HOOK = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
+
+let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer;
+
+const api = {
+  cfg() {
+    const s = JSON.parse(localStorage.getItem(KEY.access) || '{}');
+    return { name: '', code: '', ...s, url: s.url || WORKER_URL };
+  },
+  async post(path, body) {
+    const c = api.cfg();
+    if (!c.url || !c.code) throw new Error('Renseigne l\'URL du relais et le code d\'accès dans l\'onglet Accès.');
+    const r = await fetch(c.url.replace(/\/$/, '') + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Access-Code': c.code },
+      body: JSON.stringify({ ...body, author: c.name })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status + ' · ' + (j.error || 'erreur inconnue'));
+    return j;
+  }
+};
+
+const loadList = async () => parse(await (await fetch('../public/events-data.js', { cache: 'no-store' })).text());
+
+const field = (path, label, { rows = 0, placeholder = '', hint = '' } = {}) => {
+  const control = rows
+    ? `<textarea data-p="${path}" rows="${rows}" placeholder="${esc(placeholder)}"></textarea>`
+    : `<input data-p="${path}" placeholder="${esc(placeholder)}">`;
+  return `<div class="field"><label>${label}</label>${control}${hint ? `<small>${hint}</small>` : ''}</div>`;
+};
+
+const segment = (action, path, options, current) => `<div class="seg">${Object.entries(options).map(([value, label]) =>
+  `<button type="button" class="${value === current ? 'active' : ''}" data-action="${action}" data-path="${path}" data-value="${value}">${label}</button>`).join('')}</div>`;
+
+const toggle = (key, label, on) => `<label class="switch"><input type="checkbox" data-s="${key}"${on ? ' checked' : ''}><span></span>${label}</label>`;
+
+const sectionHtml = (s, i) => `
+<details class="sec" data-i="${i}"${s._c ? '' : ' open'}>
+  <summary>
+    <span class="sec-icon">${esc(s.icon)}</span>
+    <span class="sec-title"><b>${esc(s.title) || 'Sans titre'}</b><em>${TYPES[s.type].label}</em></span>
+    <span class="sec-actions">
+      <button class="icon" data-action="up" title="Monter">↑</button>
+      <button class="icon" data-action="down" title="Descendre">↓</button>
+      <button class="icon" data-action="dup" title="Dupliquer">⧉</button>
+      <button class="icon danger" data-action="del" title="Supprimer">✕</button>
+    </span>
+  </summary>
+  <div class="sec-body">
+    <div class="grid-icon">
+      <div class="field"><label>Icône</label><input data-s="icon" value="${esc(s.icon)}"></div>
+      <div class="field"><label>Titre</label><input data-s="title" value="${esc(s.title)}"></div>
+    </div>
+    <div class="field"><label>Type de bloc</label><select data-s="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}"${k === s.type ? ' selected' : ''}>${v.label}</option>`).join('')}</select></div>
+    <div class="field"><label>Chapeau</label><input data-s="lead" value="${esc(s.lead)}" placeholder="Phrase d'introduction au-dessus du contenu"></div>
+    <div class="field"><label>Contenu</label><textarea data-s="body" rows="6">${esc(s.body)}</textarea><small>${esc(TYPES[s.type].hint)}</small></div>
+    <div class="field"><label>Encadré vert</label><input data-s="box" value="${esc(s.box)}" placeholder="🧮 | Total = **A + B**"></div>
+    <div class="field"><label>Note</label><input data-s="note" value="${esc(s.note)}" placeholder="Remarque affichée sous le contenu"></div>
+    ${s.type === 'text' ? `<div>${toggle('italic', 'Texte en italique', s.italic)}</div>` : ''}
+    ${s.type === 'list' ? `<div>${toggle('variant', 'Liste d\'interdictions (✕)', s.variant)}</div>` : ''}
+  </div>
+</details>`;
+
+const renderSections = () => { $('#secs').innerHTML = ev.sections.map(sectionHtml).join('') || '<p class="empty">Aucune section pour le moment.</p>'; };
+
+const renderEditor = () => {
+  $('#edit').innerHTML = `
+    <div class="toolbar">
+      <button class="btn ghost sm" data-action="new">Nouveau</button>
+      <button class="btn ghost sm" data-action="sample">Exemple</button>
+      <button class="btn ghost sm" data-action="import">Importer</button>
+      <button class="btn ghost sm" data-action="export">Exporter</button>
+      <button class="btn ghost sm" data-action="copy-entry">Copier l'entrée portail</button>
+    </div>
+    <section class="card">
+      <header class="card-head"><h2>Page</h2><p>Titre, date et adresse de la page.</p></header>
+      <div class="card-body">
+        ${field('meta.title', 'Titre', { rows: 2, hint: 'Un retour à la ligne crée un saut de ligne dans le titre.' })}
+        ${field('meta.date', 'Bandeau date', { placeholder: '📅 12 juin 2026 · 21h00' })}
+        ${field('slug', 'Adresse', { placeholder: 'mon-evenement' })}
+      </div>
+    </section>
+    <details class="card">
+      <summary>Personnalisation avancée</summary>
+      <div class="card-body">
+        <div class="grid2">${field('meta.badge', 'Badge')}${field('meta.divider', 'Séparateur')}</div>
+        ${field('meta.pageTitle', 'Titre de l\'onglet', { hint: 'Vide : « Event - » suivi du titre.' })}
+        ${field('meta.logo', 'Chemin du logo')}
+        <div class="grid2">${field('meta.fl', 'Pied de page gauche')}${field('meta.fr', 'Pied de page droit')}</div>
+      </div>
+    </details>
+    <section class="card">
+      <header class="card-head"><h2>Carte du portail</h2><p>Ce qui s'affiche sur la page d'accueil.</p></header>
+      <div class="card-body">
+        <div class="field"><label>Statut</label>${segment('seg', 'card.status', STATUS, ev.card.status)}</div>
+        <div class="grid-icon">
+          <div class="field"><label>Icône</label><input data-p="card.icon"></div>
+          ${field('card.title', 'Titre', { placeholder: 'Vide : titre de la page' })}
+        </div>
+        ${field('card.desc', 'Description', { rows: 2 })}
+        ${field('card.date', 'Date affichée', { placeholder: 'Vendredi 12/06/26' })}
+      </div>
+    </section>
+    <section class="card">
+      <header class="card-head"><h2>Sections</h2><p>Les blocs de contenu, dans l'ordre d'affichage.</p></header>
+      <div class="card-body">
+        <div id="secs"></div>
+        <div>
+          <span class="label">Ajouter un bloc</span>
+          <div class="add-grid">${Object.entries(TYPES).map(([k, v]) => `<button class="chip" data-action="add" data-type="${k}">+ ${v.label}</button>`).join('')}</div>
+        </div>
+      </div>
+    </section>`;
+  $$('[data-p]').forEach(x => { x.value = get(ev, x.dataset.p) ?? ''; });
+  renderSections();
+};
+
+const renderPortal = () => {
+  $('#portal').innerHTML = `
+    <section class="card">
+      <header class="card-head"><h2>Portail</h2><p>Statut et ordre des cartes de la page d'accueil.</p></header>
+      <div class="card-body">${list.map((x, i) => `
+        <div class="row-item" data-i="${i}">
+          <span class="glyph">${esc(x.icon)}</span>
+          <div class="meta"><b>${esc(x.title)}</b><small>${esc(x.href || 'sans lien')}</small></div>
+          <div class="seg">${Object.entries(STATUS).map(([v, l]) => `<button class="${v === x.status ? 'active' : ''}" data-action="p-status" data-value="${v}">${l}</button>`).join('')}</div>
+          <div class="row-tools">
+            <button class="icon" data-action="p-up" title="Monter">↑</button>
+            <button class="icon" data-action="p-down" title="Descendre">↓</button>
+            <button class="icon" data-action="p-edit" title="Modifier">✎</button>
+            <button class="icon danger" data-action="p-del" title="Retirer">✕</button>
+          </div>
+        </div>`).join('') || '<p class="empty">Aucun événement.</p>'}</div>
+    </section>
+    <div class="actions">
+      <button class="btn primary" data-action="p-save">Enregistrer le portail</button>
+      <button class="btn" data-action="p-download">Télécharger events-data.js</button>
+    </div>`;
+};
+
+const renderAccess = () => {
+  const c = api.cfg();
+  const input = (key, label, type = 'text', hint = '') => `<div class="field"><label>${label}</label><input data-g="${key}" type="${type}" value="${esc(c[key])}" autocomplete="off">${hint ? `<small>${hint}</small>` : ''}</div>`;
+  $('#access').innerHTML = `
+    <section class="card">
+      <header class="card-head"><h2>Accès</h2><p>Connexion au relais de publication. Le code est fourni par la MRD et reste dans ce navigateur.</p></header>
+      <div class="card-body">
+        ${input('url', 'URL du relais')}
+        ${input('code', 'Code d\'accès', 'password')}
+        ${input('name', 'Pseudo', 'text', 'Visible dans l\'historique GitHub.')}
+        <div class="actions">
+          <button class="btn primary" data-action="save-access">Enregistrer</button>
+          <button class="btn" data-action="test-access">Tester la connexion</button>
+        </div>
+      </div>
+    </section>`;
+};
+
+const refresh = () => {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => { $('#pv').srcdoc = page(ev).replace('</body>', PREVIEW_HOOK + '</body>'); }, 200);
+  $('#url').textContent = `/${ev.slug || '…'}/`;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    localStorage.setItem(KEY.draft, json(ev));
+    $('#draft').textContent = 'Brouillon enregistré';
+  }, 600);
+};
+
+const load = x => {
+  const b = blank();
+  ev = { ...b, ...x, meta: { ...b.meta, ...x.meta }, card: { ...b.card, ...x.card }, sections: x.sections || [] };
+  slugTouched = !!x.slug;
+  renderEditor();
+  refresh();
+};
+
+const mutate = f => { f(); renderSections(); refresh(); };
+
+const setTab = async name => {
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.panel').forEach(p => { p.hidden = p.id !== name; });
+  if (name === 'portal') {
+    try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
+  }
+  if (name === 'access') renderAccess();
+};
+
+const publish = async () => {
+  if (!ev.slug || !ev.meta.title) return toast('Le titre et l\'adresse sont obligatoires.', 'err');
+  if ((!ev.card.date || !ev.meta.date) && !confirm('Date manquante sur la carte ou sur la page. Publier quand même ?')) return;
+  const button = $('#publish');
+  button.disabled = true;
+  button.textContent = 'Publication…';
+  try {
+    await api.post('/publish', { slug: ev.slug, html: page(ev), config: json(ev), card: cardOf(ev) });
+    toast('Publié. En ligne dans environ une minute.', 'ok');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Publier';
+  }
+};
+
+const actions = {
+  tab: el => setTab(el.dataset.tab),
+  device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
+  'toggle-preview': el => { el.textContent = document.body.classList.toggle('show-preview') ? 'Éditeur' : 'Aperçu'; },
+  new: () => { localStorage.removeItem(KEY.draft); load({}); },
+  sample: () => load(SAMPLE),
+  import: () => $('#file').click(),
+  export: () => download((ev.slug || 'event') + '.json', json(ev)),
+  'copy-entry': async () => { await navigator.clipboard.writeText(JSON.stringify(cardOf(ev), null, 2)); toast('Entrée copiée.', 'ok'); },
+  'download-page': () => download('index.html', page(ev)),
+  seg: el => { set(ev, el.dataset.path, el.dataset.value); markActive(el); refresh(); },
+  add: el => mutate(() => ev.sections.push(newSec(el.dataset.type))),
+  up: (el, i) => mutate(() => move(ev.sections, i, -1)),
+  down: (el, i) => mutate(() => move(ev.sections, i, 1)),
+  dup: (el, i) => mutate(() => ev.sections.splice(i + 1, 0, { ...ev.sections[i] })),
+  del: (el, i) => mutate(() => ev.sections.splice(i, 1)),
+  publish,
+  'p-status': (el, i) => { list[i].status = el.dataset.value; renderPortal(); },
+  'p-up': (el, i) => { move(list, i, -1); renderPortal(); },
+  'p-down': (el, i) => { move(list, i, 1); renderPortal(); },
+  'p-del': (el, i) => { if (confirm('Retirer du portail ? Les fichiers de la page restent dans le dépôt.')) { list.splice(i, 1); renderPortal(); } },
+  'p-edit': async (el, i) => {
+    const r = await fetch('../' + list[i].href + 'event.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('Pas de configuration pour cet événement (page faite à la main).');
+    load(await r.json());
+    setTab('edit');
+  },
+  'p-save': async () => { await api.post('/portal', { list }); toast('Portail enregistré. Mise à jour dans environ une minute.', 'ok'); },
+  'p-download': () => download('events-data.js', serialize(list)),
+  'save-access': () => {
+    const c = {};
+    $$('[data-g]').forEach(x => { if (x.value.trim()) c[x.dataset.g] = x.value.trim(); });
+    localStorage.setItem(KEY.access, JSON.stringify(c));
+    toast('Accès enregistré.', 'ok');
+  },
+  'test-access': async () => { actions['save-access'](); await api.post('/ping', {}); toast('Connexion valide.', 'ok'); }
+};
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  if (el.closest('summary')) e.preventDefault();
+  const row = el.closest('[data-i]');
+  try { await actions[el.dataset.action]?.(el, row ? +row.dataset.i : -1); } catch (err) { toast(err.message, 'err'); }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target, value = t.type === 'checkbox' ? t.checked : t.value;
+  if (t.dataset.p) {
+    set(ev, t.dataset.p, value);
+    if (t.dataset.p === 'slug') slugTouched = true;
+    if (t.dataset.p === 'meta.title' && !slugTouched) { ev.slug = slugify(value); $('[data-p="slug"]').value = ev.slug; }
+  } else if (t.dataset.s) {
+    const box = t.closest('.sec'), s = ev.sections[+box.dataset.i];
+    s[t.dataset.s] = value;
+    $('.sec-icon', box).textContent = s.icon;
+    $('.sec-title b', box).textContent = s.title || 'Sans titre';
+  } else return;
+  refresh();
+});
+
+document.addEventListener('change', e => { if (e.target.dataset.s === 'type') renderSections(); });
+
+document.addEventListener('toggle', e => {
+  const d = e.target;
+  if (d.classList.contains('sec') && ev.sections[+d.dataset.i]) ev.sections[+d.dataset.i]._c = !d.open;
+}, true);
+
+window.addEventListener('message', e => { if (e.source === $('#pv').contentWindow && typeof e.data === 'number') lastScroll = e.data; });
+$('#pv').onload = () => $('#pv').contentWindow.postMessage(lastScroll, '*');
+
+$('#file').onchange = async e => {
+  try { load(JSON.parse(await e.target.files[0].text())); } catch { toast('Fichier JSON invalide.', 'err'); }
+  e.target.value = '';
+};
+
+try { load(JSON.parse(localStorage.getItem(KEY.draft)) || {}); } catch { load({}); }
