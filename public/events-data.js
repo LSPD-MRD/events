@@ -22,7 +22,7 @@ const EVENTS = [
     "href": ""
   },
   {
-    "status": "archived",
+    "status": "soon",
     "href": "open-house/",
     "icon": "🎉",
     "title": "OPEN HOUSE",
