@@ -1,6 +1,6 @@
 const EVENTS = [
   {
-    "status": "live",
+    "status": "soon",
     "href": "cache-cache/",
     "icon": "🔦",
     "title": "HIDE & SEEK MRPD",
@@ -22,7 +22,7 @@ const EVENTS = [
     "href": ""
   },
   {
-    "status": "archived",
+    "status": "soon",
     "href": "open-house/",
     "icon": "🎉",
     "title": "OPEN HOUSE",
