@@ -4,8 +4,8 @@ const EVENTS = [
     "href": "cache-cache/",
     "icon": "🔦",
     "title": "HIDE & SEEK MRPD",
-    "desc": "Cache-cache en 3 rounds dans le nouveau poste Mission Row.",
-    "date": "Mercredi 03/06/26"
+    "desc": "Cache-cache en 3 rounds dans la nouvelle Vespucci Police Station.",
+    "date": "XXXXXX XX/XX/XX"
   },
   {
     "status": "soon",
@@ -27,7 +27,7 @@ const EVENTS = [
     "icon": "🎉",
     "title": "OPEN HOUSE",
     "desc": "Portes ouvertes multi-divisions avec mini-jeux et système de points.",
-    "date": "XXXXXX XX/06/26"
+    "date": "XXXXXX XX/XX/XX"
   },
   {
     "status": "archived",
