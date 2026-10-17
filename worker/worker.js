@@ -13,6 +13,17 @@ const parse = t => JSON.parse(t.slice(t.indexOf('['), t.lastIndexOf(']') + 1));
 const serialize = l => 'const EVENTS = ' + JSON.stringify(l, null, 2) + ';\n';
 const parseContent = t => { const a=t.indexOf('{'), z=t.lastIndexOf('}'); return JSON.parse(t.slice(a,z+1)); };
 const serializeContent = o => 'window.EVENT_CONTENT = ' + JSON.stringify(o, null, 2) + ';\n';
+function extractPage(html) {
+  const start = html.search(/<div\s+class=[\"']page[\"'][^>]*>/i);
+  if (start < 0) return null;
+  const tags = /<\/?div\b[^>]*>/gi; tags.lastIndex = start; let depth = 0, m;
+  while ((m = tags.exec(html))) {
+    if (/^<\s*\//.test(m[0])) depth--;
+    else if (!/\/\s*>$/.test(m[0])) depth++;
+    if (depth === 0) return html.slice(start, tags.lastIndex);
+  }
+  return null;
+}
 export default {
  async fetch(req, env) {
   const cors = { 'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN, 'Access-Control-Allow-Headers': 'Content-Type, X-Access-Code', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
@@ -30,8 +41,9 @@ export default {
     const cf = await read(env, 'public/events-content.js');
     const contents = cf ? parseContent(cf.text) : {};
     const full = b.html.replace(/\.\.\/public\//g, './public/').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
-    const match = full.match(/<div\s+class=[\"']page[\"'][^>]*>[\s\S]*?<\/div>\s*(?=<\/body>|$)/i);
-    contents[b.slug] = match ? match[0] : full;
+    const extracted = extractPage(full);
+    if (!extracted) return json({ error: 'structure de page invalide' }, 400, cors);
+    contents[b.slug] = extracted;
     await write(env, 'public/events-content.js', serializeContent(contents), `Contenu événement ${b.slug} (${who})`);
     const f = await read(env, 'public/events-data.js');
     const list = parse(f.text), i = list.findIndex(x => x.href === b.card.href);

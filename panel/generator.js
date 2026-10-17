@@ -47,6 +47,7 @@ const R = {
 };
 
 const sec = s => {
+  if (s.legacyWholeSection) return s.body || '';
   const [ic, ...tx] = cols(s.box || '');
   const box = s.box ? `<div class="scoring-box">\n      <span class="sc-icon">${esc(ic)}</span>\n      <p>${strong(tx.join(' | '))}</p>\n    </div>` : '';
   const parts = [s.lead && `<p class="lead">${fmt(s.lead)}</p>`, R[s.type](s), box, s.note && `<p class="note">${fmt(s.note)}</p>`].filter(Boolean);

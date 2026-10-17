@@ -313,10 +313,39 @@ const actions = {
   'p-down': (el, i) => { move(list, i, 1); renderPortal(); },
   'p-del': (el, i) => { if (confirm('Retirer du portail ? Les fichiers de la page restent dans le dépôt.')) { list.splice(i, 1); renderPortal(); } },
   'p-edit': async (el, i) => {
-    const r = await fetch('../' + list[i].href + 'event.json', { cache: 'no-store' });
-    if (!r.ok) throw new Error('Pas de configuration pour cet événement (page faite à la main).');
-    load(await r.json());
+    const entry = list[i];
+    const slug = String(entry.href || '').replace(/^\/+|\/+$/g, '');
+    const r = await fetch('../public/events-content.js', { cache: 'no-store' });
+    if (!r.ok) throw new Error('Impossible de charger le contenu central des événements.');
+    const source = await r.text();
+    const first = source.indexOf('{'), last = source.lastIndexOf('}');
+    if (first < 0 || last <= first) throw new Error('Le fichier de contenu central est invalide.');
+    const contents = JSON.parse(source.slice(first, last + 1));
+    const html = contents[slug];
+    if (!html) {
+      load({ slug: slug || slugify(entry.title), meta: { title: entry.title || '', date: entry.date || '' }, card: { ...entry }, sections: [] });
+      toast('Fiche ouverte comme nouvelle fiche : aucun ancien contenu détaillé associé.', '');
+      setTab('edit');
+      return;
+    }
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const pageRoot = doc.querySelector('.page');
+    if (!pageRoot) throw new Error('La fiche historique n’a pas de structure reconnue.');
+    const title = doc.querySelector('.header h1')?.textContent?.trim().replace(/\s+/g, ' ') || entry.title || '';
+    const date = doc.querySelector('.date-banner')?.textContent?.trim() || entry.date || '';
+    const badge = doc.querySelector('.badge')?.textContent?.trim() || 'LSPD · Vespucci Police Station';
+    const divider = doc.querySelector('.header-divider span')?.textContent?.trim() || '★ RÈGLEMENT ★';
+    const legacySections = [...pageRoot.querySelectorAll(':scope > .section')].map(node => ({
+      type: 'html', icon: node.querySelector('.section-title .icon')?.textContent?.trim() || '📄', title: node.querySelector('.section-title')?.textContent?.trim().replace(/\s+/g, ' ') || 'Contenu historique importé', body: node.outerHTML,
+      lead: '', note: '', box: '', italic: false, variant: false, legacyWholeSection: true
+    }));
+    load({
+      slug, meta: { title, date, badge, divider, logo: '../public/Logo MRD V2.png', fl: doc.querySelector('.footer-left')?.textContent?.trim() || '', fr: doc.querySelector('.footer-right')?.textContent?.trim() || 'LSPD · MRD' },
+      card: { status: entry.status || 'soon', icon: entry.icon || '✦', title: entry.title || title, desc: entry.desc || '', date: entry.date || '' },
+      sections: legacySections
+    });
     setTab('edit');
+    toast('Fiche historique importée dans l’éditeur central. Les blocs HTML restent éditables en mode source.', 'ok');
   },
   'p-save': async () => { await api.post('/portal', { list }); toast('Portail enregistré. Mise à jour dans environ une minute.', 'ok'); },
   'p-download': () => download('events-data.js', serialize(list)),
@@ -352,7 +381,14 @@ document.addEventListener('input', e => {
   refresh();
 });
 
-document.addEventListener('change', e => { if (e.target.dataset.s === 'type') renderSections(); });
+document.addEventListener('change', e => {
+  if (e.target.dataset.s === 'type') {
+    const box = e.target.closest('.sec');
+    const section = ev.sections[+box.dataset.i];
+    if (section && e.target.value !== 'html') section.legacyWholeSection = false;
+    renderSections(); refresh();
+  }
+});
 
 document.addEventListener('toggle', e => {
   const d = e.target;
