@@ -1,18 +1,22 @@
-# Portail évènementiel MRD
+# MRD Portal — Unified Edition
 
-Site statique (GitHub Pages). Les pages d'événements se créent depuis `panel/`.
+Portail événementiel et panel d’administration MRD pour GTA V FiveM RP. Les fiches événements sont intégrées dans le portail : plus de dossiers `cache-cache/`, `concert/`, `escape-game/` ou `open-house/` avec un `index.html` indépendant.
 
-## Utiliser le panel
+## Structure
+- `index.html` : portail public unique
+- `panel/` : panel d’administration / créateur d’événements
+- `public/events-data.js` : cartes et statuts des événements
+- `public/events-content.js` : contenu des fiches d’événements intégré au portail
+- `public/script.js`, `public/app.css` : interface publique et thème clair/sombre
+- `public/style.css` : styles des fiches événements
+- `worker/worker.js` : Worker Cloudflare pour publication GitHub
 
-1. Ouvrir `https://lspd-mrd.github.io/events/panel/`.
-2. Onglet Accès : saisir le code fourni par la MRD et un pseudo, Enregistrer.
-3. Onglet Éditeur : remplir, vérifier l'aperçu, Publier. La page est en ligne en environ une minute.
+## Déploiement
+1. Sauvegarder le dépôt et les valeurs actuelles des secrets Cloudflare.
+2. Copier les fichiers de ce dossier dans la racine du dépôt GitHub, sans recopier le dossier `.git`.
+3. Déployer le Worker uniquement après validation du nouveau code dans un environnement de test : la route `/publish` écrit maintenant les fiches dans `public/events-content.js` au lieu de créer `<slug>/index.html` et `<slug>/event.json`.
+4. Conserver les variables `OWNER`, `REPO`, `BRANCH`, `ALLOWED_ORIGIN`, `GH_TOKEN`, `ACCESS_CODE`. Vérifier que `ALLOWED_ORIGIN` correspond exactement à l’origine du panel.
+5. Tester `/ping`, puis une publication de test avant de republier les événements réels.
 
-## Installation (une seule fois, administrateur)
-
-1. Créer un token GitHub fine-grained limité au dépôt, permission Contents : Read and write.
-2. Cloudflare Workers : créer un Worker, y coller `worker/worker.js`.
-3. Variables texte : OWNER, REPO, BRANCH, ALLOWED_ORIGIN (ex. `https://lspd-mrd.github.io`). Secrets : GH_TOKEN, ACCESS_CODE.
-4. Renseigner l'URL du Worker dans `const WORKER_URL` de `panel/index.html`, puis commit et push.
-
-Changer ACCESS_CODE révoque l'accès de tout le monde.
+## Important
+Le panel utilise toujours le Worker configuré dans `panel/panel.js`. Les pages d’événements historiques ont été consolidées dans `public/events-content.js`. Si le dépôt contient d’autres événements non présents dans cette archive, il faut les importer avant de remplacer les données publiques.

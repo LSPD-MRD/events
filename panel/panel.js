@@ -1,5 +1,5 @@
 const WORKER_URL = 'https://mrd-panel.biscuitytb2102.workers.dev';
-const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel' };
+const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel', theme: 'mrdpanel-theme' };
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -103,7 +103,7 @@ const sectionHtml = (s, i) => `
 <details class="sec" data-i="${i}"${s._c ? '' : ' open'}>
   <summary>
     <span class="sec-icon">${esc(s.icon)}</span>
-    <span class="sec-title"><b>${esc(s.title) || 'Sans titre'}</b><em>${TYPES[s.type].label}</em></span>
+    <span class="sec-title"><b>${esc(s.title) || 'Sans titre'}</b><em>${(TYPES[s.type] || { label: 'Bloc personnalisé' }).label}</em></span>
     <span class="sec-actions">
       <button class="icon" data-action="up" title="Monter">↑</button>
       <button class="icon" data-action="down" title="Descendre">↓</button>
@@ -130,6 +130,7 @@ const renderSections = () => { $('#secs').innerHTML = ev.sections.map(sectionHtm
 
 const renderEditor = () => {
   $('#edit').innerHTML = `
+    <section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· PUBLICATIONS</span></div><h1>Créateur d’événement</h1><p>Conçois une page claire, ajuste son aperçu et publie-la sur le portail MRD.</p></div><div class="intro-mark">✦</div></section>
     <div class="toolbar">
       <button class="btn ghost sm" data-action="new">Nouveau</button>
       <button class="btn ghost sm" data-action="sample">Exemple</button>
@@ -245,6 +246,7 @@ const mutate = f => { f(); renderSections(); refresh(); };
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
+  if (['newsroom', 'media', 'team', 'archive'].includes(name)) renderWip(name);
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
   }
@@ -266,8 +268,31 @@ const publish = async () => {
   }
 };
 
+const WIP = {
+  newsroom: { icon: '✎', title: 'Rédaction & actualités', subtitle: 'Un espace éditorial pour préparer, relire et publier les communications de la MRD.', modules: ['Articles et communiqués', 'Brouillons & relecture', 'Calendrier éditorial'], note: 'La rédaction et la publication d’articles ne sont pas encore activées.' },
+  media: { icon: '▧', title: 'Bibliothèque média', subtitle: 'Centraliser les visuels, captures, logos et ressources de communication.', modules: ['Galerie de visuels', 'Kit de marque MRD', 'Pièces jointes & crédits'], note: 'L’import et la gestion des fichiers seront ajoutés dans une prochaine version.' },
+  team: { icon: '♙', title: 'Espace équipe MRD', subtitle: 'Organiser les rôles, les validations et les responsabilités de la division.', modules: ['Membres & fonctions', 'Droits et accès', 'Circuit de validation'], note: 'La gestion des membres et des permissions est en préparation.' },
+  archive: { icon: '◷', title: 'Archives & rapports', subtitle: 'Retrouver les anciennes publications et conserver une trace des opérations.', modules: ['Historique des publications', 'Rapports d’événements', 'Recherche & filtres'], note: 'Les archives centralisées ne sont pas encore connectées.' }
+};
+
+const renderWip = name => {
+  const w = WIP[name];
+  if (!w) return;
+  const root = $('#' + name);
+  root.innerHTML = `<section class="wip-hero"><div class="wip-mark">${w.icon}</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION <span>· EN DÉVELOPPEMENT</span></div><h1>${w.title}</h1><p>${w.subtitle}</p></div><span class="wip-badge">WIP</span></section><section class="wip-grid">${w.modules.map((m, i) => `<article class="wip-module"><span class="module-index">0${i + 1}</span><h3>${m}</h3><p>Module prévu dans le futur espace MRD.</p><span class="module-state">Bientôt disponible</span></article>`).join('')}</section><section class="wip-note"><span class="wip-note-icon">⌁</span><div><strong>Cette section est en préparation</strong><p>${w.note} Les outils déjà disponibles restent accessibles dans Éditeur, Portail et Accès.</p></div></section>`;
+};
+
+const applyTheme = theme => {
+  const value = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = value;
+  localStorage.setItem(KEY.theme, value);
+  const b = $('#theme-toggle');
+  if (b) b.innerHTML = value === 'dark' ? '☼ <span>Mode clair</span>' : '☾ <span>Mode sombre</span>';
+};
+
 const actions = {
   tab: el => setTab(el.dataset.tab),
+  theme: () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
   device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
   'toggle-preview': el => { el.textContent = document.body.classList.toggle('show-preview') ? 'Éditeur' : 'Aperçu'; },
   new: () => { localStorage.removeItem(KEY.draft); load({}); },
@@ -342,4 +367,5 @@ $('#file').onchange = async e => {
   e.target.value = '';
 };
 
+applyTheme(localStorage.getItem(KEY.theme) || 'dark');
 try { load(JSON.parse(localStorage.getItem(KEY.draft)) || {}); } catch { load({}); }

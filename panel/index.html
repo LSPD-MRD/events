@@ -19,9 +19,14 @@
     <button class="nav-item active" data-action="tab" data-tab="edit">Éditeur</button>
     <button class="nav-item" data-action="tab" data-tab="portal">Portail</button>
     <button class="nav-item" data-action="tab" data-tab="access">Accès</button>
+    <button class="nav-item nav-wip" data-action="tab" data-tab="newsroom">Rédaction <span>WIP</span></button>
+    <button class="nav-item nav-wip" data-action="tab" data-tab="media">Médias <span>WIP</span></button>
+    <button class="nav-item nav-wip" data-action="tab" data-tab="team">Équipe <span>WIP</span></button>
+    <button class="nav-item nav-wip" data-action="tab" data-tab="archive">Archives <span>WIP</span></button>
   </nav>
   <div class="topbar-actions">
     <span class="draft" id="draft"></span>
+    <button class="btn ghost theme-toggle" id="theme-toggle" data-action="theme" aria-label="Changer de thème" title="Changer de thème">☼ <span>Mode clair</span></button>
     <button class="btn ghost only-compact" data-action="toggle-preview">Aperçu</button>
     <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
     <button class="btn primary" id="publish" data-action="publish">Publier</button>
@@ -33,6 +38,10 @@
     <div class="panel" id="edit"></div>
     <div class="panel" id="portal" hidden></div>
     <div class="panel" id="access" hidden></div>
+    <div class="panel wip-panel" id="newsroom" hidden></div>
+    <div class="panel wip-panel" id="media" hidden></div>
+    <div class="panel wip-panel" id="team" hidden></div>
+    <div class="panel wip-panel" id="archive" hidden></div>
   </div>
   <aside class="preview">
     <div class="preview-bar">
