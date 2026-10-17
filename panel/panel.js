@@ -1,5 +1,6 @@
 const WORKER_URL = 'https://mrd-panel.biscuitytb2102.workers.dev';
-const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel', theme: 'mrdpanel-theme' };
+const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session' };
+let currentUser = null;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -69,18 +70,19 @@ let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer
 const api = {
   cfg() {
     const s = JSON.parse(localStorage.getItem(KEY.access) || '{}');
-    return { name: '', code: '', ...s, url: s.url || WORKER_URL };
+    return { ...s, url: s.url || WORKER_URL };
   },
-  async post(path, body) {
+  async post(path, body = {}) {
     const c = api.cfg();
-    if (!c.url || !c.code) throw new Error('Renseigne l\'URL du relais et le code d\'accès dans l\'onglet Accès.');
-    const r = await fetch(c.url.replace(/\/$/, '') + path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Access-Code': c.code },
-      body: JSON.stringify({ ...body, author: c.name })
-    });
+    const token = sessionStorage.getItem(KEY.token);
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
+    const r = await fetch(c.url.replace(/\/$/, '') + path, { method: 'POST', headers, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(r.status + ' · ' + (j.error || 'erreur inconnue'));
+    if (!r.ok) {
+      if (r.status === 401) signOut(false);
+      throw new Error(r.status + ' · ' + (j.error || 'erreur inconnue'));
+    }
     return j;
   }
 };
@@ -206,18 +208,14 @@ const renderPortal = () => {
 
 const renderAccess = () => {
   const c = api.cfg();
-  const input = (key, label, type = 'text', hint = '') => `<div class="field"><label>${label}</label><input data-g="${key}" type="${type}" value="${esc(c[key])}" autocomplete="off">${hint ? `<small>${hint}</small>` : ''}</div>`;
   $('#access').innerHTML = `
     <section class="card">
-      <header class="card-head"><h2>Accès</h2><p>Connexion au relais de publication. Le code est fourni par la MRD et reste dans ce navigateur.</p></header>
+      <header class="card-head"><h2>Compte & sécurité</h2><p>La connexion est gérée par le Worker MRD. Aucun mot de passe n’est enregistré dans le navigateur.</p></header>
       <div class="card-body">
-        ${input('url', 'URL du relais')}
-        ${input('code', 'Code d\'accès', 'password')}
-        ${input('name', 'Pseudo', 'text', 'Visible dans l\'historique GitHub.')}
-        <div class="actions">
-          <button class="btn primary" data-action="save-access">Enregistrer</button>
-          <button class="btn" data-action="test-access">Tester la connexion</button>
-        </div>
+        <div class="user-row"><div><b>${esc(currentUser?.username || 'Non connecté')}</b><small>${esc(currentUser?.grade || 'Aucun grade')} · rôle ${esc(currentUser?.role || '—')}</small></div><button class="btn" data-action="logout">Se déconnecter</button></div>
+        <div class="field"><label>URL du Worker</label><input data-g="url" value="${esc(c.url)}"><small>À modifier uniquement si l’adresse de ton Worker change.</small></div>
+        <div class="actions"><button class="btn primary" data-action="save-access">Enregistrer l’URL</button><button class="btn" data-action="test-access">Tester le serveur</button></div>
+        <p class="hint">Les identifiants sont gérés côté serveur. Ne partage jamais un token GitHub ou un secret Cloudflare.</p>
       </div>
     </section>`;
 };
@@ -246,7 +244,8 @@ const mutate = f => { f(); renderSections(); refresh(); };
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
-  if (['newsroom', 'media', 'team', 'archive'].includes(name)) renderWip(name);
+  if (['newsroom', 'media', 'archive'].includes(name)) renderWip(name);
+  if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
   }
@@ -271,7 +270,7 @@ const publish = async () => {
 const WIP = {
   newsroom: { icon: '✎', title: 'Rédaction & actualités', subtitle: 'Un espace éditorial pour préparer, relire et publier les communications de la MRD.', modules: ['Articles et communiqués', 'Brouillons & relecture', 'Calendrier éditorial'], note: 'La rédaction et la publication d’articles ne sont pas encore activées.' },
   media: { icon: '▧', title: 'Bibliothèque média', subtitle: 'Centraliser les visuels, captures, logos et ressources de communication.', modules: ['Galerie de visuels', 'Kit de marque MRD', 'Pièces jointes & crédits'], note: 'L’import et la gestion des fichiers seront ajoutés dans une prochaine version.' },
-  team: { icon: '♙', title: 'Espace équipe MRD', subtitle: 'Organiser les rôles, les validations et les responsabilités de la division.', modules: ['Membres & fonctions', 'Droits et accès', 'Circuit de validation'], note: 'La gestion des membres et des permissions est en préparation.' },
+
   archive: { icon: '◷', title: 'Archives & rapports', subtitle: 'Retrouver les anciennes publications et conserver une trace des opérations.', modules: ['Historique des publications', 'Rapports d’événements', 'Recherche & filtres'], note: 'Les archives centralisées ne sont pas encore connectées.' }
 };
 
@@ -280,6 +279,28 @@ const renderWip = name => {
   if (!w) return;
   const root = $('#' + name);
   root.innerHTML = `<section class="wip-hero"><div class="wip-mark">${w.icon}</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION <span>· EN DÉVELOPPEMENT</span></div><h1>${w.title}</h1><p>${w.subtitle}</p></div><span class="wip-badge">WIP</span></section><section class="wip-grid">${w.modules.map((m, i) => `<article class="wip-module"><span class="module-index">0${i + 1}</span><h3>${m}</h3><p>Module prévu dans le futur espace MRD.</p><span class="module-state">Bientôt disponible</span></article>`).join('')}</section><section class="wip-note"><span class="wip-note-icon">⌁</span><div><strong>Cette section est en préparation</strong><p>${w.note} Les outils déjà disponibles restent accessibles dans Éditeur, Portail et Accès.</p></div></section>`;
+};
+
+
+const renderTeam = async () => {
+  const root = $('#team');
+  if (currentUser?.role !== 'owner') {
+    root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La liste des comptes et leur création sont réservées au Owner.</p></div><span class="wip-badge">OWNER</span></section>`;
+    return;
+  }
+  root.innerHTML = `<section class="page-intro"><div><div class="eyebrow">SÉCURITÉ · OWNER</div><h1>Comptes & grades</h1><p>Créer des identifiants individuels et attribuer le niveau d’accès adapté.</p></div></section>
+  <section class="card"><header class="card-head"><h2>Créer un compte</h2><p>Le mot de passe initial est transmis à la personne en privé.</p></header><div class="card-body">
+  <form id="user-create-form" class="user-create">
+    <div class="field"><label>Identifiant</label><input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off"></div>
+    <div class="field"><label>Grade affiché</label><input name="grade" required maxlength="60" placeholder="Ex. Media Officer"></div>
+    <div class="field"><label>Rôle système</label><select name="role"><option value="viewer">Lecteur — consultation</option><option value="editor" selected>Éditeur — événements</option><option value="admin">Administrateur — gestion opérationnelle</option></select></div>
+    <div class="field"><label>Mot de passe temporaire</label><input name="password" required minlength="12" type="password" autocomplete="new-password"></div>
+    <div class="actions"><button class="btn primary" type="submit">Créer le compte</button></div>
+  </form></div></section><section class="card"><header class="card-head"><h2>Comptes existants</h2><p>Cette liste est visible uniquement par le Owner.</p></header><div class="card-body"><div id="users-list" class="user-admin">Chargement…</div></div></section>`;
+  try {
+    const data = await api.post('/users/list', {});
+    $('#users-list').innerHTML = data.users.map(u => `<div class="user-row"><div><b>${esc(u.username)}</b><small>${esc(u.grade)} · ${esc(u.role)} · ${u.active ? 'Actif' : 'Désactivé'}</small></div><button class="btn danger" data-action="user-disable" data-user-id="${esc(u.id)}" ${u.id === currentUser.id ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button></div>`).join('') || '<p>Aucun compte.</p>';
+  } catch (e) { $('#users-list').textContent = e.message; }
 };
 
 const applyTheme = theme => {
@@ -350,13 +371,69 @@ const actions = {
   'p-save': async () => { await api.post('/portal', { list }); toast('Portail enregistré. Mise à jour dans environ une minute.', 'ok'); },
   'p-download': () => download('events-data.js', serialize(list)),
   'save-access': () => {
-    const c = {};
+    const c = api.cfg();
     $$('[data-g]').forEach(x => { if (x.value.trim()) c[x.dataset.g] = x.value.trim(); });
     localStorage.setItem(KEY.access, JSON.stringify(c));
-    toast('Accès enregistré.', 'ok');
+    toast('URL enregistrée.', 'ok');
   },
-  'test-access': async () => { actions['save-access'](); await api.post('/ping', {}); toast('Connexion valide.', 'ok'); }
+  'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
+  logout: () => signOut(true),
+  'user-disable': async el => { if (!confirm('Désactiver ce compte ?')) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderTeam(); toast('Compte désactivé.', 'ok'); }
 };
+
+async function signIn(username, password) {
+  const c = api.cfg();
+  const r = await fetch(c.url.replace(/\/$/, '') + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) });
+  const data = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(data.error || 'Connexion refusée');
+  sessionStorage.setItem(KEY.token, data.token);
+  currentUser = data.user;
+  $('#login-screen').hidden = true;
+  $('#user-chip').textContent = currentUser.username + ' · ' + currentUser.grade;
+  $('#login-error').textContent = '';
+  applyPermissions();
+}
+async function signOut(show = true) {
+  try { if (sessionStorage.getItem(KEY.token)) await api.post('/auth/logout', {}); } catch {}
+  sessionStorage.removeItem(KEY.token); currentUser = null;
+  $('#login-screen').hidden = false;
+  $('#login-pass').value = '';
+  $('#user-chip').textContent = 'Session fermée';
+  if (show) toast('Déconnexion effectuée.', 'ok');
+}
+function applyPermissions() {
+  const role = currentUser?.role || 'viewer';
+  const canEdit = ['owner','admin','editor'].includes(role);
+  $('#publish').hidden = !canEdit;
+  $$('[data-action="tab"]').forEach(b => {
+    if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
+    if (b.dataset.tab === 'access') b.hidden = false;
+  });
+  if (!canEdit) {
+    $('#edit').innerHTML = '<section class="card"><div class="card-body"><h2>Consultation seule</h2><p>Ton compte ne dispose pas des droits de modification.</p></div></section>';
+    $('#edit').hidden = false;
+    $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
+    $$('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
+  }
+}
+async function restoreSession() {
+  const token = sessionStorage.getItem(KEY.token);
+  if (!token) return;
+  try {
+    const data = await api.post('/auth/me', {});
+    currentUser = data.user; $('#login-screen').hidden = true;
+    $('#user-chip').textContent = currentUser.username + ' · ' + currentUser.grade;
+    applyPermissions();
+  } catch { sessionStorage.removeItem(KEY.token); }
+}
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const button = $('#login-submit'), error = $('#login-error');
+  button.disabled = true; button.textContent = 'Connexion…'; error.textContent = '';
+  try { await signIn($('#login-user').value.trim(), $('#login-pass').value); }
+  catch (err) { error.textContent = err.message; }
+  finally { button.disabled = false; button.textContent = 'Se connecter'; }
+});
 
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-action]');
@@ -403,5 +480,17 @@ $('#file').onchange = async e => {
   e.target.value = '';
 };
 
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'user-create-form') return;
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const payload = Object.fromEntries(form.entries());
+  try {
+    await api.post('/users/create', payload);
+    e.target.reset(); toast('Compte créé. Communique les identifiants en privé.', 'ok'); await renderTeam();
+  } catch (err) { toast(err.message, 'err'); }
+});
+
 applyTheme(localStorage.getItem(KEY.theme) || 'dark');
 try { load(JSON.parse(localStorage.getItem(KEY.draft)) || {}); } catch { load({}); }
+restoreSession();
