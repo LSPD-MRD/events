@@ -521,6 +521,28 @@ export default {
         return json({ user: publicUser(user) }, 200, cors);
       }
 
+      if (route === "/auth/change-password") {
+        const currentPassword = String(b.currentPassword || "");
+        const newPassword = String(b.newPassword || "");
+        if (!currentPassword || newPassword.length < 12 || newPassword.length > 128) {
+          return json({ error: "Le mot de passe actuel est obligatoire et le nouveau doit contenir 12 à 128 caractères." }, 400, cors);
+        }
+        const account = await env.DB.prepare(
+          "SELECT id, password_hash, salt FROM users WHERE id = ? AND active = 1"
+        ).bind(user.id).first();
+        if (!account) return json({ error: "Compte introuvable ou désactivé." }, 401, cors);
+        const candidate = await passwordHash(currentPassword, account.salt);
+        if (candidate !== account.password_hash) {
+          return json({ error: "Le mot de passe actuel est incorrect." }, 403, cors);
+        }
+        const salt = randomToken(16);
+        const password_hash = await passwordHash(newPassword, salt);
+        await env.DB.prepare(
+          "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?"
+        ).bind(password_hash, salt, user.id).run();
+        return json({ ok: true, message: "Mot de passe modifié." }, 200, cors);
+      }
+
       if (route === "/users/list") {
         if (!isOwner(user)) {
           return json({ error: "Réservé au Owner." }, 403, cors);
