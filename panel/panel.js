@@ -541,7 +541,7 @@ const saveDraft = async () => {
 
 const publish = async () => {
   if (!ev.slug || !ev.meta.title) return toast('Le titre et l’adresse sont obligatoires.', 'err');
-  if (!ev.card.date || !ev.card.date.trim() || !ev.meta.date || !ev.meta.date.trim()) return toast('Ajoute la date sur la carte et dans la fiche avant de publier.', 'warn');
+  if (!ev.meta.date || !ev.meta.date.trim()) return toast('Ajoute la date dans la fiche de l’événement avant de publier. La date de la carte du portail est facultative.', 'warn');
   const button = $('#publish');
   button.disabled = true;
   button.textContent = 'Publication…';
