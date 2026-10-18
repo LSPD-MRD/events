@@ -42,6 +42,17 @@
     }
     if (!html && ev.content) html = ev.content;
     content.innerHTML = html || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title || 'Événement MRD')}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">◷ ${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée complète sera ajoutée prochainement.</p></article>`;
+    // Les anciennes fiches utilisaient un observer d'animation absent du portail actuel.
+    // Retirer la classe "reveal" empêche leurs sections de rester à opacity: 0.
+    content.querySelectorAll('.reveal').forEach(el => {
+      el.classList.remove('reveal');
+      el.classList.add('visible');
+      el.style.setProperty('opacity', '1', 'important');
+      el.style.setProperty('transform', 'none', 'important');
+      el.style.setProperty('visibility', 'visible', 'important');
+    });
+    content.style.setProperty('display', 'block', 'important');
+    content.style.setProperty('visibility', 'visible', 'important');
     root.hidden = true;
     const sectionHead = document.querySelector('.section-head');
     if (sectionHead) sectionHead.hidden = true;
