@@ -28,3 +28,12 @@ html, body.mrd-app { min-height: 100%; }
 body.mrd-app { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 body.mrd-app > main#app-root { flex: 1 0 auto; width: 100%; }
 body.mrd-app > .app-footer { flex: 0 0 auto; margin-top: auto; }
+
+
+/* Les anciennes fiches utilisent .reveal, mais le portail intégré n'active pas l'ancien observer d'animation. Ne jamais laisser leur contenu invisible dans la vue détail. */
+#event-detail .reveal,
+#event-content .reveal {
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
