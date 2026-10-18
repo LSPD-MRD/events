@@ -378,8 +378,8 @@ const setPreview = show => {
 };
 
 const setTab = async name => {
-  $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  $('.panel').forEach(p => { p.hidden = p.id !== name; });
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
   if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
   const layout = $('.layout');
@@ -577,8 +577,8 @@ function applyPermissions() {
   if (!canEdit) {
     $('#edit').innerHTML = '<section class="card"><div class="card-body"><h2>Consultation seule</h2><p>Ton compte ne dispose pas des droits de modification.</p></div></section>';
     $('#edit').hidden = false;
-    $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
-    $('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
+    document.querySelectorAll('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
   }
 }
 async function restoreSession() {
@@ -697,5 +697,6 @@ document.addEventListener('submit', async e => {
 
 applyTheme(localStorage.getItem(KEY.theme) || 'dark');
 try { load(JSON.parse(localStorage.getItem(KEY.draft)) || {}); } catch { load({}); }
+$('.layout').dataset.activeTab = 'edit';
 setPreview(true);
 restoreSession();
