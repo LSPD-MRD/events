@@ -7,7 +7,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function render() {
     root.innerHTML = '';
-    const data = Array.isArray(window.EVENTS) ? window.EVENTS : [];
+    const data = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (Array.isArray(window.EVENTS) ? window.EVENTS : []);
     const visible = data.filter(e => filter === 'all' || e.status === filter);
     ['live','soon','archived'].forEach(status => {
       const items = visible.filter(e => e.status === status); if (!items.length) return;
@@ -24,7 +24,8 @@
   }
   function openEvent(ev) {
     const slug = String(ev.href || '').replace(/^\/+|\/+$/g,'');
-    let html = window.EVENT_CONTENT && window.EVENT_CONTENT[slug];
+    const eventContent = typeof EVENT_CONTENT !== 'undefined' ? EVENT_CONTENT : window.EVENT_CONTENT;
+    let html = eventContent && eventContent[slug];
     if (!html && ev.content) html = ev.content;
     content.innerHTML = html || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title)}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée de cet événement n’est pas encore disponible dans le portail intégré.</p></article>`;
     root.hidden = true; document.querySelector('.section-head').hidden = true; detail.hidden = false;
@@ -36,5 +37,10 @@
   const theme = document.getElementById('theme-toggle');
   function setTheme(v) { document.documentElement.dataset.theme=v; theme.textContent=v==='light'?'☀':'☾'; localStorage.setItem('mrd-theme',v); }
   setTheme(localStorage.getItem('mrd-theme') || 'dark'); theme.addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
-  if (location.hash.startsWith('#event/')) { const slug=decodeURIComponent(location.hash.slice(7)); const ev=(window.EVENTS||[]).find(x=>String(x.href||'').replace(/^\/+|\/+$/g,'')===slug); if(ev) openEvent(ev); else render(); } else render();
+  if (location.hash.startsWith('#event/')) {
+    const slug = decodeURIComponent(location.hash.slice(7));
+    const eventList = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (window.EVENTS || []);
+    const ev = eventList.find(x => String(x.href || '').replace(/^\\/+|\\/+$/g, '') === slug);
+    if (ev) openEvent(ev); else render();
+  } else render();
 })();
