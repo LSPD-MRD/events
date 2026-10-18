@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="../public/Logo MRD V2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="panel.css?v=20261018f">
+<link rel="stylesheet" href="panel.css?v=20261018g">
 </head>
 <body>
 <header class="topbar">
@@ -31,7 +31,13 @@
     <span class="draft" id="draft"></span>
     <button class="btn ghost theme-toggle" id="theme-toggle" data-action="theme" aria-label="Changer de thème" title="Changer de thème">☼ <span>Mode clair</span></button>
     <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
-    <button class="btn primary" id="publish" data-action="publish">Publier</button>
+    <div class="save-dropdown" id="save-actions">
+      <button class="btn primary save-main" id="publish" data-action="save-draft">Enregistrer</button>
+      <button class="btn primary save-caret" id="save-menu-trigger" type="button" data-action="toggle-save-menu" aria-label="Autres options d’enregistrement" aria-expanded="false" aria-controls="save-menu">▾</button>
+      <div class="save-menu" id="save-menu" hidden>
+        <button type="button" data-action="publish">Enregistrer et publier</button>
+      </div>
+    </div>
     <div class="profile-dropdown">
       <button class="profile-trigger" id="profile-trigger" type="button" data-action="toggle-profile" aria-label="Ouvrir le menu du profil" aria-expanded="false" aria-controls="profile-menu">
         <img id="profile-avatar" alt="" hidden>
@@ -82,7 +88,7 @@
 </div>
 <input type="file" id="file" name="event-json" accept=".json" hidden>
 <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-<script src="generator.js?v=20261018f"></script>
-<script src="panel.js?v=20261018f"></script>
+<script src="generator.js?v=20261018g"></script>
+<script src="panel.js?v=20261018g"></script>
 </body>
 </html>
