@@ -725,6 +725,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 .toast.ok { border-color: color-mix(in srgb, var(--ok) 50%, var(--line)); }
 .toast.err { border-color: color-mix(in srgb, var(--err) 55%, var(--line)); }
+.toast.warn { border-color: color-mix(in srgb, #d9a441 55%, var(--line)); }
+.toast.warn .toast-icon { color: #d9a441; background: color-mix(in srgb, #d9a441 13%, transparent); }
+.toast.warn .toast-progress { background: #d9a441; }
 .toast-icon {
   display: grid;
   place-items: center;
