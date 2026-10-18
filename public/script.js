@@ -7,7 +7,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function render() {
     root.innerHTML = '';
-    const data = Array.isArray(window.EVENTS) ? window.EVENTS : [];
+    const data = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (Array.isArray(window.EVENTS) ? window.EVENTS : []);
     const visible = data.filter(e => filter === 'all' || e.status === filter);
     ['live','soon','archived'].forEach(status => {
       const items = visible.filter(e => e.status === status); if (!items.length) return;
@@ -24,7 +24,8 @@
   }
   function openEvent(ev) {
     const slug = String(ev.href || '').replace(/^\/+|\/+$/g,'');
-    let html = window.EVENT_CONTENT && window.EVENT_CONTENT[slug];
+    const eventContent = typeof EVENT_CONTENT !== 'undefined' ? EVENT_CONTENT : window.EVENT_CONTENT;
+    let html = eventContent && eventContent[slug];
     if (!html && ev.content) html = ev.content;
     content.innerHTML = html || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title)}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée de cet événement n’est pas encore disponible dans le portail intégré.</p></article>`;
     root.hidden = true; document.querySelector('.section-head').hidden = true; detail.hidden = false;
