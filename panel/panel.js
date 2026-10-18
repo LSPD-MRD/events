@@ -521,8 +521,8 @@ function applyPermissions() {
   if (!canEdit) {
     $('#edit').innerHTML = '<section class="card"><div class="card-body"><h2>Consultation seule</h2><p>Ton compte ne dispose pas des droits de modification.</p></div></section>';
     $('#edit').hidden = false;
-    $$$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
-    $$$('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
+    $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
+    $('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
   }
 }
 async function restoreSession() {
@@ -622,7 +622,7 @@ document.addEventListener('submit', async e => {
     e.target.reset(); toast('Mot de passe mis à jour. Ta session reste ouverte.', 'ok');
   } catch (err) { toast(err.message, 'err'); }
   finally { button.disabled = false; button.textContent = 'Mettre à jour le mot de passe'; }
-};
+});
 
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'user-create-form') return;
