@@ -307,6 +307,9 @@ export default {
     }
 
     try {
+      // Crée les tables absentes et applique les migrations compatibles.
+      await ensureAuthSchema(env);
+
       /*
        * CONFIGURATION INITIALE DU PROPRIÉTAIRE
        */
@@ -321,9 +324,6 @@ export default {
             cors
           );
         }
-
-        // Prépare les tables d'authentification si elles sont absentes.
-        await ensureAuthSchema(env);
 
         const username = normUser(b.username);
         const password = String(b.password || "");
