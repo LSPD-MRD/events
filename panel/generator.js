@@ -48,10 +48,12 @@ const R = {
 
 const sec = s => {
   if (s.legacyWholeSection) return s.body || '';
-  const [ic, ...tx] = cols(s.box || '');
-  const box = s.box ? `<div class="scoring-box">\n      <span class="sc-icon">${esc(ic)}</span>\n      <p>${strong(tx.join(' | '))}</p>\n    </div>` : '';
-  const parts = [s.lead && `<p class="lead">${fmt(s.lead)}</p>`, R[s.type](s), box, s.note && `<p class="note">${fmt(s.note)}</p>`].filter(Boolean);
-  return `  <div class="section reveal">\n    <div class="section-title"><span class="icon">${esc(s.icon)}</span> ${esc(s.title)}</div>\n    ${parts.join('\n    ')}\n  </div>`;
+  const type = Object.prototype.hasOwnProperty.call(R, s.type) ? s.type : 'text';
+  const safeSection = { icon: '', title: '', lead: '', body: '', box: '', note: '', ...s, type };
+  const [ic, ...tx] = cols(safeSection.box || '');
+  const box = safeSection.box ? `<div class="scoring-box">\n      <span class="sc-icon">${esc(ic)}</span>\n      <p>${strong(tx.join(' | '))}</p>\n    </div>` : '';
+  const parts = [safeSection.lead && `<p class="lead">${fmt(safeSection.lead)}</p>`, R[type](safeSection), box, safeSection.note && `<p class="note">${fmt(safeSection.note)}</p>`].filter(Boolean);
+  return `  <div class="section reveal">\n    <div class="section-title"><span class="icon">${esc(safeSection.icon)}</span> ${esc(safeSection.title)}</div>\n    ${parts.join('\n    ')}\n  </div>`;
 };
 
 const page = e => {
