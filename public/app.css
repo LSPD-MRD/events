@@ -37,3 +37,12 @@ body.mrd-app > .app-footer { flex: 0 0 auto; margin-top: auto; }
   transform: none !important;
   visibility: visible !important;
 }
+
+
+/* Legacy event pages: consistently visible when embedded in the public portal. */
+.event-detail .page, .event-detail .page * { visibility: visible; }
+.event-detail .reveal, .event-detail .reveal.visible { opacity: 1 !important; transform: none !important; visibility: visible !important; }
+.event-detail .page { font-family: Inter, Arial, sans-serif; }
+.event-detail .header h1, .event-detail .section-title, .event-detail .section-label, .event-detail .event-title { font-family: Rajdhani, Inter, sans-serif; }
+.event-detail button, .event-detail a { transition: color .18s, background .18s, border-color .18s; }
+.event-detail :focus-visible { outline: 2px solid var(--app-accent); outline-offset: 3px; }
