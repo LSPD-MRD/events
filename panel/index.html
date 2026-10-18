@@ -30,7 +30,7 @@
   <div class="topbar-actions">
     <span class="draft" id="draft"></span>
     <button class="btn ghost theme-toggle" id="theme-toggle" data-action="theme" aria-label="Changer de thème" title="Changer de thème">☼ <span>Mode clair</span></button>
-    <button class="btn ghost only-compact" data-action="toggle-preview">Aperçu</button>
+    <button class="btn ghost" data-action="toggle-preview">Masquer l’aperçu</button>
     <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
     <button class="btn primary" id="publish" data-action="publish">Publier</button>
     <div class="profile-dropdown">
@@ -55,7 +55,7 @@
     <div class="panel" id="profile" hidden></div>
     <div class="panel wip-panel" id="team" hidden></div>
   </div>
-  <aside class="preview">
+  <aside class="preview" id="preview" hidden>
     <div class="preview-bar">
       <div class="seg">
         <button class="active" data-action="device" data-width="100%">Bureau</button>
