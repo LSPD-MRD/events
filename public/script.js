@@ -57,10 +57,11 @@
     const sectionHead = document.querySelector('.section-head');
     if (sectionHead) sectionHead.hidden = true;
     detail.hidden = false;
+    document.body.classList.add('event-view');
     history.replaceState(null, '', '#event/' + encodeURIComponent(slug || ev.title || 'event'));
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  function closeEvent() { detail.hidden=true; root.hidden=false; document.querySelector('.section-head').hidden=false; history.replaceState(null,'','#home'); window.scrollTo({top:0,behavior:'smooth'}); }
+  function closeEvent() { detail.hidden=true; root.hidden=false; document.body.classList.remove('event-view'); const head=document.querySelector('.section-head'); if(head) head.hidden=false; history.replaceState(null,'','#home'); window.scrollTo({top:0,behavior:'smooth'}); }
   document.getElementById('back-events').addEventListener('click', closeEvent);
   document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
   const theme = document.getElementById('theme-toggle');

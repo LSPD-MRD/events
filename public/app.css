@@ -46,3 +46,20 @@ body.mrd-app > .app-footer { flex: 0 0 auto; margin-top: auto; }
 .event-detail .header h1, .event-detail .section-title, .event-detail .section-label, .event-detail .event-title { font-family: Rajdhani, Inter, sans-serif; }
 .event-detail button, .event-detail a { transition: color .18s, background .18s, border-color .18s; }
 .event-detail :focus-visible { outline: 2px solid var(--app-accent); outline-offset: 3px; }
+
+
+/* Event detail mode: keep the portal navigation, give the event the full available page. */
+body.mrd-app.event-view > main#app-root > .hero,
+body.mrd-app.event-view > .app-footer { display:none !important; }
+body.mrd-app.event-view > main#app-root { padding:0; }
+body.mrd-app.event-view .content-wrap { width:100%; max-width:none; padding:0; margin:0; }
+body.mrd-app.event-view #event-detail:not([hidden]) { width:100%; max-width:none; min-height:calc(100vh - 76px); margin:0; padding:clamp(18px,3vw,38px); }
+body.mrd-app.event-view #event-content { width:100%; }
+body.mrd-app.event-view #event-content .page { width:100%; max-width:none; min-height:calc(100vh - 150px); margin:0; padding:clamp(22px,4vw,56px) clamp(18px,5vw,76px); border:0; border-radius:0; box-shadow:none; }
+body.mrd-app.event-view #event-detail .back-btn { margin:0 0 24px; padding:12px 18px; gap:10px; border:1px solid var(--app-line); border-radius:10px; background:var(--app-panel); color:var(--app-text); font:700 12px Inter,Arial,sans-serif; letter-spacing:.2px; box-shadow:0 5px 18px rgba(0,0,0,.08); transition:transform .18s ease,border-color .18s ease,background .18s ease,color .18s ease; }
+body.mrd-app.event-view #event-detail .back-btn:hover { transform:translateX(-2px); border-color:var(--app-accent); background:var(--app-accent-soft); color:var(--app-accent); }
+body.mrd-app.event-view #event-detail .back-btn:focus-visible { outline:2px solid var(--app-accent); outline-offset:3px; }
+@media(max-width:760px) {
+  body.mrd-app.event-view #event-detail:not([hidden]) { min-height:calc(100svh - 68px); padding:14px 12px 24px; }
+  body.mrd-app.event-view #event-content .page { min-height:calc(100svh - 140px); padding:22px 16px 36px; }
+}
