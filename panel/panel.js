@@ -264,7 +264,7 @@ const renderAccess = () => {
 const applyProfileAvatar = () => {
   const image = $('#profile-avatar');
   const placeholder = $('#profile-avatar-placeholder');
-  const src = localStorage.getItem(KEY.avatar);
+  const src = currentUser?.avatarData || null;
   if (image) { image.hidden = !src; image.src = src || ''; }
   if (placeholder) placeholder.hidden = !!src;
 };
@@ -273,11 +273,11 @@ const renderProfile = () => {
   root.innerHTML = `
     <section class="page-intro"><div><div class="eyebrow">COMPTE PERSONNEL <span>· SÉCURITÉ</span></div><h1>Mon profil</h1><p>Gère ta photo de profil et mets à jour le mot de passe de ton compte MRD.</p></div></section>
     <section class="card">
-      <header class="card-head"><h2>Photo de profil</h2><p>Cette image est conservée dans ce navigateur et n'est pas envoyée au serveur.</p></header>
+      <header class="card-head"><h2>Photo de profil</h2><p>Cette image est enregistrée sur ton compte MRD et reste disponible sur tes autres appareils.</p></header>
       <div class="card-body">
         <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(currentUser?.username || 'Compte MRD')}</strong><small>${esc(currentUser?.grade || '')} · ${esc(currentUser?.role || '')}</small></div></div>
         <div class="actions"><button class="btn" type="button" data-action="choose-avatar">Choisir une image</button><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
-        <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1,5 Mo.</small>
+        <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1 Mo.</small>
       </div>
     </section>
     <section class="card">
@@ -292,7 +292,7 @@ const renderProfile = () => {
       </div>
     </section>`;
   const preview = $('#profile-preview-avatar');
-  const src = localStorage.getItem(KEY.avatar);
+  const src = currentUser?.avatarData || null;
   preview.innerHTML = src ? `<img src="${src}" alt="Photo de profil">` : '<span>♙</span>';
   applyProfileAvatar();
 };
@@ -410,7 +410,7 @@ const actions = {
     $('#profile-trigger').setAttribute('aria-expanded', String(next));
   },
   'choose-avatar': () => $('#avatar-file').click(),
-  'remove-avatar': () => { localStorage.removeItem(KEY.avatar); renderProfile(); toast('Photo de profil retirée.', 'ok'); },
+  'remove-avatar': async () => { try { await api.post('/auth/profile', { avatarData: null }); if (currentUser) currentUser.avatarData = null; applyProfileAvatar(); renderProfile(); toast('Photo de profil retirée du compte.', 'ok'); } catch (err) { toast(err.message, 'err'); } },
 
   theme: () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
   device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
@@ -596,13 +596,17 @@ $('#avatar-file').onchange = async e => {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (!file) return;
-  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1.5 * 1024 * 1024) {
-    toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 1,5 Mo maximum.', 'err'); return;
+  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1 * 1024 * 1024) {
+    toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 1 Mo maximum.', 'err'); return;
   }
   const reader = new FileReader();
-  reader.onload = () => {
-    try { localStorage.setItem(KEY.avatar, String(reader.result)); renderProfile(); toast('Photo de profil mise à jour sur ce navigateur.', 'ok'); }
-    catch { toast('Image trop volumineuse pour le stockage du navigateur.', 'err'); }
+  reader.onload = async () => {
+    try {
+      const data = await api.post('/auth/profile', { avatarData: String(reader.result) });
+      if (currentUser) currentUser.avatarData = data.avatarData;
+      renderProfile();
+      toast('Photo de profil enregistrée sur ton compte MRD.', 'ok');
+    } catch (err) { toast(err.message, 'err'); }
   };
   reader.readAsDataURL(file);
 };
