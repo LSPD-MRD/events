@@ -591,3 +591,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .preview { min-height: 65dvh; padding: 0 16px 24px; }
   .stage { min-height: 55dvh; }
 }
+
+
+/* Accessible controls and predictable contrast in both MRD themes. */
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+body, .layout, .workspace, .panel { color: var(--text); }
+.field label, .label, .field small, .hint, .card-head p { color: var(--muted); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select, textarea {
+  color: var(--text);
+  background-color: var(--bg);
+  border: 1px solid var(--line-strong);
+  caret-color: var(--accent);
+}
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .9; }
+select { color-scheme: inherit; }
+select option { color: var(--text); background: var(--surface); }
+input:disabled, select:disabled, textarea:disabled {
+  color: var(--muted); background: var(--surface-2); opacity: 1;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  border-color: var(--accent); outline: 2px solid var(--accent-soft); outline-offset: 1px;
+}
+.btn, .chip, .seg, .seg button, .icon, .switch { color: var(--text); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #17202a; }
+:root[data-theme="dark"] .btn.primary { color: #101820; }
+:root[data-theme="light"] .btn.primary { color: #fff; }
+.card, .sec { color: var(--text); }
