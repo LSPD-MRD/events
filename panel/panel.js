@@ -67,7 +67,7 @@ const TYPES = {
 const STATUS = { live: 'Actif', soon: 'À venir', archived: 'Archivé' };
 const PREVIEW_HOOK = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
 
-let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer;
+let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer, previewPreference = true;
 
 const api = {
   cfg() {
@@ -360,11 +360,12 @@ const closeMenus = () => {
   $('#pages-trigger').setAttribute('aria-expanded', 'false');
   $('#profile-trigger').setAttribute('aria-expanded', 'false');
 };
-const setPreview = show => {
+const setPreview = (show, remember = true) => {
   const preview = $('#preview');
   const layout = $('.layout');
   if (!preview || !layout) return;
   const allowed = layout.dataset.activeTab === 'edit';
+  if (allowed && remember) previewPreference = !!show;
   const visible = !!show && allowed;
   preview.hidden = !visible;
   layout.classList.toggle('preview-open', visible);
@@ -385,7 +386,7 @@ const setTab = async name => {
   const layout = $('.layout');
   if (layout) layout.dataset.activeTab = name;
   closeMenus();
-  setPreview(name === 'edit');
+  setPreview(name === 'edit' && previewPreference, false);
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
