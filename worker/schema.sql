@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   grade TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('owner','admin','editor','viewer')),
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  avatar_data TEXT
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
