@@ -28,14 +28,14 @@ const EVENTS = [
     "desc": "Portes ouvertes multi-divisions avec mini-jeux, démonstrations et système de points."
   },
   {
-    "status": "archived",
+    "status": "soon",
     "href": "soiree-a-points/",
     "icon": "💯",
     "title": "SOIRÉE À POINTS",
     "desc": "Shift du soir avec système de points et classement des participants."
   },
   {
-    "status": "archived",
+    "status": "soon",
     "href": "concert/",
     "icon": "🎤",
     "title": "FREDDY JOHNS’ LIVE",
