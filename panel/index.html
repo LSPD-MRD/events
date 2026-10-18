@@ -11,24 +11,39 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="btn ghost home-link" href="../" target="_blank" rel="noopener" aria-label="Ouvrir le portail public">← Portail public</a>
+  <a class="home-icon" href="../" target="_blank" rel="noopener" aria-label="Retour au portail public" title="Portail public">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
+  </a>
   <div class="brand">
     <img src="../public/Logo MRD V2.png" alt="">
     <div><strong>Événements</strong><span>Media Relations Division</span></div>
   </div>
-  <nav class="nav">
-    <button class="nav-item active" data-action="tab" data-tab="edit">Éditeur</button>
-    <button class="nav-item" data-action="tab" data-tab="portal">Portail</button>
-    <button class="nav-item" data-action="tab" data-tab="access">Accès</button>
-    <button class="nav-item nav-wip" data-action="tab" data-tab="team">Équipe <span>WIP</span></button>
-  </nav>
+  <div class="pages-dropdown">
+    <button class="pages-trigger" id="pages-trigger" type="button" data-action="toggle-pages" aria-expanded="false" aria-controls="pages-menu">Espaces <span id="active-page-label">Éditeur</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg></button>
+    <nav class="pages-menu" id="pages-menu" hidden aria-label="Navigation principale">
+      <button class="nav-item active" data-action="tab" data-tab="edit">Éditeur</button>
+      <button class="nav-item" data-action="tab" data-tab="portal">Portail</button>
+      <button class="nav-item" data-action="tab" data-tab="access">Accès</button>
+      <button class="nav-item nav-wip" data-action="tab" data-tab="team">Équipe <span>OWNER</span></button>
+    </nav>
+  </div>
   <div class="topbar-actions">
-    <span class="user-chip" id="user-chip">Session non vérifiée</span><span class="draft" id="draft"></span>
+    <span class="draft" id="draft"></span>
     <button class="btn ghost theme-toggle" id="theme-toggle" data-action="theme" aria-label="Changer de thème" title="Changer de thème">☼ <span>Mode clair</span></button>
     <button class="btn ghost only-compact" data-action="toggle-preview">Aperçu</button>
     <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
-    <button class="btn ghost" data-action="logout" id="top-logout">Déconnexion</button>
     <button class="btn primary" id="publish" data-action="publish">Publier</button>
+    <div class="profile-dropdown">
+      <button class="profile-trigger" id="profile-trigger" type="button" data-action="toggle-profile" aria-label="Ouvrir le menu du profil" aria-expanded="false" aria-controls="profile-menu">
+        <img id="profile-avatar" alt="" hidden>
+        <svg id="profile-avatar-placeholder" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"/></svg>
+      </button>
+      <div class="profile-menu" id="profile-menu" hidden>
+        <div class="profile-menu-heading"><strong id="profile-menu-name">Mon compte</strong><small id="profile-menu-grade">Session sécurisée</small></div>
+        <button type="button" data-action="tab" data-tab="profile">Mon profil</button>
+        <button type="button" class="profile-logout" data-action="logout">Se déconnecter</button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -37,6 +52,7 @@
     <div class="panel" id="edit"></div>
     <div class="panel" id="portal" hidden></div>
     <div class="panel" id="access" hidden></div>
+    <div class="panel" id="profile" hidden></div>
     <div class="panel wip-panel" id="team" hidden></div>
   </div>
   <aside class="preview">
@@ -66,6 +82,7 @@
   </form>
 </div>
 <input type="file" id="file" name="event-json" accept=".json" hidden>
+<input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
 <script src="generator.js"></script>
 <script src="panel.js"></script>
 </body>
