@@ -269,11 +269,17 @@ const canPublish = u =>
 export default {
   async fetch(req, env) {
     const origin = req.headers.get("Origin") || "";
-    const allowed = env.ALLOWED_ORIGIN || "";
-
+    const configuredOrigin = String(env.ALLOWED_ORIGIN || "").trim();
+    // GitHub Pages sert le panneau depuis l'origine du site, sans le chemin /events/panel.
+    const trustedOrigins = [
+      "https://lspd-mrd.github.io",
+      configuredOrigin
+    ].filter(Boolean);
+    const originAllowed = !origin || configuredOrigin === "*" || trustedOrigins.includes(origin);
     const cors = {
       "Access-Control-Allow-Origin":
-        allowed === "*" ? "*" : allowed,
+        configuredOrigin === "*" ? "*" :
+        (origin && originAllowed ? origin : (configuredOrigin || "https://lspd-mrd.github.io")),
       "Vary": "Origin",
       "Access-Control-Allow-Headers":
         "Content-Type, Authorization, X-Setup-Key",
@@ -281,8 +287,8 @@ export default {
       "Access-Control-Max-Age": "86400"
     };
 
-    if (origin && allowed !== "*" && origin !== allowed) {
-      return json({ error: "Origine non autorisée." }, 403, cors);
+    if (origin && !originAllowed) {
+      return json({ error: "Origine non autorisée : " + origin }, 403, cors);
     }
 
     if (req.method === "OPTIONS") {
