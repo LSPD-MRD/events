@@ -1,5 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
-const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session' };
+const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar' };
+const PAGE_LABELS = { edit: 'Éditeur', portal: 'Portail', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
 const PORTAL_URL = '../';
 let currentUser = null;
 
@@ -259,6 +260,43 @@ const renderAccess = () => {
     </section>`;
 };
 
+
+const applyProfileAvatar = () => {
+  const image = $('#profile-avatar');
+  const placeholder = $('#profile-avatar-placeholder');
+  const src = localStorage.getItem(KEY.avatar);
+  if (image) { image.hidden = !src; image.src = src || ''; }
+  if (placeholder) placeholder.hidden = !!src;
+};
+const renderProfile = () => {
+  const root = $('#profile');
+  root.innerHTML = `
+    <section class="page-intro"><div><div class="eyebrow">COMPTE PERSONNEL <span>· SÉCURITÉ</span></div><h1>Mon profil</h1><p>Gère ta photo de profil et mets à jour le mot de passe de ton compte MRD.</p></div></section>
+    <section class="card">
+      <header class="card-head"><h2>Photo de profil</h2><p>Cette image est conservée dans ce navigateur et n'est pas envoyée au serveur.</p></header>
+      <div class="card-body">
+        <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(currentUser?.username || 'Compte MRD')}</strong><small>${esc(currentUser?.grade || '')} · ${esc(currentUser?.role || '')}</small></div></div>
+        <div class="actions"><button class="btn" type="button" data-action="choose-avatar">Choisir une image</button><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
+        <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1,5 Mo.</small>
+      </div>
+    </section>
+    <section class="card">
+      <header class="card-head"><h2>Changer le mot de passe</h2><p>Ton mot de passe actuel sera vérifié avant l'enregistrement.</p></header>
+      <div class="card-body">
+        <form id="change-password-form">
+          <div class="field"><label for="current-password">Mot de passe actuel</label><input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required minlength="1" maxlength="128"></div>
+          <div class="field"><label for="new-password">Nouveau mot de passe</label><input id="new-password" name="newPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="128"><small>12 caractères minimum.</small></div>
+          <div class="field"><label for="confirm-password">Confirmer le nouveau mot de passe</label><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></div>
+          <div class="actions"><button class="btn primary" type="submit">Mettre à jour le mot de passe</button></div>
+        </form>
+      </div>
+    </section>`;
+  const preview = $('#profile-preview-avatar');
+  const src = localStorage.getItem(KEY.avatar);
+  preview.innerHTML = src ? `<img src="${src}" alt="Photo de profil">` : '<span>♙</span>';
+  applyProfileAvatar();
+};
+
 const refresh = () => {
   clearTimeout(previewTimer);
   previewTimer = setTimeout(() => { $('#pv').srcdoc = page(ev).replace('</body>', PREVIEW_HOOK + '</body>'); }, 200);
@@ -280,14 +318,24 @@ const load = x => {
 
 const mutate = f => { f(); renderSections(); refresh(); };
 
+const closeMenus = () => {
+  $('#pages-menu').hidden = true;
+  $('#profile-menu').hidden = true;
+  $('#pages-trigger').setAttribute('aria-expanded', 'false');
+  $('#profile-trigger').setAttribute('aria-expanded', 'false');
+};
 const setTab = async name => {
-  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  $$('.panel').forEach(p => { p.hidden = p.id !== name; });
+  $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $('.panel').forEach(p => { p.hidden = p.id !== name; });
+  const label = $('#active-page-label');
+  if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
+  closeMenus();
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
   }
   if (name === 'access') renderAccess();
+  if (name === 'profile') renderProfile();
 };
 
 const publish = async () => {
@@ -351,6 +399,19 @@ const applyTheme = theme => {
 
 const actions = {
   tab: el => setTab(el.dataset.tab),
+  'toggle-pages': () => {
+    const menu = $('#pages-menu'), next = menu.hidden;
+    closeMenus(); menu.hidden = !next;
+    $('#pages-trigger').setAttribute('aria-expanded', String(next));
+  },
+  'toggle-profile': () => {
+    const menu = $('#profile-menu'), next = menu.hidden;
+    closeMenus(); menu.hidden = !next;
+    $('#profile-trigger').setAttribute('aria-expanded', String(next));
+  },
+  'choose-avatar': () => $('#avatar-file').click(),
+  'remove-avatar': () => { localStorage.removeItem(KEY.avatar); renderProfile(); toast('Photo de profil retirée.', 'ok'); },
+
   theme: () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
   device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
   'toggle-preview': el => { el.textContent = document.body.classList.toggle('show-preview') ? 'Éditeur' : 'Aperçu'; },
@@ -430,9 +491,10 @@ async function signIn(username, password) {
   sessionStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
   $('#login-screen').hidden = true;
-  $('#user-chip').textContent = currentUser.username + ' · ' + currentUser.grade;
-  $('#top-logout').hidden = false;
+  $('#profile-menu-name').textContent = currentUser.username;
+  $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
   $('#login-error').textContent = '';
+  applyProfileAvatar();
   applyPermissions();
 }
 async function signOut(show = true) {
@@ -440,16 +502,17 @@ async function signOut(show = true) {
   sessionStorage.removeItem(KEY.token); currentUser = null;
   $('#login-screen').hidden = false;
   $('#login-pass').value = '';
-  $('#user-chip').textContent = 'Session fermée';
-  $('#top-logout').hidden = true;
+  closeMenus();
   if (show) toast('Déconnexion effectuée.', 'ok');
 }
 function applyPermissions() {
   const role = currentUser?.role || 'viewer';
   const canEdit = ['owner','admin','editor'].includes(role);
   $('#publish').hidden = !canEdit;
-  const logout = $('#top-logout'); if (logout) logout.hidden = false;
-  const home = $('.home-link'); if (home) home.href = publicPortalUrl();
+  const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
+  $('#profile-menu-name').textContent = currentUser?.username || 'Mon compte';
+  $('#profile-menu-grade').textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
+  applyProfileAvatar();
   $$('[data-action="tab"]').forEach(b => {
     if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
     if (['newsroom','media','archive'].includes(b.dataset.tab)) b.hidden = true;
@@ -463,14 +526,15 @@ function applyPermissions() {
   }
 }
 async function restoreSession() {
-  const home = $('.home-link'); if (home) home.href = publicPortalUrl();
-  const logout = $('#top-logout'); if (logout) logout.hidden = !sessionStorage.getItem(KEY.token);
+  const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
   const token = sessionStorage.getItem(KEY.token);
   if (!token) return;
   try {
     const data = await api.post('/auth/me', {});
     currentUser = data.user; $('#login-screen').hidden = true;
-    $('#user-chip').textContent = currentUser.username + ' · ' + currentUser.grade;
+    $('#profile-menu-name').textContent = currentUser.username;
+    $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
+    applyProfileAvatar();
     applyPermissions();
   } catch { sessionStorage.removeItem(KEY.token); }
 }
@@ -484,6 +548,7 @@ $('#login-form').addEventListener('submit', async e => {
 });
 
 document.addEventListener('click', async e => {
+  if (!e.target.closest('.pages-dropdown') && !e.target.closest('.profile-dropdown')) closeMenus();
   const el = e.target.closest('[data-action]');
   if (!el) return;
   if (el.closest('summary')) e.preventDefault();
@@ -524,8 +589,39 @@ window.addEventListener('message', e => { if (e.source === $('#pv').contentWindo
 $('#pv').onload = () => $('#pv').contentWindow.postMessage(lastScroll, '*');
 
 $('#file').onchange = async e => {
-  try { load(JSON.parse(await e.target.files[0].text())); } catch { toast('Fichier JSON invalide.', 'err'); }
+  try { if (e.target.files[0]) load(JSON.parse(await e.target.files[0].text())); } catch { toast('Fichier JSON invalide.', 'err'); }
   e.target.value = '';
+};
+$('#avatar-file').onchange = async e => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!/^image\\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1.5 * 1024 * 1024) {
+    toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 1,5 Mo maximum.', 'err'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { localStorage.setItem(KEY.avatar, String(reader.result)); renderProfile(); toast('Photo de profil mise à jour sur ce navigateur.', 'ok'); }
+    catch { toast('Image trop volumineuse pour le stockage du navigateur.', 'err'); }
+  };
+  reader.readAsDataURL(file);
+};
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'change-password-form') return;
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const currentPassword = String(form.get('currentPassword') || '');
+  const newPassword = String(form.get('newPassword') || '');
+  const confirmPassword = String(form.get('confirmPassword') || '');
+  if (newPassword !== confirmPassword) return toast('La confirmation ne correspond pas au nouveau mot de passe.', 'err');
+  if (newPassword.length < 12) return toast('Le nouveau mot de passe doit contenir au moins 12 caractères.', 'err');
+  const button = e.target.querySelector('button[type="submit"]');
+  button.disabled = true; button.textContent = 'Mise à jour…';
+  try {
+    await api.post('/auth/change-password', { currentPassword, newPassword });
+    e.target.reset(); toast('Mot de passe mis à jour. Ta session reste ouverte.', 'ok');
+  } catch (err) { toast(err.message, 'err'); }
+  finally { button.disabled = false; button.textContent = 'Mettre à jour le mot de passe'; }
 };
 
 document.addEventListener('submit', async e => {
