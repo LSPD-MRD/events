@@ -24,12 +24,94 @@ const download = (name, text) => {
 };
 
 const toast = (message, kind = '') => {
+  const container = $('#toasts');
+  if (!container) return;
+  const duration = kind === 'err' ? 7000 : 4200;
+  const titles = { ok: 'C’est enregistré', err: 'Une erreur est survenue', info: 'Information' };
+  const icons = { ok: '✓', err: '!', info: 'i' };
   const el = document.createElement('div');
-  el.className = 'toast ' + kind;
-  el.textContent = message;
-  $('#toasts').append(el);
-  setTimeout(() => el.remove(), kind === 'err' ? 6500 : 3500);
+  el.className = 'toast ' + (kind || 'info');
+  el.style.setProperty('--toast-duration', duration + 'ms');
+  el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  const icon = document.createElement('span');
+  icon.className = 'toast-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = icons[kind] || icons.info;
+  const copy = document.createElement('div');
+  copy.className = 'toast-copy';
+  const title = document.createElement('strong');
+  title.textContent = titles[kind] || titles.info;
+  const text = document.createElement('span');
+  text.textContent = String(message);
+  copy.append(title, text);
+  const close = document.createElement('button');
+  close.className = 'toast-close';
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Fermer la notification');
+  close.textContent = '×';
+  close.addEventListener('click', () => el.remove());
+  const progress = document.createElement('span');
+  progress.className = 'toast-progress';
+  el.append(icon, copy, close, progress);
+  container.append(el);
+  setTimeout(() => {
+    el.classList.add('toast-leaving');
+    setTimeout(() => el.remove(), 220);
+  }, duration);
 };
+
+const confirmDialog = (message, options = {}) => new Promise(resolve => {
+  const { title = 'Confirmer cette action', confirmText = 'Confirmer', danger = false } = options;
+  const previousFocus = document.activeElement;
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  const dialog = document.createElement('section');
+  dialog.className = 'confirm-dialog';
+  dialog.setAttribute('role', 'alertdialog');
+  dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-labelledby', 'confirm-dialog-title');
+  dialog.innerHTML = `
+    <div class="confirm-symbol" aria-hidden="true">${danger ? '!' : '?'}</div>
+    <div class="confirm-copy">
+      <h2 id="confirm-dialog-title"></h2>
+      <p class="confirm-message"></p>
+    </div>
+    <div class="confirm-actions">
+      <button type="button" class="confirm-cancel">Annuler</button>
+      <button type="button" class="confirm-accept"></button>
+    </div>`;
+  dialog.querySelector('#confirm-dialog-title').textContent = title;
+  dialog.querySelector('.confirm-message').textContent = String(message);
+  const cancel = dialog.querySelector('.confirm-cancel');
+  const accept = dialog.querySelector('.confirm-accept');
+  accept.textContent = confirmText;
+  if (danger) accept.classList.add('danger');
+  overlay.append(dialog);
+  document.body.append(overlay);
+  let finished = false;
+  const finish = value => {
+    if (finished) return;
+    finished = true;
+    document.removeEventListener('keydown', onKey);
+    overlay.remove();
+    if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+    resolve(value);
+  };
+  const onKey = event => {
+    if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+    if (event.key === 'Tab') {
+      const controls = [cancel, accept];
+      const current = controls.indexOf(document.activeElement);
+      if (event.shiftKey && current <= 0) { event.preventDefault(); accept.focus(); }
+      else if (!event.shiftKey && current === controls.length - 1) { event.preventDefault(); cancel.focus(); }
+    }
+  };
+  cancel.addEventListener('click', () => finish(false));
+  accept.addEventListener('click', () => finish(true));
+  overlay.addEventListener('click', event => { if (event.target === overlay) finish(false); });
+  document.addEventListener('keydown', onKey);
+  cancel.focus();
+});
 
 const blank = () => ({
   slug: '',
@@ -459,7 +541,7 @@ const saveDraft = async () => {
 
 const publish = async () => {
   if (!ev.slug || !ev.meta.title) return toast('Le titre et l’adresse sont obligatoires.', 'err');
-  if ((!ev.card.date || !ev.meta.date) && !confirm('Date manquante sur la carte ou sur la page. Publier quand même ?')) return;
+  if ((!ev.card.date || !ev.meta.date) && !(await confirmDialog('La date manque sur la carte ou sur la page. Veux-tu publier quand même ?', { title: 'Date manquante', confirmText: 'Publier quand même' }))) return;
   const button = $('#publish');
   button.disabled = true;
   button.textContent = 'Publication…';
@@ -622,7 +704,7 @@ const actions = {
   'p-status': (el, i) => { list[i].status = el.dataset.value; renderPortal(); },
   'p-up': (el, i) => { move(list, i, -1); renderPortal(); },
   'p-down': (el, i) => { move(list, i, 1); renderPortal(); },
-  'p-del': (el, i) => { if (confirm('Retirer du portail ? Les fichiers de la page restent dans le dépôt.')) { list.splice(i, 1); renderPortal(); } },
+  'p-del': async (el, i) => { if (await confirmDialog('La carte sera retirée du portail, mais les fichiers de sa page resteront dans le dépôt.', { title: 'Retirer cet événement ?', confirmText: 'Retirer du portail', danger: true })) { list.splice(i, 1); renderPortal(); } },
   'p-edit': async (el, i) => {
     const entry = list[i];
     const slug = String(entry.href || '').replace(/^\/+|\/+$/g, '');
@@ -681,7 +763,7 @@ const actions = {
   },
   'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
   logout: () => signOut(true),
-  'user-disable': async el => { if (!confirm('Désactiver ce compte ?')) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); }
+  'user-disable': async el => { if (!(await confirmDialog('Ce compte ne pourra plus se connecter tant qu’il sera désactivé.', { title: 'Désactiver ce compte ?', confirmText: 'Désactiver', danger: true }))) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); }
 };
 
 async function signIn(username, password) {
