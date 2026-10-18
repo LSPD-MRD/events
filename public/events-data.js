@@ -4,7 +4,8 @@ const EVENTS = [
     "href": "cache-cache/",
     "icon": "🔦",
     "title": "HIDE & SEEK MRPD",
-    "desc": "Cache-cache en 3 rounds dans la nouvelle Vespucci Police Station."
+    "desc": "Cache-cache en 3 rounds dans la nouvelle Vespucci Police Station.",
+    "date": "📅 XX XX 2026 · 21h15 (après RC)"
   },
   {
     "status": "soon",
