@@ -32,13 +32,22 @@
     if (!visible.length) root.innerHTML = '<div class="empty-state">Aucun événement dans cette catégorie.</div>';
   }
   function openEvent(ev) {
-    const slug = String(ev.href || '').replace(/^\/+|\/+$/g,'');
-    const eventContent = typeof EVENT_CONTENT !== 'undefined' ? EVENT_CONTENT : window.EVENT_CONTENT;
-    let html = eventContent && eventContent[slug];
+    if (!content || !detail || !root || !ev) return;
+    const slug = String(ev.href || '').split('/').filter(Boolean).join('/');
+    const eventContent = window.EVENT_CONTENT || (typeof EVENT_CONTENT !== 'undefined' ? EVENT_CONTENT : {});
+    let html = eventContent[slug];
+    if (!html) {
+      const key = Object.keys(eventContent).find(k => k.toLowerCase() === slug.toLowerCase());
+      if (key) html = eventContent[key];
+    }
     if (!html && ev.content) html = ev.content;
-    content.innerHTML = html || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title)}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée de cet événement n’est pas encore disponible dans le portail intégré.</p></article>`;
-    root.hidden = true; document.querySelector('.section-head').hidden = true; detail.hidden = false;
-    history.replaceState(null, '', '#event/' + encodeURIComponent(slug || ev.title || 'event')); window.scrollTo({top:0,behavior:'smooth'});
+    content.innerHTML = html || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title || 'Événement MRD')}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">◷ ${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée complète sera ajoutée prochainement.</p></article>`;
+    root.hidden = true;
+    const sectionHead = document.querySelector('.section-head');
+    if (sectionHead) sectionHead.hidden = true;
+    detail.hidden = false;
+    history.replaceState(null, '', '#event/' + encodeURIComponent(slug || ev.title || 'event'));
+    window.scrollTo({top:0,behavior:'smooth'});
   }
   function closeEvent() { detail.hidden=true; root.hidden=false; document.querySelector('.section-head').hidden=false; history.replaceState(null,'','#home'); window.scrollTo({top:0,behavior:'smooth'}); }
   document.getElementById('back-events').addEventListener('click', closeEvent);
