@@ -175,6 +175,14 @@ const renderEditor = () => {
     <section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· PUBLICATIONS</span></div><h1>Créateur d’événement</h1><p>Conçois une page claire, ajuste son aperçu et publie-la sur le portail MRD.</p></div><div class="intro-mark">✦</div></section>
     <div class="editor-tools">
       <div class="toolbar">
+      <div class="editor-pages-dropdown">
+        <button class="btn ghost sm editor-pages-trigger" id="editor-pages-trigger" type="button" data-action="toggle-editor-pages" aria-expanded="false" aria-controls="editor-pages-menu"><span class="editor-pages-icon">▤</span><span>Mes pages</span><span class="editor-pages-chevron">▾</span></button>
+        <div class="editor-pages-menu" id="editor-pages-menu" hidden>
+          <div class="editor-pages-menu-head"><span>MES ÉVÉNEMENTS</span><small id="editor-pages-count">Chargement…</small></div>
+          <div id="editor-pages-list" class="editor-pages-list"><div class="editor-pages-loading">Chargement des pages…</div></div>
+          <div class="editor-pages-menu-footer"><button type="button" data-action="editor-new"><span>＋</span> Créer une nouvelle page</button></div>
+        </div>
+      </div>
       <button class="btn ghost sm" data-action="new">Nouveau</button>
       <button class="btn ghost sm" data-action="sample">Exemple</button>
       <button class="btn ghost sm" data-action="import">Importer</button>
@@ -387,6 +395,10 @@ const mutate = f => { f(); renderSections(); refresh(); };
 const closeMenus = () => {
   $('#pages-menu').hidden = true;
   $('#profile-menu').hidden = true;
+  const editorPagesMenu = $('#editor-pages-menu');
+  if (editorPagesMenu) editorPagesMenu.hidden = true;
+  const editorPagesTrigger = $('#editor-pages-trigger');
+  if (editorPagesTrigger) editorPagesTrigger.setAttribute('aria-expanded', 'false');
   const saveMenu = $('#save-menu');
   if (saveMenu) saveMenu.hidden = true;
   const saveTrigger = $('#save-menu-trigger');
@@ -510,12 +522,68 @@ const applyTheme = theme => {
   if (b) b.innerHTML = value === 'dark' ? '☼ <span>Mode clair</span>' : '☾ <span>Mode sombre</span>';
 };
 
+const renderEditorPageMenu = () => {
+  const target = $('#editor-pages-list');
+  const count = $('#editor-pages-count');
+  if (!target) return;
+  if (!list.length) {
+    target.innerHTML = '<div class="editor-pages-empty">Aucune page trouvée.</div>';
+    if (count) count.textContent = '0 page';
+    return;
+  }
+  const currentSlug = String(ev?.slug || '').replace(/^\/+|\/+$/g, '');
+  target.innerHTML = list.map((entry, i) => {
+    const slug = String(entry.href || '').replace(/^\/+|\/+$/g, '');
+    const isCurrent = slug && slug === currentSlug;
+    const title = entry.title || slug || 'Événement sans titre';
+    const status = STATUS[entry.status] || 'À venir';
+    return `<button type="button" class="editor-page-option${isCurrent ? ' is-current' : ''}" data-action="editor-open" data-index="${i}" title="Ouvrir ${esc(title)}">
+      <span class="editor-page-icon">${esc(entry.icon || '✦')}</span>
+      <span class="editor-page-copy"><strong>${esc(title)}</strong><small>${esc(slug || 'adresse non définie')}</small></span>
+      <span class="editor-page-status status-${esc(entry.status || 'soon')}">${esc(status)}</span>
+      ${isCurrent ? '<span class="editor-page-current" aria-label="Page actuellement ouverte">●</span>' : ''}
+    </button>`;
+  }).join('');
+  if (count) count.textContent = list.length + (list.length > 1 ? ' pages' : ' page');
+};
+
 const actions = {
   tab: el => setTab(el.dataset.tab),
   'toggle-pages': () => {
     const menu = $('#pages-menu'), next = menu.hidden;
     closeMenus(); menu.hidden = !next;
     $('#pages-trigger').setAttribute('aria-expanded', String(next));
+  },
+  'toggle-editor-pages': async () => {
+    const menu = $('#editor-pages-menu'), next = menu.hidden;
+    closeMenus();
+    menu.hidden = !next;
+    $('#editor-pages-trigger').setAttribute('aria-expanded', String(next));
+    if (!next) return;
+    const target = $('#editor-pages-list');
+    target.innerHTML = '<div class="editor-pages-loading">Chargement des pages…</div>';
+    try {
+      list = await loadList();
+      renderEditorPageMenu();
+    } catch (error) {
+      target.innerHTML = '<div class="editor-pages-empty">Impossible de charger les pages. Vérifie la connexion au portail.</div>';
+      toast('Impossible de charger les pages : ' + error.message, 'err');
+    }
+  },
+  'editor-open': async el => {
+    const index = Number(el.dataset.index);
+    if (!Number.isInteger(index) || !list[index]) return toast('Cette page n’est plus disponible dans la liste.', 'err');
+    $('#editor-pages-menu').hidden = true;
+    $('#editor-pages-trigger').setAttribute('aria-expanded', 'false');
+    await actions['p-edit'](el, index);
+  },
+  'editor-new': () => {
+    $('#editor-pages-menu').hidden = true;
+    $('#editor-pages-trigger').setAttribute('aria-expanded', 'false');
+    localStorage.removeItem(KEY.draft);
+    load({});
+    setTab('edit');
+    $('[data-p="meta.title"]')?.focus();
   },
   'toggle-save-menu': () => {
     const menu = $('#save-menu'), next = menu.hidden;
@@ -680,7 +748,7 @@ $('#login-form').addEventListener('submit', async e => {
 });
 
 document.addEventListener('click', async e => {
-  if (!e.target.closest('.pages-dropdown') && !e.target.closest('.profile-dropdown') && !e.target.closest('.save-dropdown')) closeMenus();
+  if (!e.target.closest('.pages-dropdown') && !e.target.closest('.profile-dropdown') && !e.target.closest('.save-dropdown') && !e.target.closest('.editor-pages-dropdown')) closeMenus();
   const el = e.target.closest('[data-action]');
   if (!el) return;
   if (el.closest('summary')) e.preventDefault();
