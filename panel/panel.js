@@ -499,7 +499,7 @@ const actions = {
   'choose-avatar': () => $('#avatar-file').click(),
   'remove-avatar': async () => { try { await api.post('/auth/profile', { avatarData: null }); if (currentUser) currentUser.avatarData = null; applyProfileAvatar(); renderProfile(); toast('Photo de profil retirée du compte.', 'ok'); } catch (err) { toast(err.message, 'err'); } },
 
-  theme: () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
+  theme: () => { applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); refresh(); },
   device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
   'toggle-preview': () => setPreview($('#preview').hidden),
   new: () => { localStorage.removeItem(KEY.draft); load({}); },
