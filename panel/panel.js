@@ -72,7 +72,7 @@ const api = {
   cfg() {
     try {
       const saved = JSON.parse(localStorage.getItem(KEY.access) || '{}');
-      return { url: String(saved.url || WORKER_URL).replace(/\\/$/, '') };
+      return { url: String(saved.url || WORKER_URL).replace(/\/$/, '') };
     } catch { return { url: WORKER_URL }; }
   },
 
@@ -91,7 +91,7 @@ const api = {
 
     try {
       response = await fetch(
-        WORKER_URL.replace(/\/$/, '') + path,
+        api.cfg().url.replace(/\/$/, '') + path,
         {
           method: 'POST',
           headers,
@@ -128,10 +128,11 @@ const loadList = async () => {
 };
 
 const field = (path, label, { rows = 0, placeholder = '', hint = '' } = {}) => {
+  const id = 'field-' + path.replace(/[^a-zA-Z0-9_-]/g, '-');
   const control = rows
-    ? `<textarea data-p="${path}" rows="${rows}" placeholder="${esc(placeholder)}"></textarea>`
-    : `<input data-p="${path}" placeholder="${esc(placeholder)}">`;
-  return `<div class="field"><label>${label}</label>${control}${hint ? `<small>${hint}</small>` : ''}</div>`;
+    ? `<textarea id="${id}" name="${path}" data-p="${path}" rows="${rows}" placeholder="${esc(placeholder)}"></textarea>`
+    : `<input id="${id}" name="${path}" data-p="${path}" placeholder="${esc(placeholder)}">`;
+  return `<div class="field"><label for="${id}">${label}</label>${control}${hint ? `<small>${hint}</small>` : ''}</div>`;
 };
 
 const segment = (action, path, options, current) => `<div class="seg">${Object.entries(options).map(([value, label]) =>
@@ -409,8 +410,8 @@ const actions = {
   'p-download': () => download('events-data.js', serialize(list)),
   'save-access': () => {
     const input = $('[data-g=\"url\"]');
-    const url = input?.value.trim().replace(/\\/$/, '');
-    if (!url || !/^https:\\/\\//i.test(url)) return toast('Saisis une URL HTTPS valide.', 'err');
+    const url = input?.value.trim().replace(/\/$/, '');
+    if (!url || !/^https:\/\//i.test(url)) return toast('Saisis une URL HTTPS valide.', 'err');
     localStorage.setItem(KEY.access, JSON.stringify({ url }));
     toast('URL enregistrée. Les prochaines requêtes utiliseront cette adresse.', 'ok');
   },
@@ -421,9 +422,11 @@ const actions = {
 
 async function signIn(username, password) {
   const c = api.cfg();
-  const r = await fetch(c.url.replace(/\/$/, '') + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) });
+  let r;
+  try { r = await fetch(c.url.replace(/\/$/, '') + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) }); }
+  catch { throw new Error('Connexion au serveur impossible. Vérifie l’URL du Worker, sa disponibilité et le réglage CORS.'); }
   const data = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error(data.error || 'Connexion refusée');
+  if (!r.ok) throw new Error(data.error || ('Connexion refusée (' + r.status + ')'));
   sessionStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
   $('#login-screen').hidden = true;
