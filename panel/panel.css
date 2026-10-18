@@ -549,3 +549,45 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
   .preview-toggle { width:100%; justify-content:flex-start; }
   .preview-toggle::after { margin-left:auto; }
 }
+
+
+/* MRD design tokens shared with the public portal */
+:root {
+  --bg: #0b1118;
+  --surface: #121c26;
+  --surface-2: #172330;
+  --line: #293846;
+  --line-strong: #3a4c5c;
+  --text: #edf3f7;
+  --muted: #94a6b5;
+  --accent: #d6b574;
+  --accent-soft: rgba(214,181,116,.14);
+  --ok: #5fcb91;
+  --err: #ef737d;
+}
+:root[data-theme="light"] {
+  --bg: #f3f6f8;
+  --surface: #ffffff;
+  --surface-2: #eaf0f4;
+  --line: #d7e0e7;
+  --line-strong: #bdcbd5;
+  --text: #182531;
+  --muted: #607181;
+  --accent: #9a7128;
+  --accent-soft: rgba(154,113,40,.11);
+  --shadow: 0 12px 40px rgba(35,53,68,.08);
+}
+body { font-family: Inter, Arial, sans-serif; }
+button, input, select, textarea { font-family: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.btn.primary { color: #17202a; }
+.preview-toggle { background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); }
+.preview-toggle:hover { filter: brightness(1.08); }
+@media (max-width: 980px) {
+  .layout { grid-template-columns: minmax(0, 1fr); height: auto; min-height: calc(100dvh - 64px); }
+  .workspace { overflow: visible; padding: 22px 16px 56px; }
+  .preview { min-height: 65dvh; padding: 0 16px 24px; }
+  .stage { min-height: 55dvh; }
+}
