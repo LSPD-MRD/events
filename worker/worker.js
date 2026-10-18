@@ -24,7 +24,7 @@ const okSlug = s =>
 const okHtml = h =>
   typeof h === "string" &&
   h.length < 200000 &&
-  (h.match(/<script/gi) || []).length === 1 &&
+  (h.match(/<script\b/gi) || []).length <= 1 &&
   !/<[^>]+\son[a-z]+\s*=|javascript:|<iframe|<object|<embed/i.test(h);
 
 const okText = v =>
