@@ -27,8 +27,8 @@ const toast = (message, kind = '') => {
   const container = $('#toasts');
   if (!container) return;
   const duration = kind === 'err' ? 7000 : 4200;
-  const titles = { ok: 'C’est enregistré', err: 'Une erreur est survenue', info: 'Information' };
-  const icons = { ok: '✓', err: '!', info: 'i' };
+  const titles = { ok: 'C’est enregistré', err: 'Une erreur est survenue', warn: 'Date manquante', info: 'Information' };
+  const icons = { ok: '✓', err: '!', warn: '!', info: 'i' };
   const el = document.createElement('div');
   el.className = 'toast ' + (kind || 'info');
   el.style.setProperty('--toast-duration', duration + 'ms');
@@ -541,7 +541,7 @@ const saveDraft = async () => {
 
 const publish = async () => {
   if (!ev.slug || !ev.meta.title) return toast('Le titre et l’adresse sont obligatoires.', 'err');
-  if ((!ev.card.date || !ev.meta.date) && !(await confirmDialog('La date manque sur la carte ou sur la page. Veux-tu publier quand même ?', { title: 'Date manquante', confirmText: 'Publier quand même' }))) return;
+  if (!ev.card.date || !ev.card.date.trim() || !ev.meta.date || !ev.meta.date.trim()) return toast('Ajoute la date sur la carte et dans la fiche avant de publier.', 'warn');
   const button = $('#publish');
   button.disabled = true;
   button.textContent = 'Publication…';
