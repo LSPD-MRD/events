@@ -187,7 +187,8 @@ const publicUser = u => ({
   username: u.username,
   grade: u.grade,
   role: u.role,
-  active: !!u.active
+  active: !!u.active,
+  avatarData: u.avatar_data || null
 });
 
 /*
@@ -205,7 +206,8 @@ async function ensureAuthSchema(env) {
       grade TEXT NOT NULL,
       role TEXT NOT NULL,
       active INTEGER NOT NULL DEFAULT 1,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      avatar_data TEXT
     )`,
     `CREATE TABLE IF NOT EXISTS sessions (
       token_hash TEXT PRIMARY KEY,
@@ -223,6 +225,10 @@ async function ensureAuthSchema(env) {
 
   for (const sql of statements) {
     await env.DB.prepare(sql).run();
+  }
+  const columns = await env.DB.prepare("PRAGMA table_info(users)").all();
+  if (!(columns.results || []).some(column => column.name === "avatar_data")) {
+    await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar_data TEXT").run();
   }
 }
 
@@ -519,6 +525,20 @@ export default {
 
       if (route === "/auth/me") {
         return json({ user: publicUser(user) }, 200, cors);
+      }
+
+      if (route === "/auth/profile") {
+        const avatarData = b.avatarData === null ? null : String(b.avatarData || "");
+        if (avatarData !== null && (
+          avatarData.length > 1200000 ||
+          !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarData)
+        )) {
+          return json({ error: "Image invalide ou trop volumineuse (1 Mo maximum)." }, 400, cors);
+        }
+        await env.DB.prepare(
+          "UPDATE users SET avatar_data = ? WHERE id = ?"
+        ).bind(avatarData, user.id).run();
+        return json({ ok: true, avatarData }, 200, cors);
       }
 
       if (route === "/auth/change-password") {
