@@ -63,3 +63,69 @@ body.mrd-app.event-view #event-detail .back-btn:focus-visible { outline:2px soli
   body.mrd-app.event-view #event-detail:not([hidden]) { min-height:calc(100svh - 68px); padding:14px 12px 24px; }
   body.mrd-app.event-view #event-content .page { min-height:calc(100svh - 140px); padding:22px 16px 36px; }
 }
+
+
+/* Fiche événement : largeur maîtrisée, carte arrondie et retour toujours accessible. */
+body.mrd-app.event-view #event-detail:not([hidden]) {
+  width: 100%;
+  max-width: none;
+  min-height: calc(100vh - 76px);
+  margin: 0;
+  padding: 20px 24px 54px;
+}
+body.mrd-app.event-view #event-content {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+body.mrd-app.event-view #event-content .page {
+  width: 100%;
+  max-width: 1000px;
+  min-height: 0;
+  margin: 0 auto;
+  padding: clamp(22px, 3.5vw, 48px);
+  border: 1px solid var(--app-line);
+  border-radius: 22px;
+  box-shadow: var(--app-shadow);
+  overflow: hidden;
+}
+body.mrd-app.event-view #event-detail .back-btn {
+  position: sticky;
+  top: 88px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 0 0 18px;
+  padding: 11px 15px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-panel);
+  color: var(--app-text);
+  font: 700 12px Inter, Arial, sans-serif;
+  letter-spacing: .15px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+  backdrop-filter: blur(12px);
+}
+body.mrd-app.event-view #event-detail .back-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+body.mrd-app.event-view #event-detail .back-btn:hover {
+  transform: translateX(-2px);
+  border-color: var(--app-accent);
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+}
+@media (min-width: 761px) {
+  body.mrd-app.event-view #event-content { width: 70%; max-width: 1000px; }
+  body.mrd-app.event-view #event-content .page { max-width: none; }
+}
+@media (max-width: 760px) {
+  body.mrd-app.event-view #event-detail:not([hidden]) { padding: 12px 12px 28px; }
+  body.mrd-app.event-view #event-content { width: 100%; }
+  body.mrd-app.event-view #event-content .page { padding: 22px 16px 32px; border-radius: 16px; }
+  body.mrd-app.event-view #event-detail .back-btn { top: 78px; }
+}

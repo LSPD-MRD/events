@@ -62,7 +62,10 @@
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function closeEvent() { detail.hidden=true; root.hidden=false; document.body.classList.remove('event-view'); const head=document.querySelector('.section-head'); if(head) head.hidden=false; history.replaceState(null,'','#home'); window.scrollTo({top:0,behavior:'smooth'}); }
-  document.getElementById('back-events').addEventListener('click', closeEvent);
+  const backButton = document.getElementById('back-events');
+  backButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6M9 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Retour aux événements</span>';
+  backButton.setAttribute('aria-label', 'Retour aux événements');
+  backButton.addEventListener('click', closeEvent);
   document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
   const theme = document.getElementById('theme-toggle');
   function setTheme(v) { document.documentElement.dataset.theme=v; theme.textContent=v==='light'?'☀':'☾'; localStorage.setItem('mrd-theme',v); }
