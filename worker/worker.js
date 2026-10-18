@@ -241,7 +241,7 @@ async function getUser(req, env) {
   const th = await hash(token);
 
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.grade, u.role, u.active,
+    `SELECT u.id, u.username, u.grade, u.role, u.active, u.avatar_data,
             s.expires_at
      FROM sessions s
      JOIN users u ON u.id = s.user_id
