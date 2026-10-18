@@ -518,7 +518,11 @@ const applyTheme = theme => {
   document.documentElement.dataset.theme = value;
   localStorage.setItem(KEY.theme, value);
   const b = $('#theme-toggle');
-  if (b) b.innerHTML = value === 'dark' ? '☼ <span>Mode clair</span>' : '☾ <span>Mode sombre</span>';
+  if (b) {
+    b.textContent = value === 'light' ? '☀' : '☾';
+    b.setAttribute('aria-label', 'Changer de thème');
+    b.setAttribute('title', 'Changer de thème');
+  }
 };
 
 const renderEditorPageMenu = () => {
