@@ -37,5 +37,10 @@
   const theme = document.getElementById('theme-toggle');
   function setTheme(v) { document.documentElement.dataset.theme=v; theme.textContent=v==='light'?'☀':'☾'; localStorage.setItem('mrd-theme',v); }
   setTheme(localStorage.getItem('mrd-theme') || 'dark'); theme.addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
-  if (location.hash.startsWith('#event/')) { const slug=decodeURIComponent(location.hash.slice(7)); const ev=(window.EVENTS||[]).find(x=>String(x.href||'').replace(/^\/+|\/+$/g,'')===slug); if(ev) openEvent(ev); else render(); } else render();
+  if (location.hash.startsWith('#event/')) {
+    const slug = decodeURIComponent(location.hash.slice(7));
+    const eventList = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (window.EVENTS || []);
+    const ev = eventList.find(x => String(x.href || '').replace(/^\\/+|\\/+$/g, '') === slug);
+    if (ev) openEvent(ev); else render();
+  } else render();
 })();
