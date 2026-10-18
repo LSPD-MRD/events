@@ -92,7 +92,6 @@ ${e.sections.map(sec).join('\n\n')}
   </div>
 
 </div>
-<script src="../public/script.js"><\/script>
 </body>
 </html>
 `;
