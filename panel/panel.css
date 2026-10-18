@@ -661,3 +661,31 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .editor-pages-menu-footer button:hover { border-color:var(--accent); }
 .editor-pages-menu-footer button span { font-size:18px; line-height:1; }
 @media(max-width:680px) { .editor-pages-dropdown { flex:0 0 auto; } .editor-pages-menu { left:0; width:min(360px,calc(100vw - 28px)); } .editor-tools .toolbar { display:flex; flex-wrap:wrap; } }
+
+
+/* Use the same compact theme control as the public MRD portal. */
+#theme-toggle.theme-toggle {
+  width:38px;
+  min-width:38px;
+  height:38px;
+  min-height:38px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface-2);
+  color:var(--text);
+  font:400 18px/1 Inter,Arial,sans-serif;
+  box-shadow:none;
+  white-space:nowrap;
+}
+#theme-toggle.theme-toggle:hover {
+  border-color:var(--accent);
+  background:var(--accent-soft);
+  color:var(--accent);
+}
+@media(max-width:760px) {
+  #theme-toggle.theme-toggle { width:38px; min-width:38px; }
+}
