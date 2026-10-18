@@ -1,4 +1,4 @@
-const WORKER_URL = 'https://mrd-panel.biscuitytb2102.workers.dev';
+const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session' };
 let currentUser = null;
 
