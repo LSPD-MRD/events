@@ -341,11 +341,16 @@ const refresh = () => {
     if (!frame) return;
     try {
       const html = page(ev);
-      // Assigning srcdoc on every edit keeps the preview in sync with the editor.
-      // Keep the scroll bridge inside the document body so it is installed after render.
-      frame.srcdoc = html.includes('</body>')
-        ? html.replace('</body>', PREVIEW_HOOK + '</body>')
-        : html + PREVIEW_HOOK;
+      // Mirror the public portal's detail-page wrapper and active color theme.
+      // The generated document already loads the same public stylesheets as the portal.
+      const theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+      const themed = html
+        .replace('<html lang="fr">', '<html lang="fr" data-theme="' + theme + '">')
+        .replace('<body>', '<body class="mrd-app"><main id="app-root"><section class="content-wrap"><div class="event-detail">')
+        .replace('</body>', '</div></section></main></body>');
+      frame.srcdoc = themed.includes('</body>')
+        ? themed.replace('</body>', PREVIEW_HOOK + '</body>')
+        : themed + PREVIEW_HOOK;
       frame.dataset.previewError = '';
     } catch (error) {
       frame.dataset.previewError = 'true';

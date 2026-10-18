@@ -73,7 +73,7 @@ const page = e => {
 <title>${esc(m.pageTitle || 'Event - ' + m.title.replace(/\n/g, ' '))}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="${esc(m.logo)}">
-<link rel="stylesheet" href="../public/style.css">
+<link rel="stylesheet" href="../public/style.css?v=20261018f">\n<link rel="stylesheet" href="../public/app.css?v=20261018f">\n<style>.event-detail .reveal,.event-detail .reveal.visible,.event-detail .page .reveal{opacity:1!important;transform:none!important;visibility:visible!important}</style>
 </head>
 <body>
 <div class="page">
@@ -92,7 +92,6 @@ ${e.sections.map(sec).join('\n\n')}
   </div>
 
 </div>
-<script src="../public/script.js"><\/script>
 </body>
 </html>
 `;
