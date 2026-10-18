@@ -324,12 +324,23 @@ const closeMenus = () => {
   $('#pages-trigger').setAttribute('aria-expanded', 'false');
   $('#profile-trigger').setAttribute('aria-expanded', 'false');
 };
+const setPreview = show => {
+  const preview = $('#preview');
+  const layout = $('.layout');
+  if (!preview || !layout) return;
+  preview.hidden = !show;
+  layout.classList.toggle('preview-open', !!show);
+  const button = $('[data-action="toggle-preview"]');
+  if (button) button.textContent = show ? 'Masquer l’aperçu' : 'Aperçu';
+};
+
 const setTab = async name => {
-  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  $$('.panel').forEach(p => { p.hidden = p.id !== name; });
+  $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
   if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
   closeMenus();
+  setPreview(name === 'edit');
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
@@ -414,7 +425,7 @@ const actions = {
 
   theme: () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'),
   device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
-  'toggle-preview': el => { el.textContent = document.body.classList.toggle('show-preview') ? 'Éditeur' : 'Aperçu'; },
+  'toggle-preview': () => setPreview($('#preview').hidden),
   new: () => { localStorage.removeItem(KEY.draft); load({}); },
   sample: () => load(SAMPLE),
   import: () => $('#file').click(),
@@ -641,4 +652,5 @@ document.addEventListener('submit', async e => {
 
 applyTheme(localStorage.getItem(KEY.theme) || 'dark');
 try { load(JSON.parse(localStorage.getItem(KEY.draft)) || {}); } catch { load({}); }
+setPreview(true);
 restoreSession();
