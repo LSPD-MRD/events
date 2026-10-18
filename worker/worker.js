@@ -319,6 +319,7 @@ export default {
       return json({ error: "Requête illisible." }, 400, cors);
     }
 
+    let operation = "initialisation";
     try {
       // Crée les tables absentes et applique les migrations compatibles.
       await ensureAuthSchema(env);
@@ -759,6 +760,7 @@ export default {
 
         JSON.parse(b.config);
 
+        operation = "lecture du contenu des événements (public/events-content.js)";
         const cf = await read(env, "public/events-content.js");
         const contents = cf ? parseContent(cf.text) : {};
 
@@ -778,6 +780,7 @@ export default {
 
         contents[b.slug] = extracted;
 
+        operation = "écriture du contenu de l’événement (public/events-content.js)";
         await write(
           env,
           "public/events-content.js",
@@ -785,6 +788,7 @@ export default {
           `Contenu événement ${b.slug} (${user.username})`
         );
 
+        operation = "lecture du portail (public/events-data.js)";
         const f = await read(env, "public/events-data.js");
 
         if (!f) {
@@ -800,6 +804,7 @@ export default {
           list[i] = b.card;
         }
 
+        operation = "mise à jour du portail (public/events-data.js)";
         await write(
           env,
           "public/events-data.js",
@@ -850,7 +855,6 @@ export default {
 
       return json({ error: "Route inconnue." }, 404, cors);
     } catch (e) {
-      // Le détail reste dans les logs Cloudflare, pas dans la réponse HTTP.
       console.error("MRD Worker exception", {
         route,
         name: e?.name || "Error",
@@ -858,8 +862,14 @@ export default {
         stack: e?.stack || null
       });
 
+      const publishFailure = route === "/publish" && operation !== "initialisation";
+      const detail = String(e?.message || "Erreur inconnue").replace(/[\\r\\n]+/g, " ").slice(0, 180);
       return json(
-        { error: "Erreur interne du serveur. Consulte les logs du Worker." },
+        {
+          error: publishFailure
+            ? "Échec pendant " + operation + " : " + detail
+            : "Erreur interne du serveur. Consulte les logs du Worker."
+        },
         500,
         cors
       );
