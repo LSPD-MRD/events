@@ -454,6 +454,8 @@ const publish = async () => {
   button.textContent = 'Publication…';
   const menu = $('#save-menu');
   if (menu) menu.hidden = true;
+  const menuTrigger = $('#save-menu-trigger');
+  if (menuTrigger) menuTrigger.setAttribute('aria-expanded', 'false');
   try {
     await api.post('/publish', { slug: ev.slug, html: page(ev), config: json(ev), card: cardOf(ev) });
     try { await api.post('/draft/save', { slug: ev.slug, config: json(ev), card: cardOf(ev) }); } catch {}
