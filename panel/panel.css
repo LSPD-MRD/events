@@ -386,3 +386,21 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
   .topbar-actions { gap:5px; }
   .topbar-actions .hide-compact { display:none; }
 }
+
+
+/* Éditeur en pleine largeur par défaut hors aperçu */
+.layout { grid-template-columns: minmax(0, 1fr); height: auto; min-height: calc(100dvh - 76px); }
+.workspace { min-width: 0; width: 100%; padding: clamp(18px, 3vw, 44px); }
+.panel { width: 100%; max-width: none; margin: 0; }
+.layout.preview-open { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); height: calc(100dvh - 76px); }
+.layout.preview-open .workspace { overflow-y: auto; }
+.layout.preview-open .panel { max-width: none; }
+.layout.preview-open .preview { display: flex; min-height: 0; }
+.layout:not(.preview-open) .preview { display: none !important; }
+@media (max-width: 1000px) {
+  .layout, .layout.preview-open { display: block; height: auto; min-height: 0; }
+  .layout.preview-open .workspace { display: none; }
+  .layout.preview-open .preview { display: flex; min-height: 75vh; padding: 16px; }
+  .layout:not(.preview-open) .workspace { display: block; }
+  .workspace { padding: 22px clamp(14px, 4vw, 32px) 70px; }
+}
