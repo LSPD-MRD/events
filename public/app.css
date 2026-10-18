@@ -21,3 +21,10 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 [hidden]{display:none!important}
+
+
+/* Keep the public portal footer at the bottom on short pages */
+html, body.mrd-app { min-height: 100%; }
+body.mrd-app { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+body.mrd-app > main#app-root { flex: 1 0 auto; width: 100%; }
+body.mrd-app > .app-footer { flex: 0 0 auto; margin-top: auto; }
