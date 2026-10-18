@@ -183,7 +183,6 @@ const renderEditor = () => {
           <div class="editor-pages-menu-footer"><button type="button" data-action="editor-new"><span>＋</span> Créer une nouvelle page</button></div>
         </div>
       </div>
-      <button class="btn ghost sm" data-action="new">Nouveau</button>
       <button class="btn ghost sm" data-action="sample">Exemple</button>
       <button class="btn ghost sm" data-action="import">Importer</button>
       <button class="btn ghost sm" data-action="export">Exporter</button>
