@@ -683,3 +683,21 @@ h1 {
   .timeline-item { flex-direction: column; gap: 6px; }
   .timeline-time { min-width: 0; }
 }
+
+/* Fiches événement — compatibilité avec la nouvelle interface du portail */
+#event-detail:not([hidden]) { display:block !important; width:100%; max-width:1120px; margin:0 auto; position:relative; z-index:1; }
+#event-content { display:block; min-height:240px; }
+#event-content:empty::before { content:"Chargement de la fiche événement…"; display:block; padding:48px 24px; color:var(--gray); text-align:center; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.025); }
+#event-content .page { max-width:860px; margin:0 auto; padding:36px 24px 56px; }
+#event-content .header h1 { overflow-wrap:anywhere; }
+#event-content .section { margin-bottom:22px; }
+#event-content .footer { margin-top:28px; }
+#event-detail .back-btn { display:inline-flex; align-items:center; gap:10px; margin:0 0 22px; padding:11px 16px; color:var(--white); background:rgba(255,255,255,.035); border:1px solid rgba(201,162,39,.35); border-left:3px solid var(--gold); cursor:pointer; }
+#event-detail .back-btn:hover { background:rgba(201,162,39,.09); color:var(--gold-light); }
+#event-detail[hidden], #events-root[hidden], [hidden] { display:none !important; }
+@media(max-width:640px) {
+  #event-content .page { padding:24px 12px 40px; }
+  #event-content .header h1 { font-size:clamp(38px,10vw,62px); }
+  #event-content .date-banner { font-size:clamp(17px,4.8vw,26px); padding:8px 12px; letter-spacing:1px; }
+  #event-content .section { padding:18px 16px; }
+}
