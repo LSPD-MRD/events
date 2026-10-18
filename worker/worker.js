@@ -530,7 +530,7 @@ export default {
       if (route === "/auth/profile") {
         const avatarData = b.avatarData === null ? null : String(b.avatarData || "");
         if (avatarData !== null && (
-          avatarData.length > 1200000 ||
+          avatarData.length > 1500000 ||
           !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarData)
         )) {
           return json({ error: "Image invalide ou trop volumineuse (1 Mo maximum)." }, 400, cors);
