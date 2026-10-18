@@ -325,8 +325,8 @@ const closeMenus = () => {
   $('#profile-trigger').setAttribute('aria-expanded', 'false');
 };
 const setTab = async name => {
-  $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  $('.panel').forEach(p => { p.hidden = p.id !== name; });
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
   if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
   closeMenus();
@@ -521,8 +521,8 @@ function applyPermissions() {
   if (!canEdit) {
     $('#edit').innerHTML = '<section class="card"><div class="card-body"><h2>Consultation seule</h2><p>Ton compte ne dispose pas des droits de modification.</p></div></section>';
     $('#edit').hidden = false;
-    $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
-    $$('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
+    $$$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === 'edit'));
+    $$$('.panel').forEach(p => { if (p.id !== 'edit') p.hidden = true; });
   }
 }
 async function restoreSession() {
