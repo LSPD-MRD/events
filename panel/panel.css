@@ -490,3 +490,62 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
   .access-user-row { flex-wrap:wrap; }
   .access-user-action { margin-left:48px; }
 }
+
+
+/* Bouton d’aperçu — langage visuel des cartes du portail public */
+.editor-tools { align-items:stretch; }
+.preview-toggle {
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:13px;
+  min-height:54px;
+  padding:12px 18px 12px 15px;
+  color:var(--text);
+  background:linear-gradient(110deg,rgba(214,181,116,.09),rgba(255,255,255,.018) 72%);
+  border:1px solid rgba(214,181,116,.28);
+  border-left:3px solid var(--accent);
+  border-radius:3px;
+  box-shadow:none;
+  font:600 12px Inter,Arial,sans-serif;
+  letter-spacing:.025em;
+  white-space:nowrap;
+  transition:background .2s,border-color .2s,transform .2s;
+}
+.preview-toggle::after {
+  content:'↗';
+  display:grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  margin-left:7px;
+  color:var(--accent);
+  border:1px solid rgba(214,181,116,.28);
+  background:rgba(214,181,116,.07);
+  font-size:14px;
+  transition:transform .2s,background .2s;
+}
+.preview-toggle-icon {
+  display:grid;
+  place-items:center;
+  width:31px;
+  height:31px;
+  flex:0 0 31px;
+  color:var(--accent);
+  background:rgba(214,181,116,.1);
+  border:1px solid rgba(214,181,116,.24);
+  font-size:17px;
+}
+.preview-toggle:hover,.preview-toggle.is-open {
+  color:var(--accent);
+  background:linear-gradient(110deg,rgba(214,181,116,.16),rgba(255,255,255,.035) 75%);
+  border-color:rgba(214,181,116,.6);
+  transform:translateY(-1px);
+}
+.preview-toggle:hover::after { transform:translate(2px,-1px); background:rgba(214,181,116,.13); }
+.preview-toggle.is-open::after { content:'↙'; }
+@media(max-width:680px) {
+  .preview-toggle { width:100%; justify-content:flex-start; }
+  .preview-toggle::after { margin-left:auto; }
+}
