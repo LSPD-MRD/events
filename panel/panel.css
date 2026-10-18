@@ -619,3 +619,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 :root[data-theme="dark"] .btn.primary { color: #101820; }
 :root[data-theme="light"] .btn.primary { color: #fff; }
 .card, .sec { color: var(--text); }
+
+
+/* Split save action: save privately by default, publish only on explicit choice. */
+.save-dropdown { position:relative; display:inline-flex; align-items:stretch; flex:0 0 auto; }
+.save-dropdown[hidden] { display:none !important; }
+.save-dropdown .save-main { border-top-right-radius:0; border-bottom-right-radius:0; }
+.save-dropdown .save-caret { min-width:36px; padding:0 10px; border-left:1px solid rgba(20,30,40,.22); border-top-left-radius:0; border-bottom-left-radius:0; }
+.save-menu { position:absolute; z-index:100; top:calc(100% + 8px); right:0; min-width:210px; padding:6px; border:1px solid var(--line-strong); border-radius:12px; background:var(--surface); box-shadow:0 16px 40px rgba(0,0,0,.22); }
+.save-menu[hidden] { display:none !important; }
+.save-menu button { display:block; width:100%; padding:11px 12px; border:0; border-radius:8px; background:transparent; color:var(--text); text-align:left; font:600 12px Inter,Arial,sans-serif; cursor:pointer; }
+.save-menu button:hover,.save-menu button:focus-visible { background:var(--accent-soft); color:var(--accent); }
+@media(max-width:680px) { .save-dropdown { max-width:100%; } .save-dropdown .save-main { padding-left:12px; padding-right:12px; } }

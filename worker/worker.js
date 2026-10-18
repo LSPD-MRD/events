@@ -220,6 +220,13 @@ async function ensureAuthSchema(env) {
       username TEXT PRIMARY KEY,
       attempts INTEGER NOT NULL DEFAULT 0,
       window_until INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS event_drafts (
+      slug TEXT PRIMARY KEY,
+      config TEXT NOT NULL,
+      card TEXT NOT NULL,
+      updated_by TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
     )`
   ];
 
@@ -689,6 +696,42 @@ export default {
           200,
           cors
         );
+      }
+
+      /*
+       * BROUILLONS PRIVÉS D'ÉVÉNEMENTS (D1 uniquement, non publiés sur GitHub Pages)
+       */
+      if (route === "/draft/save") {
+        if (!canPublish(user)) return json({ error: "Ton grade ne permet pas d’enregistrer un brouillon." }, 403, cors);
+        if (!okSlug(b.slug) || typeof b.config !== "string" || b.config.length > 200000 || !okEntry(b.card) || b.card.href !== b.slug + "/") {
+          return json({ error: "Données de brouillon refusées." }, 400, cors);
+        }
+        let config;
+        try { config = JSON.parse(b.config); } catch { return json({ error: "Configuration de brouillon invalide." }, 400, cors); }
+        if (config.slug !== b.slug || !config.meta || typeof config.meta.title !== "string" || !config.meta.title.trim()) {
+          return json({ error: "Le titre et l’adresse du brouillon sont obligatoires." }, 400, cors);
+        }
+        await env.DB.prepare(
+          `INSERT INTO event_drafts (slug, config, card, updated_by, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(slug) DO UPDATE SET
+             config = excluded.config,
+             card = excluded.card,
+             updated_by = excluded.updated_by,
+             updated_at = excluded.updated_at`
+        ).bind(b.slug, b.config, JSON.stringify(b.card), user.username, Date.now()).run();
+        return json({ ok: true, message: "Brouillon enregistré sans publication." }, 200, cors);
+      }
+
+      if (route === "/draft/load") {
+        if (!canPublish(user)) return json({ error: "Ton grade ne permet pas de consulter les brouillons." }, 403, cors);
+        if (!okSlug(b.slug)) return json({ error: "Adresse de brouillon invalide." }, 400, cors);
+        const draft = await env.DB.prepare(
+          "SELECT config, card, updated_by, updated_at FROM event_drafts WHERE slug = ?"
+        ).bind(b.slug).first();
+        return draft
+          ? json({ found: true, config: draft.config, card: JSON.parse(draft.card), updatedBy: draft.updated_by, updatedAt: draft.updated_at }, 200, cors)
+          : json({ found: false }, 200, cors);
       }
 
       /*

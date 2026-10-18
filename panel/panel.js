@@ -387,6 +387,10 @@ const mutate = f => { f(); renderSections(); refresh(); };
 const closeMenus = () => {
   $('#pages-menu').hidden = true;
   $('#profile-menu').hidden = true;
+  const saveMenu = $('#save-menu');
+  if (saveMenu) saveMenu.hidden = true;
+  const saveTrigger = $('#save-menu-trigger');
+  if (saveTrigger) saveTrigger.setAttribute('aria-expanded', 'false');
   $('#pages-trigger').setAttribute('aria-expanded', 'false');
   $('#profile-trigger').setAttribute('aria-expanded', 'false');
 };
@@ -425,18 +429,40 @@ const setTab = async name => {
   if (name === 'profile') renderProfile();
 };
 
+const saveDraft = async () => {
+  if (!ev.slug || !ev.meta.title) return toast('Le titre et l’adresse sont obligatoires.', 'err');
+  const button = $('#publish');
+  button.disabled = true;
+  button.textContent = 'Enregistrement…';
+  try {
+    localStorage.setItem(KEY.draft, json(ev));
+    await api.post('/draft/save', { slug: ev.slug, config: json(ev), card: cardOf(ev) });
+    const draft = $('#draft');
+    if (draft) draft.textContent = 'Brouillon enregistré';
+    toast('Modifications enregistrées sans changer la page publique.', 'ok');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Enregistrer';
+  }
+};
+
 const publish = async () => {
-  if (!ev.slug || !ev.meta.title) return toast('Le titre et l\'adresse sont obligatoires.', 'err');
+  if (!ev.slug || !ev.meta.title) return toast('Le titre et l’adresse sont obligatoires.', 'err');
   if ((!ev.card.date || !ev.meta.date) && !confirm('Date manquante sur la carte ou sur la page. Publier quand même ?')) return;
   const button = $('#publish');
   button.disabled = true;
   button.textContent = 'Publication…';
+  const menu = $('#save-menu');
+  if (menu) menu.hidden = true;
+  const menuTrigger = $('#save-menu-trigger');
+  if (menuTrigger) menuTrigger.setAttribute('aria-expanded', 'false');
   try {
     await api.post('/publish', { slug: ev.slug, html: page(ev), config: json(ev), card: cardOf(ev) });
-    toast('Publié. En ligne dans environ une minute.', 'ok');
+    try { await api.post('/draft/save', { slug: ev.slug, config: json(ev), card: cardOf(ev) }); } catch {}
+    toast('Enregistré et publié. Mise à jour en ligne dans environ une minute.', 'ok');
   } finally {
     button.disabled = false;
-    button.textContent = 'Publier';
+    button.textContent = 'Enregistrer';
   }
 };
 
@@ -491,6 +517,12 @@ const actions = {
     closeMenus(); menu.hidden = !next;
     $('#pages-trigger').setAttribute('aria-expanded', String(next));
   },
+  'toggle-save-menu': () => {
+    const menu = $('#save-menu'), next = menu.hidden;
+    closeMenus();
+    menu.hidden = !next;
+    $('#save-menu-trigger').setAttribute('aria-expanded', String(next));
+  },
   'toggle-profile': () => {
     const menu = $('#profile-menu'), next = menu.hidden;
     closeMenus(); menu.hidden = !next;
@@ -515,6 +547,7 @@ const actions = {
   dup: (el, i) => mutate(() => ev.sections.splice(i + 1, 0, { ...ev.sections[i] })),
   del: (el, i) => mutate(() => ev.sections.splice(i, 1)),
   publish,
+  'save-draft': saveDraft,
   'p-status': (el, i) => { list[i].status = el.dataset.value; renderPortal(); },
   'p-up': (el, i) => { move(list, i, -1); renderPortal(); },
   'p-down': (el, i) => { move(list, i, 1); renderPortal(); },
@@ -522,6 +555,18 @@ const actions = {
   'p-edit': async (el, i) => {
     const entry = list[i];
     const slug = String(entry.href || '').replace(/^\/+|\/+$/g, '');
+    try {
+      const draftResult = await api.post('/draft/load', { slug });
+      if (draftResult.found && draftResult.config) {
+        const saved = JSON.parse(draftResult.config);
+        load({ ...saved, slug });
+        setTab('edit');
+        toast('Brouillon chargé. La version publique reste inchangée jusqu’à « Enregistrer et publier ».', 'ok');
+        return;
+      }
+    } catch (draftError) {
+      console.warn('Lecture du brouillon serveur indisponible:', draftError);
+    }
     const r = await fetch('../public/events-content.js', { cache: 'no-store' });
     if (!r.ok) throw new Error('Impossible de charger le contenu central des événements.');
     const source = await r.text();
@@ -595,7 +640,7 @@ async function signOut(show = true) {
 function applyPermissions() {
   const role = currentUser?.role || 'viewer';
   const canEdit = ['owner','admin','editor'].includes(role);
-  $('#publish').hidden = !canEdit;
+  $('#save-actions').hidden = !canEdit;
   const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
   $('#profile-menu-name').textContent = currentUser?.username || 'Mon compte';
   $('#profile-menu-grade').textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
@@ -635,7 +680,7 @@ $('#login-form').addEventListener('submit', async e => {
 });
 
 document.addEventListener('click', async e => {
-  if (!e.target.closest('.pages-dropdown') && !e.target.closest('.profile-dropdown')) closeMenus();
+  if (!e.target.closest('.pages-dropdown') && !e.target.closest('.profile-dropdown') && !e.target.closest('.save-dropdown')) closeMenus();
   const el = e.target.closest('[data-action]');
   if (!el) return;
   if (el.closest('summary')) e.preventDefault();
