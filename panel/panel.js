@@ -334,13 +334,38 @@ const renderProfile = () => {
 };
 
 const refresh = () => {
+  if (!ev) return;
+  const frame = $('#pv');
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => { $('#pv').srcdoc = page(ev).replace('</body>', PREVIEW_HOOK + '</body>'); }, 200);
-  $('#url').textContent = `/${ev.slug || '…'}/`;
+  previewTimer = setTimeout(() => {
+    if (!frame) return;
+    try {
+      const html = page(ev);
+      // Assigning srcdoc on every edit keeps the preview in sync with the editor.
+      // Keep the scroll bridge inside the document body so it is installed after render.
+      frame.srcdoc = html.includes('</body>')
+        ? html.replace('</body>', PREVIEW_HOOK + '</body>')
+        : html + PREVIEW_HOOK;
+      frame.dataset.previewError = '';
+    } catch (error) {
+      frame.dataset.previewError = 'true';
+      frame.srcdoc = '<!doctype html><html lang="fr"><meta charset="utf-8"><style>body{font:14px system-ui;background:#0b1118;color:#edf3f7;padding:24px}h2{color:#d6b574}pre{white-space:pre-wrap;color:#ff9b9b}</style><h2>Impossible de générer l’aperçu</h2><p>Vérifie les champs et les sections de cette page.</p><pre>' +
+        String(error && error.message || error).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) +
+        '</pre></html>';
+      console.error('MRD preview generation failed:', error);
+    }
+  }, 120);
+  const url = $('#url');
+  if (url) url.textContent = `/${ev.slug || '…'}/`;
   clearTimeout(draftTimer);
   draftTimer = setTimeout(() => {
-    localStorage.setItem(KEY.draft, json(ev));
-    $('#draft').textContent = 'Brouillon enregistré';
+    try {
+      localStorage.setItem(KEY.draft, json(ev));
+      const draft = $('#draft');
+      if (draft) draft.textContent = 'Brouillon enregistré';
+    } catch (error) {
+      console.warn('Impossible de sauvegarder le brouillon localement:', error);
+    }
   }, 600);
 };
 
