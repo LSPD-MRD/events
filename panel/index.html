@@ -59,13 +59,13 @@
     <div class="login-brand"><img src="../public/Logo MRD V2.png" alt="MRD"><div><strong>MRD WORKSPACE</strong><small>MEDIA RELATIONS DIVISION</small></div></div>
     <h1>Connexion sécurisée</h1>
     <p>Connecte-toi avec le compte MRD qui t’a été attribué. Les droits disponibles dépendent de ton grade.</p>
-    <div class="field"><label for="login-user">Identifiant</label><input id="login-user" autocomplete="username" required maxlength="64"></div>
-    <div class="field"><label for="login-pass">Mot de passe</label><input id="login-pass" type="password" autocomplete="current-password" required minlength="8"></div>
+    <div class="field"><label for="login-user">Identifiant</label><input id="login-user" name="username" autocomplete="username" required maxlength="64"></div>
+    <div class="field"><label for="login-pass">Mot de passe</label><input id="login-pass" name="password" type="password" autocomplete="current-password" required minlength="8"></div>
     <button class="btn primary" type="submit" id="login-submit">Se connecter</button>
     <div class="login-error" id="login-error" role="status"></div>
   </form>
 </div>
-<input type="file" id="file" accept=".json" hidden>
+<input type="file" id="file" name="event-json" accept=".json" hidden>
 <script src="generator.js"></script>
 <script src="panel.js"></script>
 </body>
