@@ -596,7 +596,7 @@ $('#avatar-file').onchange = async e => {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (!file) return;
-  if (!/^image\\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1.5 * 1024 * 1024) {
+  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1.5 * 1024 * 1024) {
     toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 1,5 Mo maximum.', 'err'); return;
   }
   const reader = new FileReader();
