@@ -404,3 +404,89 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
   .layout:not(.preview-open) .workspace { display: block; }
   .workspace { padding: 22px clamp(14px, 4vw, 32px) 70px; }
 }
+
+
+/* Aperçu strictement limité à l’espace Éditeur */
+.layout { grid-template-columns:minmax(0,1fr); height:auto; min-height:calc(100dvh - 64px); }
+.layout .preview[hidden] { display:none !important; }
+.layout:not(.preview-open) .preview { display:none !important; }
+.workspace { min-width:0; width:100%; padding:clamp(20px,3vw,48px); }
+.panel { width:100%; max-width:none; margin:0; }
+.layout.preview-open { grid-template-columns:minmax(0,1fr) minmax(0,1fr); height:calc(100dvh - 64px); min-height:0; }
+.layout.preview-open .workspace { overflow-y:auto; }
+.layout.preview-open .preview { display:flex; min-height:0; padding:24px 28px 28px 0; }
+.editor-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:2px; }
+.editor-tools .toolbar { flex:1 1 500px; min-width:0; }
+.preview-toggle { flex:0 0 auto; min-height:38px; border-radius:10px; padding:9px 14px; border-color:var(--line-strong); background:var(--surface); color:var(--text); white-space:nowrap; }
+.preview-toggle:hover,.preview-toggle.is-open { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+.preview-toggle-icon { font-size:17px; line-height:1; }
+@media(max-width:1000px) {
+  .layout, .layout.preview-open { display:block; height:auto; min-height:calc(100dvh - 64px); }
+  .layout.preview-open .workspace { display:block; }
+  .layout.preview-open .preview { display:flex; min-height:75vh; padding:16px; }
+  .layout.preview-open .stage { min-height:65vh; }
+  .workspace { padding:22px clamp(14px,4vw,32px) 70px; }
+}
+@media(max-width:680px) {
+  .editor-tools { align-items:stretch; }
+  .editor-tools .toolbar { flex-basis:100%; }
+  .preview-toggle { align-self:flex-start; }
+}
+
+/* Espace Accès : panneaux d’administration cohérents et respirants */
+.access-intro { margin-bottom:8px; }
+.access-grid { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:20px; align-items:stretch; }
+.access-grid > .card { min-width:0; overflow:hidden; }
+.access-kicker { display:inline-block; margin-bottom:10px; color:var(--accent); font-size:10px; font-weight:700; letter-spacing:.14em; }
+.access-user { display:flex; align-items:center; gap:13px; min-width:0; padding:14px; border:1px solid var(--line); border-radius:13px; background:var(--surface-2); }
+.access-user-avatar { display:grid; place-items:center; flex:0 0 42px; width:42px; height:42px; border-radius:13px; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:16px; }
+.access-user-avatar.small { flex-basis:36px; width:36px; height:36px; border-radius:11px; font-size:13px; }
+.access-user-meta { display:grid; gap:4px; min-width:0; flex:1; }
+.access-user-meta strong { overflow:hidden; text-overflow:ellipsis; }
+.access-user-meta span { color:var(--muted); font-size:12px; }
+.role-pill { padding:5px 8px; border:1px solid var(--line-strong); border-radius:999px; color:var(--accent); background:var(--accent-soft); font-size:10px; font-weight:700; text-transform:uppercase; }
+.access-logout { width:100%; }
+.access-worker-actions { align-items:center; }
+.access-worker-actions .btn { min-height:42px; }
+.access-security-note { display:flex; gap:9px; align-items:flex-start; margin:0; padding:12px 13px; border:1px solid var(--line); border-radius:11px; color:var(--muted); font-size:12px; line-height:1.6; }
+.access-security-note span { color:var(--accent); font-size:10px; padding-top:3px; }
+.access-accounts { grid-column:1/-1; }
+.access-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.access-count-mark { display:grid; place-items:center; flex:0 0 42px; width:42px; height:42px; border-radius:12px; color:var(--accent); background:var(--accent-soft); font:700 18px Rajdhani,sans-serif; }
+.access-create-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:start; }
+.access-create-form .field { min-width:0; }
+.access-create-form input,.access-create-form select { min-height:44px; }
+.select-wrap { position:relative; }
+.select-wrap select { appearance:none; -webkit-appearance:none; width:100%; padding:11px 42px 11px 13px; border-radius:11px; cursor:pointer; background:var(--bg); }
+.select-chevron { position:absolute; top:50%; right:15px; transform:translateY(-55%); pointer-events:none; color:var(--accent); font-size:19px; }
+.access-create-footer { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; padding-top:16px; border-top:1px solid var(--line); }
+.access-create-footer > span { max-width:420px; color:var(--muted); font-size:12px; line-height:1.6; }
+.create-account-btn { min-height:44px; min-width:180px; padding:11px 20px; border-radius:11px; white-space:nowrap; }
+.create-account-btn span { font-size:18px; line-height:1; }
+.access-list-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:8px 24px 0; padding:20px 0 0; border-top:1px solid var(--line); }
+.access-list-head h3 { margin:0; font-size:14px; }
+.access-list-head p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+.access-user-count { display:grid; place-items:center; min-width:34px; height:30px; padding:0 8px; border-radius:9px; background:var(--surface-2); color:var(--muted); font:600 12px 'JetBrains Mono',monospace; }
+.access-users-body { padding-top:12px; }
+.access-user-row { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
+.access-user-details { min-width:0; flex:1; }
+.access-user-details b { display:block; overflow-wrap:anywhere; }
+.access-user-details small { display:block; margin-top:5px; color:var(--muted); font-size:11px; line-height:1.5; }
+.access-user-details i { font-style:normal; font-weight:600; }
+.status-active { color:var(--ok); }
+.status-disabled { color:var(--err); }
+.access-user-action { flex:0 0 auto; min-width:110px; }
+.access-loading { display:flex; align-items:center; gap:10px; padding:12px 0; color:var(--muted); font-size:13px; }
+.loading-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 5px var(--accent-soft); }
+.access-restricted { grid-column:1/-1; display:flex; align-items:center; gap:16px; padding:26px; }
+.access-restricted-icon { display:grid; place-items:center; width:46px; height:46px; flex:0 0 46px; border-radius:14px; background:var(--surface-2); color:var(--muted); font-size:22px; }
+.access-restricted p { margin-top:6px; color:var(--muted); }
+@media(max-width:1100px) { .access-grid { grid-template-columns:1fr; } .access-accounts,.access-restricted { grid-column:auto; } }
+@media(max-width:680px) {
+  .access-create-form { grid-template-columns:1fr; }
+  .access-create-footer { align-items:stretch; }
+  .create-account-btn { width:100%; min-width:0; }
+  .access-list-head { margin-left:18px; margin-right:18px; }
+  .access-user-row { flex-wrap:wrap; }
+  .access-user-action { margin-left:48px; }
+}
