@@ -69,21 +69,51 @@ let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer
 
 const api = {
   cfg() {
-    const s = JSON.parse(localStorage.getItem(KEY.access) || '{}');
-    return { ...s, url: s.url || WORKER_URL };
+    return { url: WORKER_URL };
   },
+
   async post(path, body = {}) {
-    const c = api.cfg();
     const token = sessionStorage.getItem(KEY.token);
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers.Authorization = 'Bearer ' + token;
-    const r = await fetch(c.url.replace(/\/$/, '') + path, { method: 'POST', headers, body: JSON.stringify(body) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      if (r.status === 401) signOut(false);
-      throw new Error(r.status + ' · ' + (j.error || 'erreur inconnue'));
+
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (token) {
+      headers.Authorization = 'Bearer ' + token;
     }
-    return j;
+
+    let response;
+
+    try {
+      response = await fetch(
+        WORKER_URL.replace(/\/$/, '') + path,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        }
+      );
+    } catch (error) {
+      throw new Error(
+        'Échec de connexion au Worker. Vérifie le CORS et la disponibilité du serveur.'
+      );
+    }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        signOut(false);
+      }
+
+      throw new Error(
+        response.status + ' · ' +
+        (data.error || 'Erreur inconnue du serveur')
+      );
+    }
+
+    return data;
   }
 };
 
