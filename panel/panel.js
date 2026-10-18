@@ -173,12 +173,15 @@ const renderSections = () => { $('#secs').innerHTML = ev.sections.map(sectionHtm
 const renderEditor = () => {
   $('#edit').innerHTML = `
     <section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· PUBLICATIONS</span></div><h1>Créateur d’événement</h1><p>Conçois une page claire, ajuste son aperçu et publie-la sur le portail MRD.</p></div><div class="intro-mark">✦</div></section>
-    <div class="toolbar">
+    <div class="editor-tools">
+      <div class="toolbar">
       <button class="btn ghost sm" data-action="new">Nouveau</button>
       <button class="btn ghost sm" data-action="sample">Exemple</button>
       <button class="btn ghost sm" data-action="import">Importer</button>
       <button class="btn ghost sm" data-action="export">Exporter</button>
       <button class="btn ghost sm" data-action="copy-entry">Copier l'entrée portail</button>
+      </div>
+      <button class="btn preview-toggle" type="button" data-action="toggle-preview"><span class="preview-toggle-icon">◫</span><span data-preview-label>Masquer l’aperçu</span></button>
     </div>
     <section class="card">
       <header class="card-head"><h2>Page</h2><p>Titre, date et adresse de la page.</p></header>
@@ -246,18 +249,51 @@ const renderPortal = () => {
     </div>`;
 };
 
-const renderAccess = () => {
+const renderAccess = async () => {
   const c = api.cfg();
+  const owner = currentUser?.role === 'owner';
   $('#access').innerHTML = `
-    <section class="card">
-      <header class="card-head"><h2>Compte & sécurité</h2><p>La connexion est gérée par le Worker MRD. Aucun mot de passe n’est enregistré dans le navigateur.</p></header>
-      <div class="card-body">
-        <div class="user-row"><div><b>${esc(currentUser?.username || 'Non connecté')}</b><small>${esc(currentUser?.grade || 'Aucun grade')} · rôle ${esc(currentUser?.role || '—')}</small></div><button class="btn" data-action="logout">Se déconnecter</button></div>
-        <div class="field"><label>URL du Worker</label><input data-g="url" value="${esc(c.url)}"><small>À modifier uniquement si l’adresse de ton Worker change.</small></div>
-        <div class="actions"><button class="btn primary" data-action="save-access">Enregistrer l’URL</button><button class="btn" data-action="test-access">Tester le serveur</button></div>
-        <p class="hint">Les identifiants sont gérés côté serveur. Ne partage jamais un token GitHub ou un secret Cloudflare.</p>
-      </div>
-    </section>`;
+    <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère les connexions au panel, les rôles de l’équipe et la liaison avec le serveur MRD.</p></div><div class="intro-mark">⌘</div></section>
+    <div class="access-grid">
+      <section class="card access-security">
+        <header class="card-head"><span class="access-kicker">SESSION ACTIVE</span><h2>Compte connecté</h2><p>Les autorisations dépendent du rôle associé à ton compte.</p></header>
+        <div class="card-body">
+          <div class="access-user"><div class="access-user-avatar">${esc((currentUser?.username || 'M').slice(0,1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(currentUser?.username || 'Non connecté')}</strong><span>${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.role || '—')}</span></div>
+          <button class="btn access-logout" data-action="logout" type="button">Se déconnecter</button>
+        </div>
+      </section>
+      <section class="card access-worker">
+        <header class="card-head"><span class="access-kicker">CONNEXION API</span><h2>Serveur MRD</h2><p>Adresse du Worker qui traite les demandes du panel.</p></header>
+        <div class="card-body">
+          <div class="field"><label for="worker-url">URL du Worker</label><input id="worker-url" data-g="url" value="${esc(c.url)}" spellcheck="false" placeholder="https://votre-worker.workers.dev"><small>Ne change cette adresse que si le Worker est déplacé.</small></div>
+          <div class="actions access-worker-actions"><button class="btn primary" data-action="save-access" type="button">Enregistrer l’URL</button><button class="btn" data-action="test-access" type="button"><span aria-hidden="true">↗</span> Tester la connexion</button></div>
+          <p class="access-security-note"><span aria-hidden="true">◆</span> Les mots de passe et les droits sont gérés côté serveur. Ne partage jamais les secrets Cloudflare.</p>
+        </div>
+      </section>
+      ${owner ? `<section class="card access-accounts">
+        <header class="card-head access-card-head"><div><span class="access-kicker">GESTION DE L’ÉQUIPE</span><h2>Comptes & autorisations</h2><p>Crée un compte individuel et attribue uniquement les droits nécessaires.</p></div><span class="access-count-mark">01</span></header>
+        <div class="card-body">
+          <form id="user-create-form" class="user-create access-create-form">
+            <div class="field"><label for="new-username">Identifiant</label><input id="new-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" placeholder="ex. media.officer"></div>
+            <div class="field"><label for="new-grade">Grade affiché</label><input id="new-grade" name="grade" required maxlength="60" placeholder="ex. Media Officer"></div>
+            <div class="field"><label for="new-role">Niveau d’accès</label><div class="select-wrap"><select id="new-role" name="role"><option value="viewer">Lecteur · consultation</option><option value="editor" selected>Éditeur · événements</option><option value="admin">Administrateur · gestion</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div>
+            <div class="field"><label for="new-password">Mot de passe temporaire</label><input id="new-password" name="password" required minlength="12" type="password" autocomplete="new-password" placeholder="12 caractères minimum"></div>
+            <div class="access-create-footer"><span>Le mot de passe initial doit être communiqué en privé.</span><button class="btn primary create-account-btn" type="submit"><span aria-hidden="true">＋</span> Créer le compte</button></div>
+          </form>
+        </div>
+        <div class="access-list-head"><div><h3>Comptes existants</h3><p>Les comptes désactivés ne peuvent plus se connecter.</p></div><span id="access-user-count" class="access-user-count">—</span></div>
+        <div class="card-body access-users-body"><div id="users-list" class="user-admin"><div class="access-loading"><span class="loading-dot"></span> Chargement des comptes…</div></div></div>
+      </section>` : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>La création et la désactivation des comptes sont réservées au Owner.</p></div></section>`}
+    </div>`;
+  if (owner) {
+    try {
+      const data = await api.post('/users/list', {});
+      const users = data.users || [];
+      const count = $('#access-user-count');
+      if (count) count.textContent = String(users.length).padStart(2, '0');
+      $('#users-list').innerHTML = users.map(u => `<div class="user-row access-user-row"><div class="access-user-avatar small">${esc((u.username || 'M').slice(0,1).toUpperCase())}</div><div class="access-user-details"><b>${esc(u.username)}</b><small>${esc(u.grade)} <span>·</span> ${esc(u.role)} <span>·</span> <i class="${u.active ? 'status-active' : 'status-disabled'}">${u.active ? 'Actif' : 'Désactivé'}</i></small></div><button class="btn ${u.active ? 'danger' : ''} access-user-action" data-action="user-disable" data-user-id="${esc(u.id)}" ${u.id === currentUser.id || !u.active ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button></div>`).join('') || '<p class="empty">Aucun compte n’a été créé.</p>';
+    } catch (e) { $('#users-list').textContent = e.message; }
+  }
 };
 
 
@@ -328,10 +364,17 @@ const setPreview = show => {
   const preview = $('#preview');
   const layout = $('.layout');
   if (!preview || !layout) return;
-  preview.hidden = !show;
-  layout.classList.toggle('preview-open', !!show);
+  const allowed = layout.dataset.activeTab === 'edit';
+  const visible = !!show && allowed;
+  preview.hidden = !visible;
+  layout.classList.toggle('preview-open', visible);
   const button = $('[data-action="toggle-preview"]');
-  if (button) button.textContent = show ? 'Masquer l’aperçu' : 'Aperçu';
+  if (button) {
+    button.classList.toggle('is-open', visible);
+    const label = $('[data-preview-label]', button);
+    if (label) label.textContent = visible ? 'Masquer l’aperçu' : 'Afficher l’aperçu';
+    button.setAttribute('aria-pressed', String(visible));
+  }
 };
 
 const setTab = async name => {
@@ -339,13 +382,15 @@ const setTab = async name => {
   $('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
   if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
+  const layout = $('.layout');
+  if (layout) layout.dataset.activeTab = name;
   closeMenus();
   setPreview(name === 'edit');
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
   }
-  if (name === 'access') renderAccess();
+  if (name === 'access') await renderAccess();
   if (name === 'profile') renderProfile();
 };
 
@@ -489,7 +534,7 @@ const actions = {
   },
   'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
   logout: () => signOut(true),
-  'user-disable': async el => { if (!confirm('Désactiver ce compte ?')) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderTeam(); toast('Compte désactivé.', 'ok'); }
+  'user-disable': async el => { if (!confirm('Désactiver ce compte ?')) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); }
 };
 
 async function signIn(username, password) {
@@ -646,7 +691,7 @@ document.addEventListener('submit', async e => {
   const payload = Object.fromEntries(form.entries());
   try {
     await api.post('/users/create', payload);
-    e.target.reset(); toast('Compte créé. Communique les identifiants en privé.', 'ok'); await renderTeam();
+    e.target.reset(); toast('Compte créé. Communique les identifiants en privé.', 'ok'); await renderAccess();
   } catch (err) { toast(err.message, 'err'); }
 });
 
