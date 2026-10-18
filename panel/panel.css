@@ -631,3 +631,33 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .save-menu button { display:block; width:100%; padding:11px 12px; border:0; border-radius:8px; background:transparent; color:var(--text); text-align:left; font:600 12px Inter,Arial,sans-serif; cursor:pointer; }
 .save-menu button:hover,.save-menu button:focus-visible { background:var(--accent-soft); color:var(--accent); }
 @media(max-width:680px) { .save-dropdown { max-width:100%; } .save-dropdown .save-main { padding-left:12px; padding-right:12px; } }
+
+
+/* In-editor page switcher: compact, consistent with the MRD workspace. */
+.editor-pages-dropdown { position:relative; display:inline-flex; flex:0 0 auto; }
+.editor-pages-trigger { display:inline-flex; align-items:center; gap:9px; min-height:38px; white-space:nowrap; }
+.editor-pages-icon { display:grid; place-items:center; width:22px; height:22px; border:1px solid var(--line-strong); border-radius:6px; color:var(--accent); font-size:14px; }
+.editor-pages-chevron { margin-left:2px; color:var(--accent); font-size:11px; }
+.editor-pages-menu { position:absolute; z-index:120; top:calc(100% + 9px); left:0; width:min(380px,calc(100vw - 32px)); max-height:min(540px,70vh); display:flex; flex-direction:column; overflow:hidden; background:var(--surface); border:1px solid var(--line-strong); border-radius:14px; box-shadow:0 22px 60px rgba(0,0,0,.28); }
+.editor-pages-menu[hidden] { display:none !important; }
+.editor-pages-menu-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 15px 11px; border-bottom:1px solid var(--line); }
+.editor-pages-menu-head > span { color:var(--accent); font-size:10px; font-weight:700; letter-spacing:.14em; }
+.editor-pages-menu-head small { color:var(--muted); font-size:10px; }
+.editor-pages-list { display:grid; gap:3px; overflow-y:auto; padding:7px; }
+.editor-page-option { display:flex; align-items:center; gap:10px; width:100%; min-width:0; padding:10px; border:1px solid transparent; border-radius:10px; background:transparent; color:var(--text); text-align:left; cursor:pointer; transition:background .15s,border-color .15s; }
+.editor-page-option:hover,.editor-page-option:focus-visible { background:var(--surface-2); border-color:var(--line); }
+.editor-page-option.is-current { background:var(--accent-soft); border-color:rgba(214,181,116,.3); }
+.editor-page-icon { display:grid; place-items:center; flex:0 0 35px; width:35px; height:35px; border-radius:9px; background:var(--surface-2); font-size:17px; }
+.editor-page-copy { display:grid; gap:4px; flex:1; min-width:0; }
+.editor-page-copy strong { overflow:hidden; color:var(--text); font-size:12px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.editor-page-copy small { overflow:hidden; color:var(--muted); font:10px 'JetBrains Mono',monospace; text-overflow:ellipsis; white-space:nowrap; }
+.editor-page-status { flex:0 0 auto; padding:4px 7px; border:1px solid var(--line); border-radius:99px; color:var(--muted); font-size:9px; white-space:nowrap; }
+.editor-page-status.status-live { color:var(--ok); border-color:rgba(95,203,145,.28); background:rgba(95,203,145,.08); }
+.editor-page-status.status-archived { opacity:.75; }
+.editor-page-current { color:var(--accent); font-size:9px; }
+.editor-pages-loading,.editor-pages-empty { padding:22px 14px; color:var(--muted); font-size:12px; line-height:1.6; text-align:center; }
+.editor-pages-menu-footer { padding:8px; border-top:1px solid var(--line); background:var(--surface-2); }
+.editor-pages-menu-footer button { display:flex; align-items:center; gap:9px; width:100%; padding:11px 12px; border:1px solid rgba(214,181,116,.3); border-radius:9px; background:var(--accent-soft); color:var(--accent); text-align:left; font:600 12px Inter,Arial,sans-serif; cursor:pointer; }
+.editor-pages-menu-footer button:hover { border-color:var(--accent); }
+.editor-pages-menu-footer button span { font-size:18px; line-height:1; }
+@media(max-width:680px) { .editor-pages-dropdown { flex:0 0 auto; } .editor-pages-menu { left:0; width:min(360px,calc(100vw - 28px)); } .editor-tools .toolbar { display:flex; flex-wrap:wrap; } }
