@@ -11,6 +11,7 @@
 </head>
 <body>
 <header class="topbar">
+  <a class="btn ghost home-link" href="../" target="_blank" rel="noopener" aria-label="Ouvrir le portail public">← Portail public</a>
   <div class="brand">
     <img src="../public/Logo MRD V2.png" alt="">
     <div><strong>Événements</strong><span>Media Relations Division</span></div>
@@ -19,16 +20,14 @@
     <button class="nav-item active" data-action="tab" data-tab="edit">Éditeur</button>
     <button class="nav-item" data-action="tab" data-tab="portal">Portail</button>
     <button class="nav-item" data-action="tab" data-tab="access">Accès</button>
-    <button class="nav-item nav-wip" data-action="tab" data-tab="newsroom">Rédaction <span>WIP</span></button>
-    <button class="nav-item nav-wip" data-action="tab" data-tab="media">Médias <span>WIP</span></button>
     <button class="nav-item nav-wip" data-action="tab" data-tab="team">Équipe <span>WIP</span></button>
-    <button class="nav-item nav-wip" data-action="tab" data-tab="archive">Archives <span>WIP</span></button>
   </nav>
   <div class="topbar-actions">
     <span class="user-chip" id="user-chip">Session non vérifiée</span><span class="draft" id="draft"></span>
     <button class="btn ghost theme-toggle" id="theme-toggle" data-action="theme" aria-label="Changer de thème" title="Changer de thème">☼ <span>Mode clair</span></button>
     <button class="btn ghost only-compact" data-action="toggle-preview">Aperçu</button>
     <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
+    <button class="btn ghost" data-action="logout" id="top-logout">Déconnexion</button>
     <button class="btn primary" id="publish" data-action="publish">Publier</button>
   </div>
 </header>
@@ -38,10 +37,7 @@
     <div class="panel" id="edit"></div>
     <div class="panel" id="portal" hidden></div>
     <div class="panel" id="access" hidden></div>
-    <div class="panel wip-panel" id="newsroom" hidden></div>
-    <div class="panel wip-panel" id="media" hidden></div>
     <div class="panel wip-panel" id="team" hidden></div>
-    <div class="panel wip-panel" id="archive" hidden></div>
   </div>
   <aside class="preview">
     <div class="preview-bar">
@@ -63,13 +59,13 @@
     <div class="login-brand"><img src="../public/Logo MRD V2.png" alt="MRD"><div><strong>MRD WORKSPACE</strong><small>MEDIA RELATIONS DIVISION</small></div></div>
     <h1>Connexion sécurisée</h1>
     <p>Connecte-toi avec le compte MRD qui t’a été attribué. Les droits disponibles dépendent de ton grade.</p>
-    <div class="field"><label for="login-user">Identifiant</label><input id="login-user" autocomplete="username" required maxlength="64"></div>
-    <div class="field"><label for="login-pass">Mot de passe</label><input id="login-pass" type="password" autocomplete="current-password" required minlength="8"></div>
+    <div class="field"><label for="login-user">Identifiant</label><input id="login-user" name="username" autocomplete="username" required maxlength="64"></div>
+    <div class="field"><label for="login-pass">Mot de passe</label><input id="login-pass" name="password" type="password" autocomplete="current-password" required minlength="8"></div>
     <button class="btn primary" type="submit" id="login-submit">Se connecter</button>
     <div class="login-error" id="login-error" role="status"></div>
   </form>
 </div>
-<input type="file" id="file" accept=".json" hidden>
+<input type="file" id="file" name="event-json" accept=".json" hidden>
 <script src="generator.js"></script>
 <script src="panel.js"></script>
 </body>

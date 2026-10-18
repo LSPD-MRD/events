@@ -1,5 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session' };
+const PORTAL_URL = '../';
 let currentUser = null;
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -69,7 +70,10 @@ let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer
 
 const api = {
   cfg() {
-    return { url: WORKER_URL };
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY.access) || '{}');
+      return { url: String(saved.url || WORKER_URL).replace(/\/$/, '') };
+    } catch { return { url: WORKER_URL }; }
   },
 
   async post(path, body = {}) {
@@ -87,7 +91,7 @@ const api = {
 
     try {
       response = await fetch(
-        WORKER_URL.replace(/\/$/, '') + path,
+        api.cfg().url.replace(/\/$/, '') + path,
         {
           method: 'POST',
           headers,
@@ -117,13 +121,18 @@ const api = {
   }
 };
 
-const loadList = async () => parse(await (await fetch('../public/events-data.js', { cache: 'no-store' })).text());
+const loadList = async () => {
+  const response = await fetch('../public/events-data.js', { cache: 'no-store' });
+  if (!response.ok) throw new Error('Impossible de lire events-data.js (' + response.status + ').');
+  return parse(await response.text());
+};
 
 const field = (path, label, { rows = 0, placeholder = '', hint = '' } = {}) => {
+  const id = 'field-' + path.replace(/[^a-zA-Z0-9_-]/g, '-');
   const control = rows
-    ? `<textarea data-p="${path}" rows="${rows}" placeholder="${esc(placeholder)}"></textarea>`
-    : `<input data-p="${path}" placeholder="${esc(placeholder)}">`;
-  return `<div class="field"><label>${label}</label>${control}${hint ? `<small>${hint}</small>` : ''}</div>`;
+    ? `<textarea id="${id}" name="${path}" data-p="${path}" rows="${rows}" placeholder="${esc(placeholder)}"></textarea>`
+    : `<input id="${id}" name="${path}" data-p="${path}" placeholder="${esc(placeholder)}">`;
+  return `<div class="field"><label for="${id}">${label}</label>${control}${hint ? `<small>${hint}</small>` : ''}</div>`;
 };
 
 const segment = (action, path, options, current) => `<div class="seg">${Object.entries(options).map(([value, label]) =>
@@ -274,7 +283,6 @@ const mutate = f => { f(); renderSections(); refresh(); };
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
-  if (['newsroom', 'media', 'archive'].includes(name)) renderWip(name);
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
@@ -401,10 +409,11 @@ const actions = {
   'p-save': async () => { await api.post('/portal', { list }); toast('Portail enregistré. Mise à jour dans environ une minute.', 'ok'); },
   'p-download': () => download('events-data.js', serialize(list)),
   'save-access': () => {
-    const c = api.cfg();
-    $$('[data-g]').forEach(x => { if (x.value.trim()) c[x.dataset.g] = x.value.trim(); });
-    localStorage.setItem(KEY.access, JSON.stringify(c));
-    toast('URL enregistrée.', 'ok');
+    const input = $('[data-g=\"url\"]');
+    const url = input?.value.trim().replace(/\/$/, '');
+    if (!url || !/^https:\/\//i.test(url)) return toast('Saisis une URL HTTPS valide.', 'err');
+    localStorage.setItem(KEY.access, JSON.stringify({ url }));
+    toast('URL enregistrée. Les prochaines requêtes utiliseront cette adresse.', 'ok');
   },
   'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
   logout: () => signOut(true),
@@ -413,13 +422,16 @@ const actions = {
 
 async function signIn(username, password) {
   const c = api.cfg();
-  const r = await fetch(c.url.replace(/\/$/, '') + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) });
+  let r;
+  try { r = await fetch(c.url.replace(/\/$/, '') + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) }); }
+  catch { throw new Error('Connexion au serveur impossible. Vérifie l’URL du Worker, sa disponibilité et le réglage CORS.'); }
   const data = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error(data.error || 'Connexion refusée');
+  if (!r.ok) throw new Error(data.error || ('Connexion refusée (' + r.status + ')'));
   sessionStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
   $('#login-screen').hidden = true;
   $('#user-chip').textContent = currentUser.username + ' · ' + currentUser.grade;
+  $('#top-logout').hidden = false;
   $('#login-error').textContent = '';
   applyPermissions();
 }
@@ -429,14 +441,18 @@ async function signOut(show = true) {
   $('#login-screen').hidden = false;
   $('#login-pass').value = '';
   $('#user-chip').textContent = 'Session fermée';
+  $('#top-logout').hidden = true;
   if (show) toast('Déconnexion effectuée.', 'ok');
 }
 function applyPermissions() {
   const role = currentUser?.role || 'viewer';
   const canEdit = ['owner','admin','editor'].includes(role);
   $('#publish').hidden = !canEdit;
+  const logout = $('#top-logout'); if (logout) logout.hidden = false;
+  const home = $('.home-link'); if (home) home.href = publicPortalUrl();
   $$('[data-action="tab"]').forEach(b => {
     if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
+    if (['newsroom','media','archive'].includes(b.dataset.tab)) b.hidden = true;
     if (b.dataset.tab === 'access') b.hidden = false;
   });
   if (!canEdit) {
@@ -447,6 +463,8 @@ function applyPermissions() {
   }
 }
 async function restoreSession() {
+  const home = $('.home-link'); if (home) home.href = publicPortalUrl();
+  const logout = $('#top-logout'); if (logout) logout.hidden = !sessionStorage.getItem(KEY.token);
   const token = sessionStorage.getItem(KEY.token);
   if (!token) return;
   try {
