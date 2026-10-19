@@ -903,7 +903,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .save-menu{min-width:190px;top:calc(100% + 8px);right:0}
 .save-menu>button,.profile-menu>button{display:flex;width:100%;align-items:center;padding:10px 11px;border:0;background:transparent;color:var(--text);text-align:left;font:500 12px Inter,system-ui,sans-serif;cursor:pointer}
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{border-radius:11px;transition:border-color .18s,box-shadow .18s,background-color .18s}
-select,.select-wrap select{min-height:44px;padding-right:42px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:none}
-select:focus-visible,.select-wrap select:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:0}
+select{min-height:44px}
+.select-wrap select{min-height:44px;padding-right:42px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:none}
+select:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:0}
 select option{padding:10px;background:var(--surface);color:var(--text)}
 @media(max-width:680px){.accreditation-editor{max-width:100%;padding:12px}.accreditation-options{grid-template-columns:minmax(0,1fr)}.accreditation-editor-footer{align-items:stretch;flex-direction:column}.accreditation-editor-footer .btn{width:100%}.pages-menu,.profile-menu,.save-menu,.editor-pages-menu{max-width:calc(100vw - 24px)}}
