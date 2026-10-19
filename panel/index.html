@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="../public/Logo MRD V2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="panel.css?v=20261018m">
+<link rel="stylesheet" href="panel.css?v=20261019a">
 </head>
 <body>
 <header class="topbar">
@@ -21,7 +21,7 @@
   <div class="pages-dropdown">
     <button class="pages-trigger" id="pages-trigger" type="button" data-action="toggle-pages" aria-expanded="false" aria-controls="pages-menu">Espaces <span id="active-page-label">Éditeur</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg></button>
     <nav class="pages-menu" id="pages-menu" hidden aria-label="Navigation principale">
-      <button class="nav-item active" data-action="tab" data-tab="edit">Éditeur</button>
+      <button class="nav-item active" data-action="tab" data-tab="edit">Événements</button><button class="nav-item" data-action="tab" data-tab="publications">News & documents</button>
       <button class="nav-item" data-action="tab" data-tab="portal">Portail</button>
       <button class="nav-item" data-action="tab" data-tab="access">Accès</button>
       
@@ -55,7 +55,7 @@
 <main class="layout">
   <div class="workspace">
     <div class="panel" id="edit"></div>
-    <div class="panel" id="portal" hidden></div>
+    <div class="panel" id="portal" hidden></div><div class="panel" id="publications" hidden></div>
     <div class="panel" id="access" hidden></div>
     <div class="panel" id="profile" hidden></div>
     
@@ -87,8 +87,8 @@
   </form>
 </div>
 <input type="file" id="file" name="event-json" accept=".json" hidden>
-<input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+<input type="file" id="publication-file" accept="application/pdf,image/png,image/jpeg,image/webp" hidden><input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
 <script src="generator.js?v=20261018h"></script>
-<script src="panel.js?v=20261018m"></script>
+<script src="panel.js?v=20261019a"></script>
 </body>
 </html>

@@ -1,0 +1,1 @@
+window.MRD_PUBLICATIONS = [];

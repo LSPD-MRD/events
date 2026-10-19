@@ -82,6 +82,21 @@
   backButton.setAttribute('aria-label', 'Retour aux événements');
   backButton.addEventListener('click', closeEvent);
   document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
+  const kindLabels = { news:'ACTUALITÉ', 'compte-rendu':'COMPTE RENDU DE CÉRÉMONIE', 'comm-interne':'COMMUNICATION INTERNE', 'comm-presse':'COMMUNIQUÉ DE PRESSE' };
+  function renderPublications() {
+    const items = Array.isArray(window.MRD_PUBLICATIONS) ? window.MRD_PUBLICATIONS : [];
+    const card = p => '<article class="publication-card"><div class="publication-label">'+esc(kindLabels[p.kind]||'PUBLICATION MRD')+'</div><h3>'+esc(p.title)+'</h3>'+(p.date?'<div class="publication-date">'+esc(p.date)+'</div>':'')+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+(p.mime==='application/pdf'?'<iframe loading="lazy" title="'+esc(p.title)+'" src="'+encodeURI(p.file)+'#toolbar=0"></iframe>':'<a class="publication-image-link" href="'+encodeURI(p.file)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+encodeURI(p.file)+'" alt="'+esc(p.title)+'"></a>')+'<div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a><a href="'+encodeURI(p.file)+'" download>Télécharger ↓</a></div></article>';
+    const news=items.filter(p=>p.kind==='news'), docs=items.filter(p=>p.kind!=='news');
+    document.getElementById('news-list').innerHTML=news.map(card).join('')||'<div class="empty-state">Aucune actualité publiée pour le moment.</div>';
+    document.getElementById('documents-list').innerHTML=docs.map(card).join('')||'<div class="empty-state">Aucun document officiel publié pour le moment.</div>';
+  }
+  document.querySelectorAll('[data-space]').forEach(button=>button.addEventListener('click',()=>{
+    const space=button.dataset.space; document.querySelectorAll('[data-space]').forEach(b=>b.classList.toggle('active',b===button));
+    document.getElementById('space-events').hidden=space!=='events'; document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
+    document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
+    if(space!=='events' && location.hash.startsWith('#event/')) history.replaceState(null,'','#home');
+  }));
+  renderPublications();
   const theme = document.getElementById('theme-toggle');
   function setTheme(v) { document.documentElement.dataset.theme=v; theme.textContent=v==='light'?'☀':'☾'; localStorage.setItem('mrd-theme',v); }
   setTheme(localStorage.getItem('mrd-theme') || 'dark'); theme.addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));

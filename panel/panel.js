@@ -1,6 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar' };
-const PAGE_LABELS = { edit: 'Éditeur', portal: 'Portail', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
+const PAGE_LABELS = { edit: 'Événements', publications: 'News & documents', portal: 'Portail', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
 const PORTAL_URL = '../';
 let currentUser = null;
 
@@ -315,6 +315,18 @@ const renderEditor = () => {
   renderSections();
 };
 
+async function renderPublications() {
+  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>News & documents</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><select id="pub-kind"><option value="news">News & actualités</option><option value="compte-rendu">Compte rendu de cérémonie</option><option value="comm-interne">Communication interne</option><option value="comm-presse">Communiqué de presse (public)</option></select></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="date"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 4 Mo)</label><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
+  const fileInput=$('#pub-file'), preview=$('#pub-preview');
+  fileInput.onchange=()=>{ const f=fileInput.files[0]; if(!f)return; if(f.size>4*1024*1024){fileInput.value='';preview.textContent='Fichier trop volumineux (4 Mo maximum).';return toast('Maximum 4 Mo par fichier.','err');} const url=URL.createObjectURL(f); preview.innerHTML=f.type==='application/pdf'?'<iframe title="Aperçu PDF" src="'+url+'"></iframe>':'<img alt="Aperçu" src="'+url+'">'; };
+  try { const r=await fetch('../public/publications-data.js?v='+Date.now()); const t=r.ok?await r.text():''; const a=t.indexOf('['),z=t.lastIndexOf(']'); const data=a>=0&&z>a?JSON.parse(t.slice(a,z+1)):[]; $('#pub-list').innerHTML=data.map(p=>'<div class="row-item"><div class="meta"><b>'+esc(p.title)+'</b><small>'+esc(p.kind)+' · '+esc(p.date||'Sans date')+'</small></div><a class="btn sm" target="_blank" rel="noopener" href="../'+encodeURI(p.file)+'">Ouvrir</a><a class="btn sm" download href="../'+encodeURI(p.file)+'">Télécharger</a></div>').join('')||'<p class="empty">Aucune publication en ligne.</p>'; } catch { $('#pub-list').textContent='Impossible de charger les publications.'; }
+}
+document.addEventListener('submit', async e => {
+  if(e.target.id!=='publication-form')return; e.preventDefault();
+  const f=$('#pub-file').files[0]; if(!f)return toast('Choisis un fichier.','err'); if(f.size>4*1024*1024)return toast('Maximum 4 Mo par fichier.','err');
+  const b=$('#pub-submit');b.disabled=true;b.textContent='Publication…';
+  try { const data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(f);}); await api.post('/publication/publish',{kind:$('#pub-kind').value,title:$('#pub-title').value.trim(),summary:$('#pub-summary').value.trim(),date:$('#pub-date').value,mime:f.type,data}); toast('Publication envoyée. Le portail sera actualisé dans environ une minute.','ok'); await renderPublications(); } catch(err){toast(err.message||'Échec de publication.','err');} finally{b.disabled=false;b.textContent='Publier sur le portail';}
+});
 const renderPortal = () => {
   $('#portal').innerHTML = `
     <section class="card">
@@ -514,6 +526,7 @@ const setTab = async name => {
   if (layout) layout.dataset.activeTab = name;
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
+  if (name === 'publications') await renderPublications();
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
