@@ -206,7 +206,7 @@ const api = {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && /session absente ou expirée|session invalide|reconnecte-toi/i.test(data.error || '')) {
         signOut(false);
       }
 
@@ -908,7 +908,13 @@ async function restoreSession() {
     $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
     applyProfileAvatar();
     applyPermissions();
-  } catch { localStorage.removeItem(KEY.token); }
+  } catch (error) {
+    // Ne pas effacer une session persistante sur une erreur réseau ou une réponse
+    // temporaire du Worker. Seule une session explicitement expirée est supprimée.
+    if (/401|session absente ou expirée|session invalide|reconnecte-toi/i.test(error.message || '')) {
+      localStorage.removeItem(KEY.token);
+    }
+  }
 }
 $('#login-form').addEventListener('submit', async e => {
   e.preventDefault();
