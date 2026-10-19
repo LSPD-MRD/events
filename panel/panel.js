@@ -321,6 +321,7 @@ const AUDIT_LABELS = {
   account_created: "Création de compte",
   account_disabled: "Désactivation de compte",
   account_grade_changed: "Modification de grade",
+  password_changed: "Modification du mot de passe",
   event_created: "Création d’événement",
   event_updated: "Modification d’événement",
   event_added_to_portal: "Ajout au portail",
@@ -638,17 +639,17 @@ const renderWip = name => {
 const renderTeam = async () => {
   const root = $('#team');
   if (currentUser?.role !== 'co') {
-    root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La gestion des comptes est réservée au CO et limitée par grade.</p></div><span class="wip-badge">OWNER</span></section>`;
+    root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La gestion des comptes est réservée au CO et limitée par grade.</p></div><span class="wip-badge">CO</span></section>`;
     return;
   }
-  root.innerHTML = `<section class="page-intro"><div><div class="eyebrow">SÉCURITÉ · OWNER</div><h1>Comptes & grades</h1><p>Créer des identifiants individuels et attribuer le niveau d’accès adapté.</p></div></section>
+  root.innerHTML = `<section class="page-intro"><div><div class="eyebrow">SÉCURITÉ · CO</div><h1>Comptes & grades</h1><p>Créer des identifiants individuels et attribuer le niveau d’accès adapté.</p></div></section>
   <section class="card"><header class="card-head"><h2>Créer un compte</h2><p>Le mot de passe initial est transmis à la personne en privé.</p></header><div class="card-body">
   <form id="user-create-form" class="user-create">
     <div class="field"><label>Identifiant</label><input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off"></div>
     <div class="field"><label>Grade</label><select name="role"><option value="cto">Certified Officer (CtO)</option><option value="eo">Expert Officer (EO)</option><option value="aco">Assistant Commanding Officer (ACO)</option></select></div>
     <div class="field"><label>Mot de passe temporaire</label><input name="password" required minlength="12" type="password" autocomplete="new-password"></div>
     <div class="actions"><button class="btn primary" type="submit">Créer le compte</button></div>
-  </form></div></section><section class="card"><header class="card-head"><h2>Comptes existants</h2><p>Cette liste est visible uniquement par le Owner.</p></header><div class="card-body"><div id="users-list" class="user-admin">Chargement…</div></div></section>`;
+  </form></div></section><section class="card"><header class="card-head"><h2>Comptes existants</h2><p>Cette liste est réservée au Commanding Officer (CO).</p></header><div class="card-body"><div id="users-list" class="user-admin">Chargement…</div></div></section>`;
   try {
     const data = await api.post('/users/list', {});
     $('#users-list').innerHTML = data.users.map(u => `<div class="user-row"><div><b>${esc(u.username)}</b><small>${esc(u.grade)} · ${esc(u.role)} · ${u.active ? 'Actif' : 'Désactivé'}</small></div><button class="btn danger" data-action="user-disable" data-user-id="${esc(u.id)}" ${u.id === currentUser.id ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button></div>`).join('') || '<p>Aucun compte.</p>';
