@@ -869,3 +869,42 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
 /* Respecte l’attribut hidden sur les entrées de navigation */
 .nav-item[hidden], .pages-menu [hidden] { display: none !important; }
+
+
+/* MRD UI refresh: compact multi-accreditation picker and consistent dropdown surfaces. */
+.accreditation-manager{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;position:relative}
+.accreditation-add{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--accent);font-size:23px;line-height:1;cursor:pointer;transition:background .18s,border-color .18s,transform .18s,box-shadow .18s}
+.accreditation-add:hover,.accreditation-add[aria-expanded="true"]{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);transform:translateY(-1px)}
+.accreditation-manager-copy{display:grid;gap:1px;min-width:0}
+.accreditation-manager-copy>span{font-size:12px;font-weight:650;color:var(--text)}
+.accreditation-manager-copy small{font-size:11px;color:var(--muted)}
+.accreditation-editor{position:relative;width:100%;max-width:520px;margin:4px 0 2px;padding:15px;background:var(--surface);border:1px solid var(--line-strong);border-radius:15px;box-shadow:var(--shadow);animation:fade .16s ease-out}
+.accreditation-editor[hidden]{display:none!important}
+.accreditation-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.accreditation-editor-head>div{display:grid;gap:3px}
+.accreditation-editor-head strong{font-size:13px;font-weight:700}
+.accreditation-editor-head small,.accreditation-editor-footer>span{font-size:11px;line-height:1.45;color:var(--muted)}
+.accreditation-close{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.accreditation-close:hover{color:var(--text);border-color:var(--line-strong)}
+.accreditation-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 14px;padding:0}
+.accreditation-option{align-items:center;min-height:48px;padding:10px 11px;border-radius:11px;background:var(--bg);border-color:var(--line);font-size:11px;cursor:pointer;transition:background .15s,border-color .15s}
+.accreditation-option:hover:not(.is-unavailable){background:var(--accent-soft);border-color:var(--accent)}
+.accreditation-option input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.accreditation-option input:checked+span{font-weight:700;color:var(--text)}
+.accreditation-option small{grid-column:2;font-size:10px}
+.accreditation-editor-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--line)}
+.accreditation-editor-footer .btn{flex:0 0 auto;margin:0;white-space:nowrap}
+.pages-menu,.profile-menu,.save-menu,.editor-pages-menu{padding:7px;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+.pages-menu,.profile-menu,.save-menu,.editor-pages-menu{animation:fade .14s ease-out}
+.pages-menu .nav-item,.profile-menu>button,.save-menu>button,.editor-pages-menu>button{min-height:38px;border-radius:9px;transition:background .15s,color .15s,border-color .15s}
+.pages-menu .nav-item:hover,.profile-menu>button:hover,.save-menu>button:hover,.editor-pages-menu>button:hover{background:var(--accent-soft);color:var(--text)}
+.profile-menu-heading{padding:10px 11px 12px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+.profile-menu-heading strong{font-size:12px}.profile-menu-heading small{font-size:11px;color:var(--muted)}
+.save-menu{min-width:190px;top:calc(100% + 8px);right:0}
+.save-menu>button,.profile-menu>button{display:flex;width:100%;align-items:center;padding:10px 11px;border:0;background:transparent;color:var(--text);text-align:left;font:500 12px Inter,system-ui,sans-serif;cursor:pointer}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{border-radius:11px;transition:border-color .18s,box-shadow .18s,background-color .18s}
+select{min-height:44px}
+.select-wrap select{min-height:44px;padding-right:42px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:none}
+select:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:0}
+select option{padding:10px;background:var(--surface);color:var(--text)}
+@media(max-width:680px){.accreditation-editor{max-width:100%;padding:12px}.accreditation-options{grid-template-columns:minmax(0,1fr)}.accreditation-editor-footer{align-items:stretch;flex-direction:column}.accreditation-editor-footer .btn{width:100%}.pages-menu,.profile-menu,.save-menu,.editor-pages-menu{max-width:calc(100vw - 24px)}}
