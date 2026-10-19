@@ -828,7 +828,7 @@ export default {
         if (!canPublish(user)) return json({ error: "Ton grade ne permet pas de publier." }, 403, cors);
         const kinds = ["news", "comm-interne", "comm-presse", "compte-rendu"];
         const extByMime = { "application/pdf": "pdf", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
-        if (!kinds.includes(b.kind) || !okText(b.title) || !b.title.trim() || !extByMime[b.mime] || typeof b.data !== "string" || b.data.length > 5600000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b.data)) return json({ error: "Fichier ou données invalides (maximum 4 Mo)." }, 400, cors);
+        if (!kinds.includes(b.kind) || !okText(b.title) || !b.title.trim() || !extByMime[b.mime] || typeof b.data !== "string" || b.data.length > 14200000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b.data)) return json({ error: "Fichier ou données invalides (maximum 10 Mo)." }, 400, cors);
         const slug = (b.title.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "publication").slice(0, 60) + "-" + Date.now().toString(36);
         const path = "public/uploads/" + slug + "." + extByMime[b.mime];
         const upload = await gh(env, path, { method: "PUT", body: JSON.stringify({ message: "Publication MRD : " + b.title.slice(0, 100), content: b.data, branch: env.BRANCH }) });
