@@ -95,7 +95,6 @@
     if(space!=='events') { if(!detail.hidden) showPortal(); if(location.hash.startsWith('#event/')) history.replaceState(null,'','#home'); }
     document.querySelectorAll('[data-space]').forEach(b=>b.classList.toggle('active',b===button));
     document.getElementById('space-events').hidden=space!=='events'; document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
-    document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
   }));
   renderPublications();
   const theme = document.getElementById('theme-toggle');
