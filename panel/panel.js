@@ -461,7 +461,7 @@ const renderAccess = async () => {
             <b>${esc(u.username)}</b>
             <small>${esc(u.grade)} <span>·</span> ${esc(u.role)} <span>·</span> <i class="${u.active ? 'status-active' : 'status-disabled'}">${u.active ? 'Actif' : 'Désactivé'}</i></small>
             <div class="accreditation-tags">${accreditationTags(selected)}</div>
-            ${u.role === 'owner' ? '<small class="accreditation-note">Le CO dispose de toutes les accréditations.</small>' : `<details class="accreditation-editor"><summary>Gérer les accréditations</summary><div class="accreditation-options">${Object.keys(ACCREDITATION_META).map(name => `<label class="accreditation-option ${allowed.includes(name) ? '' : 'is-unavailable'}"><input type="checkbox" data-accreditation-user="${esc(u.id)}" value="${esc(name)}" ${selected.includes(name) ? 'checked' : ''} ${!allowed.includes(name) || !u.active ? 'disabled' : ''}><span>${esc(name)}</span>${!allowed.includes(name) ? '<small>Non accessible à ce grade</small>' : ''}</label>`).join('')}</div><button type="button" class="btn primary sm" data-action="save-accreditations" data-user-id="${esc(u.id)}" ${!u.active || Number(u.id) === Number(currentUser.id) ? 'disabled' : ''}>Enregistrer les accréditations</button></details>`}
+            \${u.role === 'owner' ? '<small class="accreditation-note">Le CO dispose de toutes les accréditations.</small>' : \`<div class="accreditation-manager"><button type="button" class="accreditation-add" data-action="toggle-accreditation-editor" data-user-id="\${esc(u.id)}" aria-expanded="false" aria-label="Ajouter ou modifier les accréditations de \${esc(u.username)}" title="Ajouter ou modifier les accréditations"><span aria-hidden="true">＋</span></button><div class="accreditation-manager-copy"><span>Accréditations</span><small>\${selected.length ? selected.length + ' attribuée' + (selected.length > 1 ? 's' : '') : 'Aucune accréditation'}</small></div><div class="accreditation-editor" data-accreditation-editor="\${esc(u.id)}" hidden><div class="accreditation-editor-head"><div><strong>Attribuer les accréditations</strong><small>Sélectionne une ou plusieurs accréditations.</small></div><button type="button" class="accreditation-close" data-action="toggle-accreditation-editor" data-user-id="\${esc(u.id)}" aria-label="Fermer">×</button></div><div class="accreditation-options">\${Object.keys(ACCREDITATION_META).map(name => \`<label class="accreditation-option \${allowed.includes(name) ? '' : 'is-unavailable'}"><input type="checkbox" data-accreditation-user="\${esc(u.id)}" value="\${esc(name)}" \${selected.includes(name) ? 'checked' : ''} \${!allowed.includes(name) || !u.active ? 'disabled' : ''}><span>\${esc(name)}</span>\${!allowed.includes(name) ? '<small>Non accessible à ce grade</small>' : ''}</label>\`).join('')}</div><div class="accreditation-editor-footer"><span>Les changements prennent effet après enregistrement.</span><button type="button" class="btn primary sm" data-action="save-accreditations" data-user-id="\${esc(u.id)}" \${!u.active || Number(u.id) === Number(currentUser.id) ? 'disabled' : ''}>Enregistrer</button></div></div></div>\`}
           </div>
           <button class="btn ${u.active ? 'danger' : ''} access-user-action" data-action="user-disable" data-user-id="${esc(u.id)}" ${Number(u.id) === Number(currentUser.id) || !u.active || u.role === 'owner' ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button>
         </article>`;
@@ -822,6 +822,18 @@ const actions = {
   'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
   logout: () => signOut(true),
   'user-disable': async el => { if (!(await confirmDialog('Ce compte ne pourra plus se connecter tant qu’il sera désactivé.', { title: 'Désactiver ce compte ?', confirmText: 'Désactiver', danger: true }))) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); },
+  'toggle-accreditation-editor': el => {
+    const id = el.dataset.userId;
+    const editor = $('[data-accreditation-editor]').find(item => item.dataset.accreditationEditor === id);
+    if (!editor) return;
+    const opening = editor.hidden;
+    $('.accreditation-editor').forEach(item => { item.hidden = true; });
+    $('[data-action="toggle-accreditation-editor"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+    if (opening) {
+      editor.hidden = false;
+      $('[data-action="toggle-accreditation-editor"]').filter(button => button.dataset.userId === id).forEach(button => button.setAttribute('aria-expanded', 'true'));
+    }
+  },
   'save-accreditations': async el => {
     if (currentUser?.grade !== 'Commanding Officer' || currentUser?.role !== 'owner') throw new Error('Seul le Commanding Officer peut attribuer des accréditations.');
     const id = el.dataset.userId;
