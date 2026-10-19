@@ -227,6 +227,14 @@ async function ensureAuthSchema(env) {
       card TEXT NOT NULL,
       updated_by TEXT NOT NULL,
       updated_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_username TEXT NOT NULL,
+      actor_grade TEXT NOT NULL,
+      action TEXT NOT NULL,
+      target TEXT NOT NULL,
+      created_at INTEGER NOT NULL
     )`
   ];
 
@@ -237,6 +245,10 @@ async function ensureAuthSchema(env) {
   if (!(columns.results || []).some(column => column.name === "avatar_data")) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar_data TEXT").run();
   }
+  // Migration douce vers les quatre grades officiels.
+  await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner'").run();
+  await env.DB.prepare("UPDATE users SET grade = 'Assistant Commanding Officer' WHERE role = 'admin'").run();
+  await env.DB.prepare("UPDATE users SET role = 'editor', grade = CASE WHEN grade = 'Expert Officer' THEN 'Expert Officer' ELSE 'Certified Officer' END WHERE role IN ('editor', 'viewer')").run();
 }
 
 async function getUser(req, env) {
@@ -269,9 +281,27 @@ async function getUser(req, env) {
 }
 
 const isOwner = u => u && u.role === "owner";
+const isAdmin = u => u && ["owner", "admin"].includes(u.role);
+const canPublish = u => u && ["owner", "admin", "editor"].includes(u.role);
 
-const canPublish = u =>
-  u && ["owner", "admin", "editor"].includes(u.role);
+async function audit(env, user, action, target) {
+  try {
+    await env.DB.prepare(
+      "INSERT INTO audit_logs (actor_username, actor_grade, action, target, created_at) VALUES (?, ?, ?, ?, ?)"
+    ).bind(
+      String(user?.username || "système").slice(0, 64),
+      String(user?.grade || "—").slice(0, 60),
+      String(action || "Action").slice(0, 80),
+      String(target || "—").slice(0, 160),
+      Date.now()
+    ).run();
+    await env.DB.prepare(
+      "DELETE FROM audit_logs WHERE id NOT IN (SELECT id FROM audit_logs ORDER BY id DESC LIMIT 1000)"
+    ).run();
+  } catch (error) {
+    console.error("MRD audit log failed", String(error?.message || error));
+  }
+}
 
 export default {
   async fetch(req, env) {
@@ -598,7 +628,12 @@ export default {
         const username = normUser(b.username);
         const password = String(b.password || "");
         const grade = String(b.grade || "").trim();
-        const role = String(b.role || "editor");
+        const roleByGrade = {
+          "Certified Officer": "editor",
+          "Expert Officer": "editor",
+          "Assistant Commanding Officer": "admin"
+        };
+        const role = roleByGrade[grade];
 
         if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
           return json(
@@ -622,12 +657,8 @@ export default {
           );
         }
 
-        if (!["admin", "editor", "viewer"].includes(role)) {
-          return json({ error: "Rôle non autorisé." }, 400, cors);
-        }
-
-        if (!grade || grade.length > 60) {
-          return json({ error: "Grade invalide." }, 400, cors);
+        if (!role || !["Certified Officer", "Expert Officer", "Assistant Commanding Officer"].includes(grade)) {
+          return json({ error: "Choisis un des grades autorisés. Le Commanding Officer est réservé au compte Owner." }, 400, cors);
         }
 
         const salt = randomToken(16);
@@ -647,6 +678,7 @@ export default {
             Date.now()
           ).run();
 
+          await audit(env, user, "Compte créé", username + " · " + grade);
           return json(
             { ok: true, id: r.meta?.last_row_id },
             201,
@@ -671,11 +703,13 @@ export default {
         }
 
         const id = Number(b.id);
-
         if (!Number.isInteger(id) || id === user.id) {
           return json({ error: "Compte invalide." }, 400, cors);
         }
-
+        const targetUser = await env.DB.prepare("SELECT username, role, active FROM users WHERE id = ?").bind(id).first();
+        if (!targetUser || targetUser.role === "owner" || !targetUser.active) {
+          return json({ error: "Compte introuvable ou déjà désactivé." }, 400, cors);
+        }
         await env.DB.prepare(
           "UPDATE users SET active = 0 WHERE id = ? AND role <> ?"
         ).bind(id, "owner").run();
@@ -684,7 +718,16 @@ export default {
           "DELETE FROM sessions WHERE user_id = ?"
         ).bind(id).run();
 
+        await audit(env, user, "Compte désactivé", targetUser.username);
         return json({ ok: true }, 200, cors);
+      }
+
+      if (route === "/logs/list") {
+        if (!isAdmin(user)) return json({ error: "Réservé aux administrateurs et au Commanding Officer." }, 403, cors);
+        const result = await env.DB.prepare(
+          "SELECT id, actor_username, actor_grade, action, target, created_at FROM audit_logs ORDER BY id DESC LIMIT 200"
+        ).all();
+        return json({ logs: result.results || [] }, 200, cors);
       }
 
       if (route === "/ping") {
@@ -712,6 +755,7 @@ export default {
         if (config.slug !== b.slug || !config.meta || typeof config.meta.title !== "string" || !config.meta.title.trim()) {
           return json({ error: "Le titre et l’adresse du brouillon sont obligatoires." }, 400, cors);
         }
+        const priorDraft = await env.DB.prepare("SELECT slug FROM event_drafts WHERE slug = ?").bind(b.slug).first();
         await env.DB.prepare(
           `INSERT INTO event_drafts (slug, config, card, updated_by, updated_at)
            VALUES (?, ?, ?, ?, ?)
@@ -721,6 +765,7 @@ export default {
              updated_by = excluded.updated_by,
              updated_at = excluded.updated_at`
         ).bind(b.slug, b.config, JSON.stringify(b.card), user.username, Date.now()).run();
+        await audit(env, user, priorDraft ? "Brouillon modifié" : "Brouillon créé", b.card.title || b.slug);
         return json({ ok: true, message: "Brouillon enregistré sans publication." }, 200, cors);
       }
 
@@ -778,6 +823,9 @@ export default {
           );
         }
 
+        const priorCardFile = await read(env, "public/events-data.js");
+        const priorCards = priorCardFile ? parse(priorCardFile.text) : [];
+        const priorEvent = priorCards.find(x => x.href === b.card.href);
         contents[b.slug] = extracted;
 
         operation = "écriture du contenu de l’événement (public/events-content.js)";
@@ -812,6 +860,7 @@ export default {
           `Portail : ${b.slug} (${user.username})`
         );
 
+        await audit(env, user, priorEvent ? "Événement modifié et publié" : "Événement créé et publié", b.card.title || b.slug);
         return json(
           {
             ok: true,
@@ -837,6 +886,7 @@ export default {
         let list = []; if (listFile) { const start=listFile.text.indexOf("["); const end=listFile.text.lastIndexOf("]"); if(start>=0&&end>start) list=JSON.parse(listFile.text.slice(start,end+1)); }
         list.unshift({ id: slug, kind: b.kind, title: b.title.trim().slice(0,120), summary: String(b.summary||"").slice(0,500), date: String(b.date||"").slice(0,20), mime: b.mime, file: path });
         await write(env, "public/publications-data.js", "window.MRD_PUBLICATIONS = " + JSON.stringify(list, null, 2) + ";\\n", "Publication MRD " + slug + " (" + user.username + ")");
+        await audit(env, user, "Publication créée", b.title.trim().slice(0, 120) + " · " + b.kind);
         return json({ ok: true, file: path }, 200, cors);
       }
 
@@ -860,13 +910,26 @@ export default {
           return json({ error: "Données refusées." }, 400, cors);
         }
 
+        const beforeFile = await read(env, "public/events-data.js");
+        const beforeList = beforeFile ? parse(beforeFile.text) : [];
+        const beforeMap = new Map(beforeList.map(item => [item.href, item]));
+        const afterMap = new Map(b.list.map(item => [item.href, item]));
+        const auditEntries = [];
+        for (const [href, item] of afterMap) {
+          const old = beforeMap.get(href);
+          if (!old) auditEntries.push(["Événement ajouté au portail", item.title || href]);
+          else if (JSON.stringify(old) !== JSON.stringify(item)) auditEntries.push(["Événement modifié dans le portail", item.title || href]);
+        }
+        for (const [href, item] of beforeMap) {
+          if (!afterMap.has(href)) auditEntries.push(["Événement retiré du portail", item.title || href]);
+        }
         await write(
           env,
           "public/events-data.js",
           serialize(b.list),
           `Portail mis à jour (${user.username})`
         );
-
+        for (const [action, target] of auditEntries) await audit(env, user, action, target);
         return json({ ok: true }, 200, cors);
       }
 
