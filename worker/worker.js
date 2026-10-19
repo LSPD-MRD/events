@@ -182,12 +182,20 @@ async function passwordHash(password, salt) {
 
 const normUser = s => String(s || "").trim().toLowerCase();
 
+const ACCREDITATIONS = ["Media Relations", "Interagency", "Public Information", "Community Affairs"];
+const gradeAccreditations = grade => ({
+  "Commanding Officer": ACCREDITATIONS,
+  "Assistant Commanding Officer": ACCREDITATIONS,
+  "Expert Officer": ["Media Relations", "Community Affairs", "Interagency"],
+  "Certified Officer": ["Media Relations", "Community Affairs"]
+}[grade] || []);
+const parseAccreditations = value => {
+  try { const parsed = JSON.parse(value || "[]"); return Array.isArray(parsed) ? ACCREDITATIONS.filter(a => parsed.includes(a)) : []; }
+  catch { return []; }
+};
 const publicUser = u => ({
-  id: u.id,
-  username: u.username,
-  grade: u.grade,
-  role: u.role,
-  active: !!u.active,
+  id: u.id, username: u.username, grade: u.grade, role: u.role, active: !!u.active,
+  accreditations: u.role === "owner" ? [...ACCREDITATIONS] : parseAccreditations(u.accreditations),
   avatarData: u.avatar_data || null
 });
 
@@ -207,7 +215,8 @@ async function ensureAuthSchema(env) {
       role TEXT NOT NULL,
       active INTEGER NOT NULL DEFAULT 1,
       created_at INTEGER NOT NULL,
-      avatar_data TEXT
+      avatar_data TEXT,
+      accreditations TEXT NOT NULL DEFAULT '[]'
     )`,
     `CREATE TABLE IF NOT EXISTS sessions (
       token_hash TEXT PRIMARY KEY,
@@ -245,6 +254,9 @@ async function ensureAuthSchema(env) {
   if (!(columns.results || []).some(column => column.name === "avatar_data")) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar_data TEXT").run();
   }
+  if (!(columns.results || []).some(column => column.name === "accreditations")) {
+    await env.DB.prepare("ALTER TABLE users ADD COLUMN accreditations TEXT NOT NULL DEFAULT '[]'").run();
+  }
   // Migration douce vers les quatre grades officiels.
   await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner' AND grade <> 'Commanding Officer'").run();
   await env.DB.prepare("UPDATE users SET grade = 'Assistant Commanding Officer' WHERE role = 'admin' AND grade <> 'Assistant Commanding Officer'").run();
@@ -260,7 +272,7 @@ async function getUser(req, env) {
   const th = await hash(token);
 
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.grade, u.role, u.active, u.avatar_data,
+    `SELECT u.id, u.username, u.grade, u.role, u.active, u.avatar_data, u.accreditations,
             s.expires_at
      FROM sessions s
      JOIN users u ON u.id = s.user_id
@@ -613,11 +625,28 @@ export default {
         }
 
         const result = await env.DB.prepare(
-          `SELECT id, username, grade, role, active, created_at
+          `SELECT id, username, grade, role, active, created_at, accreditations
            FROM users ORDER BY created_at DESC`
         ).all();
+        return json({ users: (result.results || []).map(u => ({
+          ...u, active: !!u.active,
+          accreditations: u.role === "owner" ? [...ACCREDITATIONS] : parseAccreditations(u.accreditations)
+        })) }, 200, cors);
+      }
 
-        return json({ users: result.results || [] }, 200, cors);
+      if (route === "/users/accreditations") {
+        if (!isOwner(user) || user.grade !== "Commanding Officer") return json({ error: "L’attribution des accréditations est réservée au Commanding Officer." }, 403, cors);
+        const id = Number(b.id), requested = b.accreditations;
+        if (!Number.isInteger(id) || id === user.id || !Array.isArray(requested) || requested.some(a => typeof a !== "string" || !ACCREDITATIONS.includes(a))) return json({ error: "Données d’accréditation invalides." }, 400, cors);
+        const target = await env.DB.prepare("SELECT id, username, grade, role, active FROM users WHERE id = ?").bind(id).first();
+        if (!target || !target.active || target.role === "owner") return json({ error: "Compte cible introuvable ou non modifiable." }, 404, cors);
+        const allowed = gradeAccreditations(target.grade), unique = [...new Set(requested)];
+        const forbidden = unique.filter(a => !allowed.includes(a));
+        if (forbidden.length) return json({ error: "Accréditation non accessible pour le grade " + target.grade + " : " + forbidden.join(", ") }, 400, cors);
+        await env.DB.prepare("UPDATE users SET accreditations = ? WHERE id = ?").bind(JSON.stringify(unique), id).run();
+        await audit(env, user, "Accréditations modifiées", target.username + " · " + (unique.join(", ") || "aucune"));
+        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations FROM users WHERE id = ?").bind(id).first();
+        return json({ ok: true, user: publicUser(updated) }, 200, cors);
       }
 
       if (route === "/users/create") {
