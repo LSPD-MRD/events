@@ -1,6 +1,22 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar' };
 const PAGE_LABELS = { edit: 'Événements', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
+const ACCREDITATION_META = {
+  'Media Relations': { className: 'accred-media' },
+  'Interagency': { className: 'accred-interagency' },
+  'Public Information': { className: 'accred-public-info' },
+  'Community Affairs': { className: 'accred-community' }
+};
+const ACCREDITATIONS_BY_GRADE = {
+  'Commanding Officer': Object.keys(ACCREDITATION_META),
+  'Assistant Commanding Officer': Object.keys(ACCREDITATION_META),
+  'Expert Officer': ['Media Relations', 'Community Affairs', 'Interagency'],
+  'Certified Officer': ['Media Relations', 'Community Affairs']
+};
+const accreditationTags = (items = []) => items.map(name => {
+  const meta = ACCREDITATION_META[name];
+  return meta ? '<span class="accreditation-tag ' + meta.className + '">' + esc(name) + '</span>' : '';
+}).join('');
 const PORTAL_URL = '../';
 let currentUser = null;
 
@@ -420,7 +436,20 @@ const renderAccess = async () => {
       const users = data.users || [];
       const count = $('#access-user-count');
       if (count) count.textContent = String(users.length).padStart(2, '0');
-      $('#users-list').innerHTML = users.map(u => `<div class="user-row access-user-row"><div class="access-user-avatar small">${esc((u.username || 'M').slice(0,1).toUpperCase())}</div><div class="access-user-details"><b>${esc(u.username)}</b><small>${esc(u.grade)} <span>·</span> ${esc(u.role)} <span>·</span> <i class="${u.active ? 'status-active' : 'status-disabled'}">${u.active ? 'Actif' : 'Désactivé'}</i></small></div><button class="btn ${u.active ? 'danger' : ''} access-user-action" data-action="user-disable" data-user-id="${esc(u.id)}" ${u.id === currentUser.id || !u.active ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button></div>`).join('') || '<p class="empty">Aucun compte n’a été créé.</p>';
+      $('#users-list').innerHTML = users.map(u => {
+        const allowed = ACCREDITATIONS_BY_GRADE[u.grade] || [];
+        const selected = Array.isArray(u.accreditations) ? u.accreditations : [];
+        return `<article class="user-row access-user-row access-user-card">
+          <div class="access-user-avatar small">${esc((u.username || 'M').slice(0,1).toUpperCase())}</div>
+          <div class="access-user-details">
+            <b>${esc(u.username)}</b>
+            <small>${esc(u.grade)} <span>·</span> ${esc(u.role)} <span>·</span> <i class="${u.active ? 'status-active' : 'status-disabled'}">${u.active ? 'Actif' : 'Désactivé'}</i></small>
+            <div class="accreditation-tags">${accreditationTags(selected)}</div>
+            ${u.role === 'owner' ? '<small class="accreditation-note">Le CO dispose de toutes les accréditations.</small>' : `<details class="accreditation-editor"><summary>Gérer les accréditations</summary><div class="accreditation-options">${Object.keys(ACCREDITATION_META).map(name => `<label class="accreditation-option ${allowed.includes(name) ? '' : 'is-unavailable'}"><input type="checkbox" data-accreditation-user="${esc(u.id)}" value="${esc(name)}" ${selected.includes(name) ? 'checked' : ''} ${!allowed.includes(name) || !u.active ? 'disabled' : ''}><span>${esc(name)}</span>${!allowed.includes(name) ? '<small>Non accessible à ce grade</small>' : ''}</label>`).join('')}</div><button type="button" class="btn primary sm" data-action="save-accreditations" data-user-id="${esc(u.id)}" ${!u.active || Number(u.id) === Number(currentUser.id) ? 'disabled' : ''}>Enregistrer les accréditations</button></details>`}
+          </div>
+          <button class="btn ${u.active ? 'danger' : ''} access-user-action" data-action="user-disable" data-user-id="${esc(u.id)}" ${Number(u.id) === Number(currentUser.id) || !u.active || u.role === 'owner' ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button>
+        </article>`;
+      }).join('') || '<p class="empty">Aucun compte n’a été créé.</p>';
     } catch (e) { $('#users-list').textContent = e.message; }
   }
 };
@@ -440,7 +469,7 @@ const renderProfile = () => {
     <section class="card">
       <header class="card-head"><h2>Photo de profil</h2><p>Cette image est enregistrée sur ton compte MRD et reste disponible sur tes autres appareils.</p></header>
       <div class="card-body">
-        <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(currentUser?.username || 'Compte MRD')}</strong><small>${esc(currentUser?.grade || '')} · ${esc(currentUser?.role || '')}</small></div></div>
+        <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(currentUser?.username || 'Compte MRD')}</strong><small>${esc(currentUser?.grade || '')} · ${esc(currentUser?.role || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div></div></div>
         <div class="actions"><button class="btn" type="button" data-action="choose-avatar">Choisir une image</button><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
         <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1 Mo.</small>
       </div>
@@ -811,7 +840,16 @@ const actions = {
   },
   'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
   logout: () => signOut(true),
-  'user-disable': async el => { if (!(await confirmDialog('Ce compte ne pourra plus se connecter tant qu’il sera désactivé.', { title: 'Désactiver ce compte ?', confirmText: 'Désactiver', danger: true }))) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); }
+  'user-disable': async el => { if (!(await confirmDialog('Ce compte ne pourra plus se connecter tant qu’il sera désactivé.', { title: 'Désactiver ce compte ?', confirmText: 'Désactiver', danger: true }))) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); },
+  'save-accreditations': async el => {
+    if (currentUser?.grade !== 'Commanding Officer' || currentUser?.role !== 'owner') throw new Error('Seul le Commanding Officer peut attribuer des accréditations.');
+    const id = el.dataset.userId;
+    const inputs = $('[data-accreditation-user]').filter(input => input.dataset.accreditationUser === id);
+    const accreditations = inputs.filter(input => input.checked).map(input => input.value);
+    await api.post('/users/accreditations', { id, accreditations });
+    await renderAccess();
+    toast('Accréditations mises à jour.', 'ok');
+  }
 };
 
 async function signIn(username, password) {
