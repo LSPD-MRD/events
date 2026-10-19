@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
   grade TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('owner','admin','editor','viewer')),
+  role TEXT NOT NULL CHECK (role IN ('cto','eo','aco','co')),
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)),
   created_at INTEGER NOT NULL,
   avatar_data TEXT
@@ -26,4 +26,19 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   username TEXT PRIMARY KEY,
   attempts INTEGER NOT NULL DEFAULT 0,
   window_until INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor_id INTEGER,
+  actor_username TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON audit_logs(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS system_migrations (
+  id TEXT PRIMARY KEY,
+  applied_at INTEGER NOT NULL
 );
