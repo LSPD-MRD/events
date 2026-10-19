@@ -590,7 +590,9 @@ const setPreview = (show, remember = true) => {
   }
 };
 
-const canViewLogs = user => ['owner', 'admin'].includes(user?.role);
+const canViewLogs = user =>
+  ['owner', 'admin'].includes(user?.role) ||
+  ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
 
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -694,6 +696,9 @@ const actions = {
   tab: el => setTab(el.dataset.tab),
   'toggle-pages': () => {
     const menu = $('#pages-menu'), next = menu.hidden;
+    // La restauration de session est asynchrone : recalculer les droits à l'ouverture
+    // évite que l'entrée Logs reste masquée si le menu a été ouvert trop tôt.
+    if (currentUser) applyPermissions();
     closeMenus(); menu.hidden = !next;
     $('#pages-trigger').setAttribute('aria-expanded', String(next));
   },
