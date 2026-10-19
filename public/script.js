@@ -3,7 +3,7 @@
   const root = document.getElementById('events-root');
   const detail = document.getElementById('event-detail');
   const content = document.getElementById('event-content');
-  let filter = 'all';
+  let filter = localStorage.getItem('mrd-event-filter') || 'all';
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function render() {
     root.innerHTML = '';
@@ -81,12 +81,12 @@
   backButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6M9 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Retour aux événements</span>';
   backButton.setAttribute('aria-label', 'Retour aux événements');
   backButton.addEventListener('click', closeEvent);
-  document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
-  const kindLabels = { news:'ACTUALITÉ', 'compte-rendu':'COMMUNICATION INTERNE', 'comm-interne':'COMMUNICATION INTERNE', 'comm-presse':'COMMUNICATION INTERNE' };
+  document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; localStorage.setItem('mrd-event-filter',filter); document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
+  const kindLabels = { news:'MEDIA RELATIONS', 'compte-rendu':'INTERAGENCY', 'comm-interne':'INTERAGENCY', 'comm-presse':'PUBLIC INFORMATION · PIO' };
   function renderPublications() {
     const items = Array.isArray(window.MRD_PUBLICATIONS) ? window.MRD_PUBLICATIONS : [];
     const card = p => '<article class="publication-card"><div class="publication-label">'+esc(kindLabels[p.kind]||'PUBLICATION MRD')+'</div><h3>'+esc(p.title)+'</h3>'+(p.date?'<div class="publication-date">'+esc(p.date)+'</div>':'')+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+'<button type="button" class="publication-thumb publication-preview-trigger" data-preview="'+esc(p.id)+'" aria-label="Agrandir l’aperçu de '+esc(p.title)+'">'+(p.mime==='application/pdf'?'<span class="publication-pdf-thumb"><b>PDF</b><small>Cliquer pour agrandir</small></span>':'<img src="'+encodeURI(p.file)+'" alt="Aperçu de '+esc(p.title)+'" loading="lazy">')+'</button><button type="button" class="publication-preview-trigger publication-preview-text" data-preview="'+esc(p.id)+'">Voir en grand ↗</button><div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a></div></article>';
-    const news=items.filter(p=>p.kind==='news'), docs=items.filter(p=>p.kind!=='news');
+    const news=items.filter(p=>p.kind==='news'||p.kind==='comm-presse'), docs=items.filter(p=>p.kind!=='news'&&p.kind!=='comm-presse');
     document.getElementById('news-list').innerHTML=news.map(card).join('')||'<div class="empty-state">Aucune actualité publiée pour le moment.</div>';
     document.getElementById('documents-list').innerHTML=docs.map(card).join('')||'<div class="empty-state">Aucun document officiel publié pour le moment.</div>';
     const modal = document.getElementById('publication-preview-modal');
@@ -118,8 +118,11 @@
     const space=button.dataset.space; document.querySelectorAll('[data-space]').forEach(b=>b.classList.toggle('active',b===button));
     document.getElementById('space-events').hidden=space!=='events'; document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
     document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
-    if(space!=='events' && location.hash.startsWith('#event/')) history.replaceState(null,'','#home');
+    localStorage.setItem('mrd-portal-space',space); if(space!=='events' && location.hash.startsWith('#event/')) history.replaceState(null,'','#home');
   }));
+  const savedSpace = ['events','news','documents'].includes(localStorage.getItem('mrd-portal-space')) ? localStorage.getItem('mrd-portal-space') : 'events';
+  document.querySelectorAll('[data-space]').forEach(button=>{const active=button.dataset.space===savedSpace;button.classList.toggle('active',active);document.getElementById('space-'+(button.dataset.space==='events'?'events':button.dataset.space==='news'?'news':'documents')).hidden=!active;});
+  document.querySelectorAll('[data-filter]').forEach(button=>button.classList.toggle('active',button.dataset.filter===filter));
   renderPublications();
   const theme = document.getElementById('theme-toggle');
   function setTheme(v) { document.documentElement.dataset.theme=v; theme.textContent=v==='light'?'☀':'☾'; localStorage.setItem('mrd-theme',v); }
