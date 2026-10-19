@@ -1,6 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar' };
-const PAGE_LABELS = { edit: 'Événements', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
+const PAGE_LABELS = { edit: 'Événements', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', profile: 'Mon profil' };
 const ACCREDITATION_META = {
   'Media Relations': { className: 'accred-media' },
   'Interagency': { className: 'accred-interagency' },
@@ -17,11 +17,27 @@ const accreditationTags = (items = []) => (Array.isArray(items) ? items : []).ma
   const meta = ACCREDITATION_META[name];
   return meta ? '<span class="accreditation-tag ' + meta.className + '">' + esc(name) + '</span>' : '';
 }).join('');
-const PORTAL_URL = '../';
 let currentUser = null;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const isSessionExpiredError = message => /session absente ou expirée|session invalide|reconnecte-toi/i.test(String(message || ''));
+const setLoginFieldsVisible = visible => {
+  const form = $('#login-form');
+  if (!form) return;
+  $$('.field, #login-submit', form).forEach(control => { control.hidden = !visible; });
+};
+const clearLocalSession = (message = '') => {
+  localStorage.removeItem(KEY.token);
+  currentUser = null;
+  setLoginFieldsVisible(true);
+  const password = $('#login-pass');
+  if (password) password.value = '';
+  const screen = $('#login-screen');
+  if (screen) screen.hidden = false;
+  const error = $('#login-error');
+  if (error) error.textContent = message;
+};
 const get = (o, p) => p.split('.').reduce((a, k) => a[k], o);
 const set = (o, p, v) => { const k = p.split('.'), l = k.pop(); k.reduce((a, x) => a[x], o)[l] = v; };
 const move = (a, i, d) => { const j = i + d; if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; };
@@ -206,8 +222,8 @@ const api = {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      if (response.status === 401 && /session absente ou expirée|session invalide|reconnecte-toi/i.test(data.error || '')) {
-        signOut(false);
+      if (response.status === 401 && isSessionExpiredError(data.error)) {
+        clearLocalSession('Ta session a expiré. Reconnecte-toi.');
       }
 
       throw new Error(
@@ -574,7 +590,7 @@ const setPreview = (show, remember = true) => {
   }
 };
 
-const canViewLogs = user => ['owner', 'admin'].includes(user?.role) || ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
+const canViewLogs = user => ['owner', 'admin'].includes(user?.role);
 
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -593,7 +609,6 @@ const setTab = async name => {
   }
   if (name === 'publications') await renderPublications();
   if (name === 'logs') await renderLogs();
-  if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
   }
@@ -636,42 +651,6 @@ const publish = async () => {
     button.disabled = false;
     button.textContent = 'Enregistrer';
   }
-};
-
-const WIP = {
-  newsroom: { icon: '✎', title: 'Rédaction & actualités', subtitle: 'Un espace éditorial pour préparer, relire et publier les communications de la MRD.', modules: ['Articles et communiqués', 'Brouillons & relecture', 'Calendrier éditorial'], note: 'La rédaction et la publication d’articles ne sont pas encore activées.' },
-  media: { icon: '▧', title: 'Bibliothèque média', subtitle: 'Centraliser les visuels, captures, logos et ressources de communication.', modules: ['Galerie de visuels', 'Kit de marque MRD', 'Pièces jointes & crédits'], note: 'L’import et la gestion des fichiers seront ajoutés dans une prochaine version.' },
-
-  archive: { icon: '◷', title: 'Archives & rapports', subtitle: 'Retrouver les anciennes publications et conserver une trace des opérations.', modules: ['Historique des publications', 'Rapports d’événements', 'Recherche & filtres'], note: 'Les archives centralisées ne sont pas encore connectées.' }
-};
-
-const renderWip = name => {
-  const w = WIP[name];
-  if (!w) return;
-  const root = $('#' + name);
-  root.innerHTML = `<section class="wip-hero"><div class="wip-mark">${w.icon}</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION <span>· EN DÉVELOPPEMENT</span></div><h1>${w.title}</h1><p>${w.subtitle}</p></div><span class="wip-badge">WIP</span></section><section class="wip-grid">${w.modules.map((m, i) => `<article class="wip-module"><span class="module-index">0${i + 1}</span><h3>${m}</h3><p>Module prévu dans le futur espace MRD.</p><span class="module-state">Bientôt disponible</span></article>`).join('')}</section><section class="wip-note"><span class="wip-note-icon">⌁</span><div><strong>Cette section est en préparation</strong><p>${w.note} Les outils déjà disponibles restent accessibles dans Éditeur, Portail et Accès.</p></div></section>`;
-};
-
-
-const renderTeam = async () => {
-  const root = $('#team');
-  if (currentUser?.role !== 'owner') {
-    root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La liste des comptes et leur création sont réservées au Owner.</p></div><span class="wip-badge">OWNER</span></section>`;
-    return;
-  }
-  root.innerHTML = `<section class="page-intro"><div><div class="eyebrow">SÉCURITÉ · OWNER</div><h1>Comptes & grades</h1><p>Créer des identifiants individuels et attribuer le niveau d’accès adapté.</p></div></section>
-  <section class="card"><header class="card-head"><h2>Créer un compte</h2><p>Le mot de passe initial est transmis à la personne en privé.</p></header><div class="card-body">
-  <form id="user-create-form" class="user-create">
-    <div class="field"><label>Identifiant</label><input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off"></div>
-    <div class="field"><label>Grade affiché</label><input name="grade" required maxlength="60" placeholder="Ex. Media Officer"></div>
-    <div class="field"><label>Rôle système</label><select name="role"><option value="viewer">Lecteur — consultation</option><option value="editor" selected>Éditeur — événements</option><option value="admin">Administrateur — gestion opérationnelle</option></select></div>
-    <div class="field"><label>Mot de passe temporaire</label><input name="password" required minlength="12" type="password" autocomplete="new-password"></div>
-    <div class="actions"><button class="btn primary" type="submit">Créer le compte</button></div>
-  </form></div></section><section class="card"><header class="card-head"><h2>Comptes existants</h2><p>Cette liste est visible uniquement par le Owner.</p></header><div class="card-body"><div id="users-list" class="user-admin">Chargement…</div></div></section>`;
-  try {
-    const data = await api.post('/users/list', {});
-    $('#users-list').innerHTML = data.users.map(u => `<div class="user-row"><div><b>${esc(u.username)}</b><small>${esc(u.grade)} · ${esc(u.role)} · ${u.active ? 'Actif' : 'Désactivé'}</small></div><button class="btn danger" data-action="user-disable" data-user-id="${esc(u.id)}" ${u.id === currentUser.id ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button></div>`).join('') || '<p>Aucun compte.</p>';
-  } catch (e) { $('#users-list').textContent = e.message; }
 };
 
 const applyTheme = theme => {
@@ -866,12 +845,15 @@ async function signIn(username, password) {
   if (!r.ok) throw new Error(data.error || ('Connexion refusée (' + r.status + ')'));
   localStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
-  $('#login-screen').hidden = true;
-  $('#profile-menu-name').textContent = currentUser.username;
-  $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
-  $('#login-error').textContent = '';
-  applyProfileAvatar();
-  applyPermissions();
+  setLoginFieldsVisible(true);
+  try {
+    applyPermissions();
+    $('#login-screen').hidden = true;
+    $('#login-error').textContent = '';
+  } catch (error) {
+    clearLocalSession(error.message || 'Impossible d’initialiser le panel.');
+    throw error;
+  }
 }
 async function signOut(show = true) {
   try { if (localStorage.getItem(KEY.token)) await api.post('/auth/logout', {}); } catch {}
@@ -884,15 +866,15 @@ async function signOut(show = true) {
 function applyPermissions() {
   const role = currentUser?.role || 'viewer';
   const canEdit = ['owner','admin','editor'].includes(role);
-  $('#save-actions').hidden = !canEdit;
-  const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
-  $('#profile-menu-name').textContent = currentUser?.username || 'Mon compte';
-  $('#profile-menu-grade').textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
+  const saveActions = $('#save-actions');
+  if (saveActions) saveActions.hidden = !canEdit;
+  const profileName = $('#profile-menu-name');
+  if (profileName) profileName.textContent = currentUser?.username || 'Mon compte';
+  const profileGrade = $('#profile-menu-grade');
+  if (profileGrade) profileGrade.textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
   applyProfileAvatar();
-  $('[data-action="tab"]').forEach(b => {
+  $$('[data-action="tab"]').forEach(b => {
     if (b.dataset.tab === 'logs') b.hidden = !canViewLogs(currentUser);
-    if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
-    if (['newsroom','media','archive'].includes(b.dataset.tab)) b.hidden = true;
     if (b.dataset.tab === 'access') b.hidden = false;
   });
   if (!canEdit) {
@@ -903,21 +885,28 @@ function applyPermissions() {
   }
 }
 async function restoreSession() {
-  const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
   const token = localStorage.getItem(KEY.token);
   if (!token) return;
+
+  setLoginFieldsVisible(false);
+  $('#login-error').textContent = 'Vérification de la session précédente…';
+
   try {
     const data = await api.post('/auth/me', {});
-    currentUser = data.user; $('#login-screen').hidden = true;
-    $('#profile-menu-name').textContent = currentUser.username;
-    $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
-    applyProfileAvatar();
+    if (!data.user) throw new Error('Le serveur n’a pas renvoyé les informations du compte.');
+    currentUser = data.user;
     applyPermissions();
+    setLoginFieldsVisible(true);
+    $('#login-screen').hidden = true;
+    $('#login-error').textContent = '';
   } catch (error) {
-    // Ne pas effacer une session persistante sur une erreur réseau ou une réponse
-    // temporaire du Worker. Seule une session explicitement expirée est supprimée.
-    if (/401|session absente ou expirée|session invalide|reconnecte-toi/i.test(error.message || '')) {
-      localStorage.removeItem(KEY.token);
+    setLoginFieldsVisible(true);
+    $('#login-screen').hidden = false;
+    if (isSessionExpiredError(error.message)) {
+      clearLocalSession('Ta session a expiré. Reconnecte-toi.');
+    } else {
+      // Une erreur réseau ou serveur temporaire ne doit pas supprimer le jeton.
+      $('#login-error').textContent = 'Impossible de vérifier la session auprès du serveur. La session locale est conservée ; vérifie la connexion puis recharge le panel.';
     }
   }
 }
@@ -1022,6 +1011,8 @@ document.addEventListener('submit', async e => {
   } catch (err) { toast(err.message, 'err'); }
 });
 
+const activePageLabel = $('#active-page-label');
+if (activePageLabel) activePageLabel.textContent = PAGE_LABELS.edit;
 applyTheme(localStorage.getItem(KEY.theme) || 'dark');
 try { load(JSON.parse(localStorage.getItem(KEY.draft)) || {}); } catch { load({}); }
 $('.layout').dataset.activeTab = 'edit';
