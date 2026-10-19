@@ -869,3 +869,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
 /* Respecte l’attribut hidden sur les entrées de navigation */
 .nav-item[hidden], .pages-menu [hidden] { display: none !important; }
+
+
+/* Évite le flash de l’écran de connexion pendant la restauration de session. */
+body.session-checking .topbar,
+body.session-checking .layout,
+body.session-checking #login-screen,
+body.session-checking .toasts { visibility: hidden; }
