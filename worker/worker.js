@@ -618,6 +618,7 @@ export default {
         await env.DB.prepare(
           "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?"
         ).bind(password_hash, salt, user.id).run();
+        await writeAudit(env, user, "password_changed", user.username);
         return json({ ok: true, message: "Mot de passe modifié." }, 200, cors);
       }
 
@@ -854,20 +855,22 @@ export default {
         const previousList = currentFile ? parse(currentFile.text) : [];
         const previousByHref = new Map(previousList.map(item => [item.href, item]));
         const nextByHref = new Map(b.list.map(item => [item.href, item]));
+        const auditChanges = [];
         for (const item of b.list) {
           const previous = previousByHref.get(item.href);
-          if (!previous) await writeAudit(env, user, "event_added_to_portal", item.title || item.href);
+          if (!previous) auditChanges.push(["event_added_to_portal", item.title || item.href]);
           else if (["status", "icon", "title", "desc", "date"].some(key => (previous[key] || "") !== (item[key] || ""))) {
-            await writeAudit(env, user, "event_card_updated", item.title || item.href);
+            auditChanges.push(["event_card_updated", item.title || item.href]);
           }
         }
         for (const item of previousList) {
-          if (!nextByHref.has(item.href)) await writeAudit(env, user, "event_removed_from_portal", item.title || item.href);
+          if (!nextByHref.has(item.href)) auditChanges.push(["event_removed_from_portal", item.title || item.href]);
         }
         if (previousList.map(item => item.href).join("|") !== b.list.map(item => item.href).join("|")) {
-          await writeAudit(env, user, "portal_order_updated", "Ordre des cartes");
+          auditChanges.push(["portal_order_updated", "Ordre des cartes"]);
         }
         await write(env, "public/events-data.js", serialize(b.list), "Portail mis à jour (" + user.username + ")");
+        for (const [action, target] of auditChanges) await writeAudit(env, user, action, target);
         return json({ ok: true }, 200, cors);
       }
 
