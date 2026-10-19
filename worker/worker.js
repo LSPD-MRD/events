@@ -237,6 +237,10 @@ async function ensureAuthSchema(env) {
   if (!(columns.results || []).some(column => column.name === "avatar_data")) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar_data TEXT").run();
   }
+  // Migration douce vers les quatre grades officiels.
+  await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner'").run();
+  await env.DB.prepare("UPDATE users SET grade = 'Assistant Commanding Officer' WHERE role = 'admin'").run();
+  await env.DB.prepare("UPDATE users SET role = 'editor', grade = CASE WHEN grade = 'Expert Officer' THEN 'Expert Officer' ELSE 'Certified Officer' END WHERE role IN ('editor', 'viewer')").run();
 }
 
 async function getUser(req, env) {
