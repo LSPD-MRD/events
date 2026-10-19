@@ -635,9 +635,9 @@ export default {
 
       if (route === "/users/list") {
         if (!isAdmin(user)) return json({ error: "Réservé aux grades ACO et CO." }, 403, cors);
-        const result = await env.DB.prepare(
-          "SELECT id, username, grade, role, active, created_at FROM users ORDER BY created_at DESC"
-        ).all();
+        const result = isOwner(user)
+          ? await env.DB.prepare("SELECT id, username, grade, role, active, created_at FROM users ORDER BY created_at DESC").all()
+          : await env.DB.prepare("SELECT id, username, grade, role, active, created_at FROM users WHERE role IN ('cto', 'eo') ORDER BY created_at DESC").all();
         return json({ users: result.results || [] }, 200, cors);
       }
 
