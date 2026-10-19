@@ -85,10 +85,34 @@
   const kindLabels = { news:'ACTUALITÉ', 'compte-rendu':'COMMUNICATION INTERNE', 'comm-interne':'COMMUNICATION INTERNE', 'comm-presse':'COMMUNICATION INTERNE' };
   function renderPublications() {
     const items = Array.isArray(window.MRD_PUBLICATIONS) ? window.MRD_PUBLICATIONS : [];
-    const card = p => '<article class="publication-card"><div class="publication-label">'+esc(kindLabels[p.kind]||'PUBLICATION MRD')+'</div><h3>'+esc(p.title)+'</h3>'+(p.date?'<div class="publication-date">'+esc(p.date)+'</div>':'')+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+(p.mime==='application/pdf'?'<iframe loading="lazy" title="'+esc(p.title)+'" src="'+encodeURI(p.file)+'#toolbar=0"></iframe>':'<a class="publication-image-link" href="'+encodeURI(p.file)+'" target="_blank" rel="noopener"><img loading="lazy" src="'+encodeURI(p.file)+'" alt="'+esc(p.title)+'"></a>')+'<div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a><a href="'+encodeURI(p.file)+'" download>Télécharger ↓</a></div></article>';
+    const card = p => '<article class="publication-card"><div class="publication-label">'+esc(kindLabels[p.kind]||'PUBLICATION MRD')+'</div><h3>'+esc(p.title)+'</h3>'+(p.date?'<div class="publication-date">'+esc(p.date)+'</div>':'')+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+'<button type="button" class="publication-preview-trigger" data-preview="'+esc(p.id)+'">'+(p.mime==='application/pdf'?'Voir l’aperçu PDF':'Voir l’aperçu')+' ↗</button><div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a></div></article>';
     const news=items.filter(p=>p.kind==='news'), docs=items.filter(p=>p.kind!=='news');
     document.getElementById('news-list').innerHTML=news.map(card).join('')||'<div class="empty-state">Aucune actualité publiée pour le moment.</div>';
     document.getElementById('documents-list').innerHTML=docs.map(card).join('')||'<div class="empty-state">Aucun document officiel publié pour le moment.</div>';
+    const modal = document.getElementById('publication-preview-modal');
+    if (modal) modal.remove();
+    const shell = document.createElement('div');
+    shell.id = 'publication-preview-modal';
+    shell.className = 'publication-modal';
+    shell.hidden = true;
+    shell.setAttribute('role','dialog');
+    shell.setAttribute('aria-modal','true');
+    shell.setAttribute('aria-label','Aperçu de la publication');
+    shell.innerHTML = '<div class="publication-modal-backdrop" data-preview-close></div><section class="publication-modal-panel"><header class="publication-modal-head"><div><span class="eyebrow">APERÇU DE LA PUBLICATION</span><h2 id="publication-modal-title"></h2></div><button type="button" class="publication-modal-close" aria-label="Fermer l’aperçu" data-preview-close>×</button></header><div class="publication-modal-content" id="publication-modal-content"></div></section>';
+    document.body.appendChild(shell);
+    const closePreview = () => { shell.hidden = true; document.body.classList.remove('publication-modal-open'); document.getElementById('publication-modal-content').innerHTML=''; };
+    shell.querySelectorAll('[data-preview-close]').forEach(el=>el.addEventListener('click',closePreview));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!shell.hidden)closePreview();});
+    document.querySelectorAll('.publication-preview-trigger').forEach(button=>button.addEventListener('click',()=>{
+      const pub=items.find(item=>String(item.id)===button.dataset.preview);
+      if(!pub)return;
+      document.getElementById('publication-modal-title').textContent=pub.title||'Publication';
+      const url=encodeURI(pub.file);
+      document.getElementById('publication-modal-content').innerHTML=pub.mime==='application/pdf'
+        ? '<iframe class="publication-modal-pdf" title="'+esc(pub.title)+'" src="'+url+'#toolbar=0&navpanes=0"></iframe>'
+        : '<img class="publication-modal-image" src="'+url+'" alt="'+esc(pub.title)+'">';
+      shell.hidden=false; document.body.classList.add('publication-modal-open');
+    }));
   }
   document.querySelectorAll('[data-space]').forEach(button=>button.addEventListener('click',()=>{
     const space=button.dataset.space; document.querySelectorAll('[data-space]').forEach(b=>b.classList.toggle('active',b===button));
