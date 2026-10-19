@@ -914,13 +914,14 @@ export default {
         const beforeList = beforeFile ? parse(beforeFile.text) : [];
         const beforeMap = new Map(beforeList.map(item => [item.href, item]));
         const afterMap = new Map(b.list.map(item => [item.href, item]));
+        const auditEntries = [];
         for (const [href, item] of afterMap) {
           const old = beforeMap.get(href);
-          if (!old) await audit(env, user, "Événement ajouté au portail", item.title || href);
-          else if (JSON.stringify(old) !== JSON.stringify(item)) await audit(env, user, "Événement modifié dans le portail", item.title || href);
+          if (!old) auditEntries.push(["Événement ajouté au portail", item.title || href]);
+          else if (JSON.stringify(old) !== JSON.stringify(item)) auditEntries.push(["Événement modifié dans le portail", item.title || href]);
         }
         for (const [href, item] of beforeMap) {
-          if (!afterMap.has(href)) await audit(env, user, "Événement retiré du portail", item.title || href);
+          if (!afterMap.has(href)) auditEntries.push(["Événement retiré du portail", item.title || href]);
         }
         await write(
           env,
@@ -928,6 +929,7 @@ export default {
           serialize(b.list),
           `Portail mis à jour (${user.username})`
         );
+        for (const [action, target] of auditEntries) await audit(env, user, action, target);
         return json({ ok: true }, 200, cors);
       }
 
