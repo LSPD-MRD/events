@@ -908,3 +908,10 @@ select{min-height:44px}
 select:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:0}
 select option{padding:10px;background:var(--surface);color:var(--text)}
 @media(max-width:680px){.accreditation-editor{max-width:100%;padding:12px}.accreditation-options{grid-template-columns:minmax(0,1fr)}.accreditation-editor-footer{align-items:stretch;flex-direction:column}.accreditation-editor-footer .btn{width:100%}.pages-menu,.profile-menu,.save-menu,.editor-pages-menu{max-width:calc(100vw - 24px)}}
+
+
+/* Évite le flash de l’écran de connexion pendant la restauration de session. */
+body.session-checking .topbar,
+body.session-checking .layout,
+body.session-checking #login-screen,
+body.session-checking .toasts { visibility: hidden; }
