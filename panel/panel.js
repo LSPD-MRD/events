@@ -824,14 +824,14 @@ const actions = {
   'user-disable': async el => { if (!(await confirmDialog('Ce compte ne pourra plus se connecter tant qu’il sera désactivé.', { title: 'Désactiver ce compte ?', confirmText: 'Désactiver', danger: true }))) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); },
   'toggle-accreditation-editor': el => {
     const id = el.dataset.userId;
-    const editor = $('[data-accreditation-editor]').find(item => item.dataset.accreditationEditor === id);
+    const editor = $$('[data-accreditation-editor]').find(item => item.dataset.accreditationEditor === id);
     if (!editor) return;
     const opening = editor.hidden;
-    $('.accreditation-editor').forEach(item => { item.hidden = true; });
-    $('[data-action="toggle-accreditation-editor"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+    $$('.accreditation-editor').forEach(item => { item.hidden = true; });
+    $$('[data-action="toggle-accreditation-editor"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
     if (opening) {
       editor.hidden = false;
-      $('[data-action="toggle-accreditation-editor"]').filter(button => button.dataset.userId === id).forEach(button => button.setAttribute('aria-expanded', 'true'));
+      $$('[data-action="toggle-accreditation-editor"]').filter(button => button.dataset.userId === id).forEach(button => button.setAttribute('aria-expanded', 'true'));
     }
   },
   'save-accreditations': async el => {
