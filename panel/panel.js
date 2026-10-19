@@ -590,7 +590,9 @@ const setPreview = (show, remember = true) => {
   }
 };
 
-const canViewLogs = user => ['owner', 'admin'].includes(user?.role);
+const canViewLogs = user =>
+  ['owner', 'admin'].includes(user?.role) ||
+  ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
 
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -694,6 +696,8 @@ const actions = {
   tab: el => setTab(el.dataset.tab),
   'toggle-pages': () => {
     const menu = $('#pages-menu'), next = menu.hidden;
+    // Recalculer les droits à l'ouverture pour que Logs reflète la session courante.
+    if (currentUser) applyPermissions();
     closeMenus(); menu.hidden = !next;
     $('#pages-trigger').setAttribute('aria-expanded', String(next));
   },
@@ -898,7 +902,12 @@ function applyPermissions() {
 }
 async function restoreSession() {
   const token = localStorage.getItem(KEY.token);
-  if (!token) return;
+  if (!token) {
+    setLoginFieldsVisible(true);
+    $('#login-screen').hidden = false;
+    document.body.classList.remove('session-checking');
+    return;
+  }
 
   setLoginFieldsVisible(false);
   $('#login-error').textContent = 'Vérification de la session précédente…';
@@ -920,6 +929,8 @@ async function restoreSession() {
       // Une erreur réseau ou serveur temporaire ne doit pas supprimer le jeton.
       $('#login-error').textContent = 'Impossible de vérifier la session auprès du serveur. La session locale est conservée ; vérifie la connexion puis recharge le panel.';
     }
+  } finally {
+    document.body.classList.remove('session-checking');
   }
 }
 $('#login-form').addEventListener('submit', async e => {
