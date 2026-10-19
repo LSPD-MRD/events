@@ -4,7 +4,7 @@ window.MRD_PUBLICATIONS = [
     "kind": "comm-interne",
     "title": "VESPUCCI POLICE STATION | Compte rendu de cérémonie -  18/10/2026",
     "summary": "",
-    "date": "20026-10-18",
+    "date": "2026-10-18",
     "mime": "image/png",
     "file": "public/uploads/ompte-rend-de-ce-re-monie-mvfct2jy.png"
   },
@@ -26,4 +26,4 @@ window.MRD_PUBLICATIONS = [
     "mime": "image/png",
     "file": "public/uploads/ompte-rend-de-ce-re-monie-mvfcoqnf.png"
   }
-];\n
+];
