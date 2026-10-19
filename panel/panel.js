@@ -834,7 +834,8 @@ function applyPermissions() {
   $('#profile-menu-name').textContent = currentUser?.username || 'Mon compte';
   $('#profile-menu-grade').textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
   applyProfileAvatar();
-  $$('[data-action="tab"]').forEach(b => {
+  $('[data-action="tab"]').forEach(b => {
+    if (b.dataset.tab === 'logs') b.hidden = !['owner','admin'].includes(role);
     if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
     if (['newsroom','media','archive'].includes(b.dataset.tab)) b.hidden = true;
     if (b.dataset.tab === 'access') b.hidden = false;
