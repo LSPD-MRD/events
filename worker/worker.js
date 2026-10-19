@@ -877,7 +877,8 @@ export default {
         for (const item of previousList) {
           if (!nextByHref.has(item.href)) auditChanges.push(["event_removed_from_portal", item.title || item.href]);
         }
-        if (previousList.map(item => item.href).join("|") !== b.list.map(item => item.href).join("|")) {
+        const sameCards = previousList.length === b.list.length && previousList.every(item => nextByHref.has(item.href));
+        if (sameCards && previousList.map(item => item.href).join("|") !== b.list.map(item => item.href).join("|")) {
           auditChanges.push(["portal_order_updated", "Ordre des cartes"]);
         }
         await write(env, "public/events-data.js", serialize(b.list), "Portail mis à jour (" + user.username + ")");
