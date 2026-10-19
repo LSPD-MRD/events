@@ -320,8 +320,19 @@ async function renderPublications() {
   if (window.flatpickr) window.flatpickr($('#pub-date'), { locale: window.flatpickr.l10ns.fr, dateFormat: 'Y-m-d', altInput: true, altFormat: 'j F Y', allowInput: true, disableMobile: true });
   const fileInput=$('#pub-file'), preview=$('#pub-preview');
   fileInput.onchange=()=>{ const f=fileInput.files[0]; if(!f)return; if(f.size>10*1024*1024){fileInput.value='';preview.textContent='Fichier trop volumineux (10 Mo maximum).';return toast('Maximum 10 Mo par fichier.','err');} const url=URL.createObjectURL(f); preview.innerHTML=f.type==='application/pdf'?'<iframe title="Aperçu PDF" src="'+url+'"></iframe>':'<img alt="Aperçu" src="'+url+'">'; };
-  try { const r=await fetch('../public/publications-data.js?v='+Date.now()); const t=r.ok?await r.text():''; const a=t.indexOf('['),z=t.lastIndexOf(']'); const data=a>=0&&z>a?JSON.parse(t.slice(a,z+1)):[]; $('#pub-list').innerHTML=data.map(p=>'<div class="row-item"><div class="meta"><b>'+esc(p.title)+'</b><small>'+esc(p.kind)+' · '+esc(p.date||'Sans date')+'</small></div><a class="btn sm" target="_blank" rel="noopener" href="../'+encodeURI(p.file)+'">Ouvrir</a><a class="btn sm" download href="../'+encodeURI(p.file)+'">Télécharger</a></div>').join('')||'<p class="empty">Aucune publication en ligne.</p>'; } catch { $('#pub-list').textContent='Impossible de charger les publications.'; }
+  try { const r=await fetch('../public/publications-data.js?v='+Date.now()); const t=r.ok?await r.text():''; const a=t.indexOf('['),z=t.lastIndexOf(']'); const data=a>=0&&z>a?JSON.parse(t.slice(a,z+1)):[]; $('#pub-list').innerHTML=data.map(p=>'<div class="row-item"><div class="meta"><b>'+esc(p.title)+'</b><small>'+esc(p.kind)+' · '+esc(p.date||'Sans date')+'</small></div><a class="btn sm" target="_blank" rel="noopener" href="../'+encodeURI(p.file)+'">Ouvrir</a><a class="btn sm" download href="../'+encodeURI(p.file)+'">Télécharger</a><button type="button" class="btn sm danger publication-delete" data-publication-delete="'+esc(p.id)+'">Supprimer</button></div>').join('')||'<p class="empty">Aucune publication en ligne.</p>'; } catch { $('#pub-list').textContent='Impossible de charger les publications.'; }
 }
+document.addEventListener('click', async e => {
+  const button=e.target.closest('[data-publication-delete]');
+  if(!button)return;
+  const id=button.dataset.publicationDelete;
+  if(!id)return;
+  const accepted=await confirmDialog('Cette action retirera définitivement la publication du portail et supprimera son fichier associé du dépôt. Cette opération est irréversible.',{title:'Supprimer cette publication ?',confirmText:'Supprimer la publication',danger:true});
+  if(!accepted)return;
+  button.disabled=true;button.textContent='Suppression…';
+  try { await api.post('/publication/delete',{id}); toast('Publication supprimée du portail.','ok'); await renderPublications(); }
+  catch(error){toast(error.message||'Impossible de supprimer la publication.','err');button.disabled=false;button.textContent='Supprimer';}
+});
 document.addEventListener('submit', async e => {
   if(e.target.id!=='publication-form')return; e.preventDefault();
   const f=$('#pub-file').files[0]; if(!f)return toast('Choisis un fichier.','err'); if(f.size>10*1024*1024)return toast('Maximum 10 Mo par fichier.','err');
