@@ -638,7 +638,7 @@ const renderWip = name => {
 const renderTeam = async () => {
   const root = $('#team');
   if (currentUser?.role !== 'co') {
-    root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La liste des comptes et leur création sont réservées au Owner.</p></div><span class="wip-badge">OWNER</span></section>`;
+    root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La gestion des comptes est réservée au CO et limitée par grade.</p></div><span class="wip-badge">OWNER</span></section>`;
     return;
   }
   root.innerHTML = `<section class="page-intro"><div><div class="eyebrow">SÉCURITÉ · OWNER</div><h1>Comptes & grades</h1><p>Créer des identifiants individuels et attribuer le niveau d’accès adapté.</p></div></section>
