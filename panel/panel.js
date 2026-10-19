@@ -590,7 +590,7 @@ const setPreview = (show, remember = true) => {
   }
 };
 
-const canViewLogs = user => ['owner', 'admin'].includes(user?.role);
+const canViewLogs = user => ['owner', 'admin'].includes(user?.role) || ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
 
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -693,6 +693,9 @@ const renderEditorPageMenu = () => {
 const actions = {
   tab: el => setTab(el.dataset.tab),
   'toggle-pages': () => {
+    // Recalcule les droits au moment d'ouvrir le menu : le bouton Logs ne doit
+    // pas rester masqué si le profil a été restauré après le premier rendu.
+    if (currentUser) applyPermissions();
     const menu = $('#pages-menu'), next = menu.hidden;
     closeMenus(); menu.hidden = !next;
     $('#pages-trigger').setAttribute('aria-expanded', String(next));
@@ -901,12 +904,14 @@ async function restoreSession() {
     $('#login-error').textContent = '';
   } catch (error) {
     setLoginFieldsVisible(true);
-    $('#login-screen').hidden = false;
     if (isSessionExpiredError(error.message)) {
+      $('#login-screen').hidden = false;
       clearLocalSession('Ta session a expiré. Reconnecte-toi.');
     } else {
-      // Une erreur réseau ou serveur temporaire ne doit pas supprimer le jeton.
-      $('#login-error').textContent = 'Impossible de vérifier la session auprès du serveur. La session locale est conservée ; vérifie la connexion puis recharge le panel.';
+      // Ne détruit pas le jeton en cas d'indisponibilité réseau ; le message
+      // précise que le souci est la vérification, pas un mot de passe incorrect.
+      $('#login-screen').hidden = false;
+      $('#login-error').textContent = 'La session enregistrée n’a pas pu être vérifiée auprès du serveur. Ton jeton est conservé : recharge le panel quand le serveur est disponible. Si cela arrive à chaque retour, le Worker déployé doit être vérifié.';
     }
   }
 }
