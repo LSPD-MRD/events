@@ -858,3 +858,24 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .flatpickr-prev-month svg,.flatpickr-next-month svg{fill:var(--text)!important}
 .flatpickr-calendar.arrowTop:before,.flatpickr-calendar.arrowTop:after{border-bottom-color:var(--surface)!important}
 .flatpickr-calendar.arrowBottom:before,.flatpickr-calendar.arrowBottom:after{border-top-color:var(--surface)!important}
+
+
+/* Accréditations M.R.D — badges de profil et attribution par le CO */
+.accreditation-tags { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; }
+.accreditation-tag { display:inline-flex; align-items:center; padding:5px 9px; border:1px solid currentColor; border-radius:999px; font-size:10px; font-weight:750; letter-spacing:.015em; line-height:1.2; white-space:nowrap; }
+.accred-media { color:#6aa9ff; background:rgba(36,99,166,.15); border-color:rgba(106,169,255,.4); }
+.accred-interagency { color:#c4a0ff; background:rgba(124,58,237,.15); border-color:rgba(196,160,255,.4); }
+.accred-public-info { color:#f6c36b; background:rgba(180,83,9,.16); border-color:rgba(246,195,107,.42); }
+.accred-community { color:#67d6c7; background:rgba(15,118,110,.16); border-color:rgba(103,214,199,.4); }
+.profile-accreditation-tags { max-width:520px; }
+.access-user-card { align-items:flex-start; gap:14px; }
+.access-user-card .access-user-details { min-width:0; flex:1; }
+.accreditation-editor { margin-top:10px; max-width:620px; border:1px solid var(--line); border-radius:10px; padding:9px 11px; }
+.accreditation-editor > summary { cursor:pointer; color:var(--accent); font-size:12px; font-weight:700; }
+.accreditation-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:12px 0; }
+.accreditation-option { display:flex; align-items:center; gap:8px; min-width:0; padding:9px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; font-size:11px; }
+.accreditation-option input { accent-color:var(--accent); flex:0 0 auto; }
+.accreditation-option small { display:block; color:var(--muted); font-size:9px; }
+.accreditation-option.is-unavailable { opacity:.48; }
+.accreditation-note { display:block; margin-top:8px; color:var(--muted); }
+@media(max-width:680px) { .accreditation-options { grid-template-columns:1fr; } .access-user-card { flex-wrap:wrap; } .access-user-card .access-user-action { margin-left:auto; } }
