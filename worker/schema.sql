@@ -22,6 +22,14 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
 
+CREATE TABLE IF NOT EXISTS event_drafts (
+  slug TEXT PRIMARY KEY,
+  config TEXT NOT NULL,
+  card TEXT NOT NULL,
+  updated_by TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS login_attempts (
   username TEXT PRIMARY KEY,
   attempts INTEGER NOT NULL DEFAULT 0,
