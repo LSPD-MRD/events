@@ -176,7 +176,7 @@ const api = {
   },
 
   async post(path, body = {}) {
-    const token = sessionStorage.getItem(KEY.token);
+    const token = localStorage.getItem(KEY.token);
 
     const headers = {
       'Content-Type': 'application/json'
@@ -332,7 +332,7 @@ const renderEditor = () => {
 };
 
 async function renderPublications() {
-  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>Publications</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><div class="select-wrap"><select id="pub-kind"><option value="news">News & actualités</option><option value="comm-interne">Communication interne</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="text" placeholder="Choisir une date" autocomplete="off"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
+  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>Publications</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><div class="select-wrap"><select id="pub-kind"><option value="news">Media Relations · News classiques</option><option value="comm-presse">Public Information (PIO) · Communiqué de presse</option><option value="comm-interne">Interagency · Communication interne</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="text" placeholder="Choisir une date" autocomplete="off"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
   if (window.flatpickr) window.flatpickr($('#pub-date'), { locale: window.flatpickr.l10ns.fr, dateFormat: 'Y-m-d', altInput: true, altFormat: 'j F Y', allowInput: true, disableMobile: true });
   const fileInput=$('#pub-file'), preview=$('#pub-preview');
   fileInput.onchange=()=>{ const f=fileInput.files[0]; if(!f)return; if(f.size>10*1024*1024){fileInput.value='';preview.textContent='Fichier trop volumineux (10 Mo maximum).';return toast('Maximum 10 Mo par fichier.','err');} const url=URL.createObjectURL(f); preview.innerHTML=f.type==='application/pdf'?'<iframe title="Aperçu PDF" src="'+url+'"></iframe>':'<img alt="Aperçu" src="'+url+'">'; };
@@ -859,7 +859,7 @@ async function signIn(username, password) {
   catch { throw new Error('Connexion au serveur impossible. Vérifie l’URL du Worker, sa disponibilité et le réglage CORS.'); }
   const data = await r.json().catch(()=>({}));
   if (!r.ok) throw new Error(data.error || ('Connexion refusée (' + r.status + ')'));
-  sessionStorage.setItem(KEY.token, data.token);
+  localStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
   $('#login-screen').hidden = true;
   $('#profile-menu-name').textContent = currentUser.username;
@@ -869,8 +869,8 @@ async function signIn(username, password) {
   applyPermissions();
 }
 async function signOut(show = true) {
-  try { if (sessionStorage.getItem(KEY.token)) await api.post('/auth/logout', {}); } catch {}
-  sessionStorage.removeItem(KEY.token); currentUser = null;
+  try { if (localStorage.getItem(KEY.token)) await api.post('/auth/logout', {}); } catch {}
+  localStorage.removeItem(KEY.token); currentUser = null;
   $('#login-screen').hidden = false;
   $('#login-pass').value = '';
   closeMenus();
@@ -899,7 +899,7 @@ function applyPermissions() {
 }
 async function restoreSession() {
   const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
-  const token = sessionStorage.getItem(KEY.token);
+  const token = localStorage.getItem(KEY.token);
   if (!token) return;
   try {
     const data = await api.post('/auth/me', {});
@@ -908,7 +908,7 @@ async function restoreSession() {
     $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
     applyProfileAvatar();
     applyPermissions();
-  } catch { sessionStorage.removeItem(KEY.token); }
+  } catch { localStorage.removeItem(KEY.token); }
 }
 $('#login-form').addEventListener('submit', async e => {
   e.preventDefault();
