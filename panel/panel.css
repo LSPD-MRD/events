@@ -932,3 +932,11 @@ body.session-checking .toasts { visibility: hidden; }
 .file-dropzone-compact{min-height:132px;margin:14px 0;padding:18px}
 .layout.file-import-dragging:after{content:"Dépose le fichier JSON pour importer l’événement";position:fixed;z-index:1000;inset:18px;display:grid;place-items:center;border:2px dashed var(--accent);border-radius:20px;background:color-mix(in srgb,var(--surface) 92%,transparent);box-shadow:0 0 0 999px #0005;color:var(--text);font-size:clamp(16px,2vw,22px);font-weight:650;pointer-events:none}
 @media(max-width:680px){.file-dropzone{min-height:150px;padding:18px 14px}.file-dropzone-compact{min-height:126px}}
+
+
+/* Actions du fichier sélectionné dans Publications */
+#publications .publication-file-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 16px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2)}
+#publications .publication-file-actions .file-dropzone-status{min-width:0;overflow-wrap:anywhere;flex:1}
+#publications .publication-file-clear{flex:0 0 auto;border-color:var(--err);color:var(--err)}
+#publications .publication-file-clear:hover{background:var(--err);color:#fff}
+#publications .publication-file-clear[hidden]{display:none!important}
