@@ -872,6 +872,37 @@ export default {
         );
       }
 
+      /* Suppression sécurisée d'une publication et de son fichier associé. */
+      if (route === "/publication/delete") {
+        if (!canPublish(user)) return json({ error: "Ton grade ne permet pas de supprimer une publication." }, 403, cors);
+        if (typeof b.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(b.id) || b.id.length > 100) {
+          return json({ error: "Identifiant de publication invalide." }, 400, cors);
+        }
+        const listFile = await read(env, "public/publications-data.js");
+        if (!listFile) return json({ error: "Catalogue des publications introuvable." }, 404, cors);
+        const start = listFile.text.indexOf("[");
+        const end = listFile.text.lastIndexOf("]");
+        if (start < 0 || end <= start) return json({ error: "Catalogue des publications invalide." }, 500, cors);
+        const list = JSON.parse(listFile.text.slice(start, end + 1));
+        const publication = list.find(item => item.id === b.id);
+        if (!publication) return json({ error: "Cette publication n’existe plus." }, 404, cors);
+        if (typeof publication.file !== "string" || !/^public\/uploads\/[a-z0-9-]+\.(?:pdf|png|jpg|webp)$/.test(publication.file)) {
+          return json({ error: "Chemin du fichier refusé par sécurité." }, 400, cors);
+        }
+        const next = list.filter(item => item.id !== b.id);
+        await write(env, "public/publications-data.js", "window.MRD_PUBLICATIONS = " + JSON.stringify(next, null, 2) + ";\n", "Suppression publication " + b.id + " (" + user.username + ")");
+        const asset = await gh(env, publication.file);
+        if (asset.ok) {
+          const assetInfo = await asset.json();
+          const deletion = await gh(env, publication.file, { method: "DELETE", body: JSON.stringify({ message: "Suppression fichier publication " + b.id + " (" + user.username + ")", sha: assetInfo.sha, branch: env.BRANCH }) });
+          if (!deletion.ok) throw new Error("Publication retirée du catalogue, mais suppression du fichier échouée (GitHub HTTP " + deletion.status + ").");
+        } else if (asset.status !== 404) {
+          throw new Error("Publication retirée du catalogue, mais lecture du fichier impossible (GitHub HTTP " + asset.status + ").");
+        }
+        await audit(env, user, "Publication supprimée", String(publication.title || b.id).slice(0, 120));
+        return json({ ok: true, message: "Publication supprimée." }, 200, cors);
+      }
+
       /* Publication de documents et actualités (PDF / images) */
       if (route === "/publication/publish") {
         if (!canPublish(user)) return json({ error: "Ton grade ne permet pas de publier." }, 403, cors);
