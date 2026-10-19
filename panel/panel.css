@@ -879,3 +879,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .accreditation-option.is-unavailable { opacity:.48; }
 .accreditation-note { display:block; margin-top:8px; color:var(--muted); }
 @media(max-width:680px) { .accreditation-options { grid-template-columns:1fr; } .access-user-card { flex-wrap:wrap; } .access-user-card .access-user-action { margin-left:auto; } }
+
+/* Accréditations : affichage compact et robuste des comptes */
+.access-user-row.access-user-card{align-items:flex-start;gap:16px;padding:18px 20px;min-width:0}
+.access-user-card .access-user-details{flex:1;min-width:0;overflow-wrap:anywhere}
+.access-user-card .accreditation-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:9px;max-width:100%}
+.access-user-card .accreditation-tag{display:inline-flex;max-width:100%;align-items:center;white-space:normal;overflow-wrap:anywhere;padding:5px 9px;border-radius:999px;font-size:11px;line-height:1.3}
+.accreditation-editor{margin-top:12px;max-width:100%;border:1px solid var(--line,var(--app-line));border-radius:10px;padding:10px 12px}
+.accreditation-editor>summary{cursor:pointer;font-weight:700;font-size:12px;list-style-position:inside}
+.accreditation-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.accreditation-option{display:flex;align-items:flex-start;gap:8px;min-width:0;padding:9px 10px;border:1px solid var(--line,var(--app-line));border-radius:8px;font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.accreditation-option input{flex:0 0 auto;margin-top:2px}
+.accreditation-option span{min-width:0;overflow-wrap:anywhere}
+.accreditation-option small{display:block;color:var(--muted,var(--app-muted));font-size:10px}
+.accreditation-option.is-unavailable{opacity:.5}
+.accreditation-editor .btn{margin-top:2px}
+.access-user-action{flex:0 0 auto}
+@media(max-width:680px){.access-user-row.access-user-card{flex-wrap:wrap;padding:14px}.access-user-card .access-user-details{flex-basis:calc(100% - 56px)}.access-user-card .access-user-action{margin-left:54px}.accreditation-options{grid-template-columns:minmax(0,1fr)}}
