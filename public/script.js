@@ -71,7 +71,7 @@
     if (location.hash.startsWith('#event/')) {
       const slug = decodeURIComponent(location.hash.slice(7));
       const eventList = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (window.EVENTS || []);
-      const ev = eventList.find(x => String(x.href || '').replace(/^\\/+|\\/+$/g, '') === slug);
+      const ev = eventList.find(x => String(x.href || '').replace(/^\/+|\/+$/g, '') === slug);
       if (ev) openEvent(ev, false);
     } else if (!detail.hidden) {
       showPortal();
