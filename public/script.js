@@ -31,7 +31,7 @@
     });
     if (!visible.length) root.innerHTML = '<div class="empty-state">Aucun événement dans cette catégorie.</div>';
   }
-  function openEvent(ev) {
+  function openEvent(ev, updateHistory = true) {
     if (!content || !detail || !root || !ev) return;
     const slug = String(ev.href || '').split('/').filter(Boolean).join('/');
     const eventContent = window.EVENT_CONTENT || (typeof EVENT_CONTENT !== 'undefined' ? EVENT_CONTENT : {});
@@ -58,10 +58,25 @@
     if (sectionHead) sectionHead.hidden = true;
     detail.hidden = false;
     document.body.classList.add('event-view');
-    history.replaceState(null, '', '#event/' + encodeURIComponent(slug || ev.title || 'event'));
+    if (updateHistory) history.pushState({ mrdEventView: true }, '', '#event/' + encodeURIComponent(slug || ev.title || 'event'));
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  function closeEvent() { detail.hidden=true; root.hidden=false; document.body.classList.remove('event-view'); const head=document.querySelector('.section-head'); if(head) head.hidden=false; history.replaceState(null,'','#home'); window.scrollTo({top:0,behavior:'smooth'}); }
+  function showPortal() { detail.hidden=true; root.hidden=false; document.body.classList.remove('event-view'); const head=document.querySelector('.section-head'); if(head) head.hidden=false; window.scrollTo({top:0,behavior:'smooth'}); }
+  function closeEvent() {
+    if (location.hash.startsWith('#event/') && history.state?.mrdEventView) { history.back(); return; }
+    showPortal();
+    if (location.hash.startsWith('#event/')) history.replaceState(null, '', '#home');
+  }
+  window.addEventListener('popstate', () => {
+    if (location.hash.startsWith('#event/')) {
+      const slug = decodeURIComponent(location.hash.slice(7));
+      const eventList = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (window.EVENTS || []);
+      const ev = eventList.find(x => String(x.href || '').replace(/^\/+|\/+$/g, '') === slug);
+      if (ev) openEvent(ev, false);
+    } else if (!detail.hidden) {
+      showPortal();
+    }
+  });
   const backButton = document.getElementById('back-events');
   backButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6M9 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Retour aux événements</span>';
   backButton.setAttribute('aria-label', 'Retour aux événements');
@@ -74,6 +89,6 @@
     const slug = decodeURIComponent(location.hash.slice(7));
     const eventList = typeof EVENTS !== 'undefined' && Array.isArray(EVENTS) ? EVENTS : (window.EVENTS || []);
     const ev = eventList.find(x => String(x.href || '').replace(/^\/+|\/+$/g, '') === slug);
-    if (ev) openEvent(ev); else render();
+    if (ev) openEvent(ev, false); else render();
   } else render();
 })();
