@@ -1,6 +1,7 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar' };
-const PAGE_LABELS = { edit: 'Événements', publications: 'News & documents', portal: 'Portail', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
+const PAGE_LABELS = { edit: 'Événements', publications: 'News & documents', logs: 'Logs', portal: 'Portail', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
+const ROLE_LABELS = { cto: 'Certified Officer (CtO)', eo: 'Expert Officer (EO)', aco: 'Assistant Commanding Officer (ACO)', co: 'Commanding Officer (CO)' };
 const PORTAL_URL = '../';
 let currentUser = null;
 
@@ -315,6 +316,31 @@ const renderEditor = () => {
   renderSections();
 };
 
+
+const AUDIT_LABELS = {
+  account_created: "Création de compte",
+  account_disabled: "Désactivation de compte",
+  account_grade_changed: "Modification de grade",
+  event_created: "Création d’événement",
+  event_updated: "Modification d’événement",
+  event_added_to_portal: "Ajout au portail",
+  event_card_updated: "Modification de carte",
+  event_removed_from_portal: "Retrait du portail",
+  portal_order_updated: "Modification de l’ordre",
+  publication_published: "Publication news/document"
+};
+async function renderLogs() {
+  const root = $('#logs');
+  root.innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · ADMINISTRATION</div><h1>Logs</h1><p>Historique des ajouts, modifications, retraits et publications importantes.</p></div></section><section class="card"><header class="card-head"><h2>Actions récentes</h2><p>Les 100 dernières actions. Visible uniquement par les grades ACO et CO.</p></header><div class="card-body" id="audit-log-list"><p class="empty">Chargement…</p></div></section>';
+  try {
+    const data = await api.post('/logs/list', {});
+    const logs = data.logs || [];
+    $('#audit-log-list').innerHTML = logs.map(log => '<div class="audit-log-row"><time>'+esc(new Date(log.created_at).toLocaleString('fr-FR'))+'</time><b>'+esc(AUDIT_LABELS[log.action] || log.action)+'</b><span>'+esc(log.target || '—')+'</span><small>'+esc(log.actor_username)+'</small></div>').join('') || '<p class="empty">Aucune action enregistrée pour le moment.</p>';
+  } catch (err) {
+    $('#audit-log-list').innerHTML = '<p class="empty">'+esc(err.message || 'Impossible de charger les logs.')+'</p>';
+  }
+}
+
 async function renderPublications() {
   $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>News & documents</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><select id="pub-kind"><option value="news">News & actualités</option><option value="compte-rendu">Compte rendu de cérémonie</option><option value="comm-interne">Communication interne</option><option value="comm-presse">Communiqué de presse (public)</option></select></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="date"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
   const fileInput=$('#pub-file'), preview=$('#pub-preview');
@@ -526,7 +552,10 @@ const setTab = async name => {
   if (layout) layout.dataset.activeTab = name;
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
+  if (['access', 'logs'].includes(name) && !['aco', 'co'].includes(currentUser?.role)) return toast('Cet espace est réservé aux grades ACO et CO.', 'err');
+  if (name === 'team' && currentUser?.role !== 'co') return toast('Cet espace est réservé au CO.', 'err');
   if (name === 'publications') await renderPublications();
+  if (name === 'logs') await renderLogs();
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
