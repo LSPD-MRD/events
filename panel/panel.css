@@ -896,3 +896,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .accreditation-editor .btn{margin-top:2px}
 .access-user-action{flex:0 0 auto}
 @media(max-width:680px){.access-user-row.access-user-card{flex-wrap:wrap;padding:14px}.access-user-card .access-user-details{flex-basis:calc(100% - 56px)}.access-user-card .access-user-action{margin-left:54px}.accreditation-options{grid-template-columns:minmax(0,1fr)}}
+
+/* Respecte l’attribut hidden sur les entrées de navigation */
+.nav-item[hidden], .pages-menu [hidden] { display: none !important; }

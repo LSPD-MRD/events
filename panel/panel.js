@@ -574,6 +574,8 @@ const setPreview = (show, remember = true) => {
   }
 };
 
+const canViewLogs = user => ['owner', 'admin'].includes(user?.role) || ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
+
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
@@ -584,8 +586,8 @@ const setTab = async name => {
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
   const logsNav = $('[data-tab="logs"]');
-  if (logsNav) logsNav.hidden = !["owner", "admin"].includes(currentUser?.role);
-  if (name === 'logs' && !["owner", "admin"].includes(currentUser?.role)) {
+  if (logsNav) logsNav.hidden = !canViewLogs(currentUser);
+  if (name === 'logs' && !canViewLogs(currentUser)) {
     toast("Les logs sont réservés aux administrateurs et au Commanding Officer.", "err");
     return setTab("edit");
   }
@@ -888,7 +890,7 @@ function applyPermissions() {
   $('#profile-menu-grade').textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
   applyProfileAvatar();
   $('[data-action="tab"]').forEach(b => {
-    if (b.dataset.tab === 'logs') b.hidden = !['owner','admin'].includes(role);
+    if (b.dataset.tab === 'logs') b.hidden = !canViewLogs(currentUser);
     if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
     if (['newsroom','media','archive'].includes(b.dataset.tab)) b.hidden = true;
     if (b.dataset.tab === 'access') b.hidden = false;
