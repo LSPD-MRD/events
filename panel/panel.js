@@ -403,7 +403,7 @@ const renderAccess = async () => {
       <section class="card access-security">
         <header class="card-head"><span class="access-kicker">SESSION ACTIVE</span><h2>Compte connecté</h2><p>Les autorisations dépendent du rôle associé à ton compte.</p></header>
         <div class="card-body">
-          <div class="access-user"><div class="access-user-avatar">${esc((currentUser?.username || 'M').slice(0,1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(currentUser?.username || 'Non connecté')}</strong><span>${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.role || '—')}</span></div>
+          <div class="access-user"><div class="access-user-avatar">${esc((currentUser?.username || 'M').slice(0,1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(currentUser?.username || 'Non connecté')}</strong><span>${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.grade || '—')}</span></div>
           <button class="btn access-logout" data-action="logout" type="button">Se déconnecter</button>
         </div>
       </section>
@@ -427,7 +427,7 @@ const renderAccess = async () => {
         </div>
         <div class="access-list-head"><div><h3>Comptes existants</h3><p>Les comptes désactivés ne peuvent plus se connecter.</p></div><span id="access-user-count" class="access-user-count">—</span></div>
         <div class="card-body access-users-body"><div id="users-list" class="user-admin"><div class="access-loading"><span class="loading-dot"></span> Chargement des comptes…</div></div></div>
-      </section>` : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>La création et la désactivation des comptes sont réservées au Owner.</p></div></section>`}
+      </section>` : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>Les comptes sont gérés par les grades ACO et CO selon leurs autorisations.</p></div></section>`}
     </div>`;
   const acoOption = $('#new-role option[value="aco"]');
   if (acoOption && currentUser?.role !== 'co') acoOption.disabled = true;
@@ -563,7 +563,9 @@ const setPreview = (show, remember = true) => {
 };
 
 const setTab = async name => {
-  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  if (['access', 'logs'].includes(name) && !['aco', 'co'].includes(currentUser?.role)) return toast('Cet espace est réservé aux grades ACO et CO.', 'err');
+  if (name === 'team' && currentUser?.role !== 'co') return toast('Cet espace est réservé au CO.', 'err');
+  $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
   if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
@@ -571,8 +573,6 @@ const setTab = async name => {
   if (layout) layout.dataset.activeTab = name;
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
-  if (['access', 'logs'].includes(name) && !['aco', 'co'].includes(currentUser?.role)) return toast('Cet espace est réservé aux grades ACO et CO.', 'err');
-  if (name === 'team' && currentUser?.role !== 'co') return toast('Cet espace est réservé au CO.', 'err');
   if (name === 'publications') await renderPublications();
   if (name === 'logs') await renderLogs();
   if (name === 'team') renderTeam();
@@ -645,8 +645,7 @@ const renderTeam = async () => {
   <section class="card"><header class="card-head"><h2>Créer un compte</h2><p>Le mot de passe initial est transmis à la personne en privé.</p></header><div class="card-body">
   <form id="user-create-form" class="user-create">
     <div class="field"><label>Identifiant</label><input name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off"></div>
-    <div class="field"><label>Grade affiché</label><input name="grade" required maxlength="60" placeholder="Ex. Media Officer"></div>
-    <div class="field"><label>Rôle système</label><select name="role"><option value="viewer">Lecteur — consultation</option><option value="editor" selected>Éditeur — événements</option><option value="admin">Administrateur — gestion opérationnelle</option></select></div>
+    <div class="field"><label>Grade</label><select name="role"><option value="cto">Certified Officer (CtO)</option><option value="eo">Expert Officer (EO)</option><option value="aco">Assistant Commanding Officer (ACO)</option></select></div>
     <div class="field"><label>Mot de passe temporaire</label><input name="password" required minlength="12" type="password" autocomplete="new-password"></div>
     <div class="actions"><button class="btn primary" type="submit">Créer le compte</button></div>
   </form></div></section><section class="card"><header class="card-head"><h2>Comptes existants</h2><p>Cette liste est visible uniquement par le Owner.</p></header><div class="card-body"><div id="users-list" class="user-admin">Chargement…</div></div></section>`;
