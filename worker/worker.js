@@ -289,6 +289,8 @@ async function getUser(req, env) {
     return null;
   }
 
+  // Expiration glissante : 30 minutes depuis la dernière requête authentifiée.
+  await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE token_hash = ?").bind(Date.now() + 30 * 60 * 1000, th).run();
   return row;
 }
 
@@ -524,7 +526,7 @@ export default {
         ).bind(username).run();
 
         const token = randomToken(32);
-        const expires = Date.now() + 12 * 60 * 60 * 1000;
+        const expires = Date.now() + 30 * 60 * 1000;
 
         await env.DB.prepare(
           `INSERT INTO sessions
