@@ -270,13 +270,24 @@ async function ensureAuthSchema(env) {
 
   const roleMigration = await env.DB.prepare("SELECT id FROM system_migrations WHERE id = ?").bind("four_grades_v1").first();
   if (!roleMigration) {
-    await env.DB.prepare(
-      "UPDATE users SET role = CASE role WHEN 'owner' THEN 'co' WHEN 'admin' THEN 'aco' WHEN 'editor' THEN 'eo' WHEN 'viewer' THEN 'cto' ELSE role END WHERE role IN ('owner', 'admin', 'editor', 'viewer')"
-    ).run();
-    await env.DB.prepare(
-      "UPDATE users SET grade = CASE role WHEN 'co' THEN 'Commanding Officer (CO)' WHEN 'aco' THEN 'Assistant Commanding Officer (ACO)' WHEN 'eo' THEN 'Expert Officer (EO)' WHEN 'cto' THEN 'Certified Officer (CtO)' ELSE grade END WHERE role IN ('co', 'aco', 'eo', 'cto')"
-    ).run();
-    await env.DB.prepare("INSERT OR IGNORE INTO system_migrations (id, applied_at) VALUES (?, ?)").bind("four_grades_v1", Date.now()).run();
+    // Recrée users avec la contrainte des quatre grades, en conservant identifiants et sessions.
+    // Le schema.sql historique impose une CHECK sur les anciens rôles : un simple UPDATE échouerait.
+    await env.DB.batch([
+      env.DB.prepare("DROP TABLE IF EXISTS sessions_backup"),
+      env.DB.prepare("DROP TABLE IF EXISTS users_new"),
+      env.DB.prepare("CREATE TABLE users_new (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, salt TEXT NOT NULL, grade TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('cto','eo','aco','co')), active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0,1)), created_at INTEGER NOT NULL, avatar_data TEXT)"),
+      env.DB.prepare("CREATE TABLE sessions_backup AS SELECT token_hash, user_id, expires_at, created_at FROM sessions"),
+      env.DB.prepare("INSERT INTO users_new (id, username, password_hash, salt, grade, role, active, created_at, avatar_data) SELECT id, username, password_hash, salt, CASE role WHEN 'owner' THEN 'Commanding Officer (CO)' WHEN 'co' THEN 'Commanding Officer (CO)' WHEN 'admin' THEN 'Assistant Commanding Officer (ACO)' WHEN 'aco' THEN 'Assistant Commanding Officer (ACO)' WHEN 'editor' THEN 'Expert Officer (EO)' WHEN 'eo' THEN 'Expert Officer (EO)' ELSE 'Certified Officer (CtO)' END, CASE role WHEN 'owner' THEN 'co' WHEN 'co' THEN 'co' WHEN 'admin' THEN 'aco' WHEN 'aco' THEN 'aco' WHEN 'editor' THEN 'eo' WHEN 'eo' THEN 'eo' WHEN 'cto' THEN 'cto' ELSE 'cto' END, active, created_at, avatar_data FROM users"),
+      env.DB.prepare("DROP TABLE sessions"),
+      env.DB.prepare("DROP TABLE users"),
+      env.DB.prepare("ALTER TABLE users_new RENAME TO users"),
+      env.DB.prepare("CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL)"),
+      env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at, created_at) SELECT token_hash, user_id, expires_at, created_at FROM sessions_backup"),
+      env.DB.prepare("DROP TABLE sessions_backup"),
+      env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)"),
+      env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at)"),
+      env.DB.prepare("INSERT OR IGNORE INTO system_migrations (id, applied_at) VALUES (?, ?)").bind("four_grades_v1", Date.now())
+    ]);
   }
 }
 
