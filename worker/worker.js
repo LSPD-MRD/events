@@ -182,10 +182,27 @@ async function passwordHash(password, salt) {
 
 const normUser = s => String(s || "").trim().toLowerCase();
 
+const ROLE_GRADE = {
+  cto: "Certified Officer (CtO)",
+  eo: "Expert Officer (EO)",
+  aco: "Assistant Commanding Officer (ACO)",
+  co: "Commanding Officer (CO)"
+};
+const validRoles = Object.keys(ROLE_GRADE);
+const isOwner = u => !!u && u.role === "co";
+const isAdmin = u => !!u && ["aco", "co"].includes(u.role);
+const canPublish = u => !!u && validRoles.includes(u.role);
+
+async function writeAudit(env, user, action, target) {
+  await env.DB.prepare(
+    "INSERT INTO audit_logs (actor_id, actor_username, action, target, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).bind(user.id, user.username, action, String(target || "").slice(0, 160), Date.now()).run();
+}
+
 const publicUser = u => ({
   id: u.id,
   username: u.username,
-  grade: u.grade,
+  grade: ROLE_GRADE[u.role] || u.grade,
   role: u.role,
   active: !!u.active,
   avatarData: u.avatar_data || null
@@ -227,6 +244,19 @@ async function ensureAuthSchema(env) {
       card TEXT NOT NULL,
       updated_by TEXT NOT NULL,
       updated_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_id INTEGER,
+      actor_username TEXT NOT NULL,
+      action TEXT NOT NULL,
+      target TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON audit_logs(created_at DESC)`,
+    `CREATE TABLE IF NOT EXISTS system_migrations (
+      id TEXT PRIMARY KEY,
+      applied_at INTEGER NOT NULL
     )`
   ];
 
@@ -236,6 +266,17 @@ async function ensureAuthSchema(env) {
   const columns = await env.DB.prepare("PRAGMA table_info(users)").all();
   if (!(columns.results || []).some(column => column.name === "avatar_data")) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar_data TEXT").run();
+  }
+
+  const roleMigration = await env.DB.prepare("SELECT id FROM system_migrations WHERE id = ?").bind("four_grades_v1").first();
+  if (!roleMigration) {
+    await env.DB.prepare(
+      "UPDATE users SET role = CASE role WHEN 'owner' THEN 'co' WHEN 'admin' THEN 'aco' WHEN 'editor' THEN 'eo' WHEN 'viewer' THEN 'cto' ELSE role END WHERE role IN ('owner', 'admin', 'editor', 'viewer')"
+    ).run();
+    await env.DB.prepare(
+      "UPDATE users SET grade = CASE role WHEN 'co' THEN 'Commanding Officer (CO)' WHEN 'aco' THEN 'Assistant Commanding Officer (ACO)' WHEN 'eo' THEN 'Expert Officer (EO)' WHEN 'cto' THEN 'Certified Officer (CtO)' ELSE grade END WHERE role IN ('co', 'aco', 'eo', 'cto')"
+    ).run();
+    await env.DB.prepare("INSERT OR IGNORE INTO system_migrations (id, applied_at) VALUES (?, ?)").bind("four_grades_v1", Date.now()).run();
   }
 }
 
@@ -267,11 +308,6 @@ async function getUser(req, env) {
 
   return row;
 }
-
-const isOwner = u => u && u.role === "owner";
-
-const canPublish = u =>
-  u && ["owner", "admin", "editor"].includes(u.role);
 
 export default {
   async fetch(req, env) {
