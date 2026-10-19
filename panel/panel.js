@@ -1,6 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar' };
-const PAGE_LABELS = { edit: 'Événements', publications: 'News & documents', portal: 'Portail', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
+const PAGE_LABELS = { edit: 'Événements', publications: 'News & documents', portal: 'Portail', logs: 'Logs', access: 'Accès', team: 'Équipe', profile: 'Mon profil' };
 const PORTAL_URL = '../';
 let currentUser = null;
 
@@ -350,6 +350,23 @@ const renderPortal = () => {
     </div>`;
 };
 
+const renderLogs = async () => {
+  const root = $('#logs');
+  if (!["owner", "admin"].includes(currentUser?.role)) {
+    root.innerHTML = '<section class="card"><div class="card-body">Accès réservé aux administrateurs et au Commanding Officer.</div></section>';
+    return;
+  }
+  root.innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · SÉCURITÉ</div><h1>Logs d’activité</h1><p>Historique des créations, modifications, publications et désactivations importantes.</p></div><div class="intro-mark">⌁</div></section><section class="card"><header class="card-head"><h2>Dernières opérations</h2><p>Les détails sensibles ne sont pas enregistrés. Les 200 actions les plus récentes sont affichées.</p></header><div class="card-body" id="audit-list"><p class="empty">Chargement des logs…</p></div></section>';
+  try {
+    const result = await api.post('/logs/list', {});
+    const logs = result.logs || [];
+    $('#audit-list').innerHTML = logs.map(item => {
+      const date = new Date(Number(item.created_at)).toLocaleString('fr-FR', { dateStyle:'short', timeStyle:'short' });
+      return '<div class="audit-row"><div class="audit-mark">•</div><div class="audit-copy"><strong>'+esc(item.action)+'</strong><span>'+esc(item.target)+'</span><small>'+esc(item.actor_username)+' · '+esc(item.actor_grade)+'</small></div><time>'+esc(date)+'</time></div>';
+    }).join('') || '<p class="empty">Aucune action enregistrée pour le moment.</p>';
+  } catch (error) { $('#audit-list').textContent = error.message || 'Impossible de charger les logs.'; }
+};
+
 const renderAccess = async () => {
   const c = api.cfg();
   const owner = currentUser?.role === 'owner';
@@ -376,8 +393,7 @@ const renderAccess = async () => {
         <div class="card-body">
           <form id="user-create-form" class="user-create access-create-form">
             <div class="field"><label for="new-username">Identifiant</label><input id="new-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" placeholder="ex. media.officer"></div>
-            <div class="field"><label for="new-grade">Grade affiché</label><input id="new-grade" name="grade" required maxlength="60" placeholder="ex. Media Officer"></div>
-            <div class="field"><label for="new-role">Niveau d’accès</label><div class="select-wrap"><select id="new-role" name="role"><option value="viewer">Lecteur · consultation</option><option value="editor" selected>Éditeur · événements</option><option value="admin">Administrateur · gestion</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div>
+            <div class="field"><label for="new-grade">Grade</label><div class="select-wrap"><select id="new-grade" name="grade" required><option value="Certified Officer">Certified Officer (CtO)</option><option value="Expert Officer">Expert Officer (EO)</option><option value="Assistant Commanding Officer">Assistant Commanding Officer (ACO)</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div><small>Le niveau d’accès est attribué automatiquement selon le grade.</small></div>
             <div class="field"><label for="new-password">Mot de passe temporaire</label><input id="new-password" name="password" required minlength="12" type="password" autocomplete="new-password" placeholder="12 caractères minimum"></div>
             <div class="access-create-footer"><span>Le mot de passe initial doit être communiqué en privé.</span><button class="btn primary create-account-btn" type="submit"><span aria-hidden="true">＋</span> Créer le compte</button></div>
           </form>
@@ -526,7 +542,14 @@ const setTab = async name => {
   if (layout) layout.dataset.activeTab = name;
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
+  const logsNav = $('[data-tab="logs"]');
+  if (logsNav) logsNav.hidden = !["owner", "admin"].includes(currentUser?.role);
+  if (name === 'logs' && !["owner", "admin"].includes(currentUser?.role)) {
+    toast("Les logs sont réservés aux administrateurs et au Commanding Officer.", "err");
+    return setTab("edit");
+  }
   if (name === 'publications') await renderPublications();
+  if (name === 'logs') await renderLogs();
   if (name === 'team') renderTeam();
   if (name === 'portal') {
     try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
