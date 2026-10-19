@@ -376,9 +376,27 @@ const renderPortal = () => {
     </div>`;
 };
 
+
+const renderUserRows = users => {
+  const isCo = currentUser?.role === 'co';
+  const assignable = isCo
+    ? [{value:'cto',label:ROLE_LABELS.cto},{value:'eo',label:ROLE_LABELS.eo},{value:'aco',label:ROLE_LABELS.aco}]
+    : [{value:'cto',label:ROLE_LABELS.cto},{value:'eo',label:ROLE_LABELS.eo}];
+  return users.map(u => {
+    const manageable = isCo ? u.role !== 'co' : ['cto','eo'].includes(u.role);
+    const picker = manageable
+      ? '<div class="user-role-editor"><select data-role-select>' + assignable.map(r => '<option value="' + r.value + '"' + (r.value === u.role ? ' selected' : '') + '>' + esc(r.label) + '</option>').join('') + '</select><button class="btn sm" data-action="user-role-save" data-user-id="' + esc(u.id) + '">Enregistrer le grade</button></div>'
+      : '<small class="user-role-static">' + esc(ROLE_LABELS[u.role] || u.grade) + '</small>';
+    const disable = manageable && u.active
+      ? '<button class="btn danger access-user-action" data-action="user-disable" data-user-id="' + esc(u.id) + '">Désactiver</button>'
+      : '';
+    return '<div class="user-row access-user-row"><div class="access-user-avatar small">' + esc((u.username || 'M').slice(0,1).toUpperCase()) + '</div><div class="access-user-details"><b>' + esc(u.username) + '</b><small>' + esc(u.active ? 'Actif' : 'Désactivé') + '</small></div>' + picker + disable + '</div>';
+  }).join('') || '<p class="empty">Aucun compte n’a été créé.</p>';
+};
+
 const renderAccess = async () => {
   const c = api.cfg();
-  const owner = currentUser?.role === 'owner';
+  const owner = ['aco', 'co'].includes(currentUser?.role);
   $('#access').innerHTML = `
     <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère les connexions au panel, les rôles de l’équipe et la liaison avec le serveur MRD.</p></div><div class="intro-mark">⌘</div></section>
     <div class="access-grid">
@@ -402,8 +420,7 @@ const renderAccess = async () => {
         <div class="card-body">
           <form id="user-create-form" class="user-create access-create-form">
             <div class="field"><label for="new-username">Identifiant</label><input id="new-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" placeholder="ex. media.officer"></div>
-            <div class="field"><label for="new-grade">Grade affiché</label><input id="new-grade" name="grade" required maxlength="60" placeholder="ex. Media Officer"></div>
-            <div class="field"><label for="new-role">Niveau d’accès</label><div class="select-wrap"><select id="new-role" name="role"><option value="viewer">Lecteur · consultation</option><option value="editor" selected>Éditeur · événements</option><option value="admin">Administrateur · gestion</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div>
+            <div class="field"><label for="new-role">Grade à attribuer</label><div class="select-wrap"><select id="new-role" name="role"><option value="cto">Certified Officer (CtO)</option><option value="eo">Expert Officer (EO)</option><option value="aco">Assistant Commanding Officer (ACO)</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div>
             <div class="field"><label for="new-password">Mot de passe temporaire</label><input id="new-password" name="password" required minlength="12" type="password" autocomplete="new-password" placeholder="12 caractères minimum"></div>
             <div class="access-create-footer"><span>Le mot de passe initial doit être communiqué en privé.</span><button class="btn primary create-account-btn" type="submit"><span aria-hidden="true">＋</span> Créer le compte</button></div>
           </form>
@@ -412,13 +429,15 @@ const renderAccess = async () => {
         <div class="card-body access-users-body"><div id="users-list" class="user-admin"><div class="access-loading"><span class="loading-dot"></span> Chargement des comptes…</div></div></div>
       </section>` : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>La création et la désactivation des comptes sont réservées au Owner.</p></div></section>`}
     </div>`;
+  const acoOption = $('#new-role option[value="aco"]');
+  if (acoOption && currentUser?.role !== 'co') acoOption.disabled = true;
   if (owner) {
     try {
       const data = await api.post('/users/list', {});
       const users = data.users || [];
       const count = $('#access-user-count');
       if (count) count.textContent = String(users.length).padStart(2, '0');
-      $('#users-list').innerHTML = users.map(u => `<div class="user-row access-user-row"><div class="access-user-avatar small">${esc((u.username || 'M').slice(0,1).toUpperCase())}</div><div class="access-user-details"><b>${esc(u.username)}</b><small>${esc(u.grade)} <span>·</span> ${esc(u.role)} <span>·</span> <i class="${u.active ? 'status-active' : 'status-disabled'}">${u.active ? 'Actif' : 'Désactivé'}</i></small></div><button class="btn ${u.active ? 'danger' : ''} access-user-action" data-action="user-disable" data-user-id="${esc(u.id)}" ${u.id === currentUser.id || !u.active ? 'disabled' : ''}>${u.active ? 'Désactiver' : 'Désactivé'}</button></div>`).join('') || '<p class="empty">Aucun compte n’a été créé.</p>';
+      $('#users-list').innerHTML = renderUserRows(users);
     } catch (e) { $('#users-list').textContent = e.message; }
   }
 };
@@ -618,7 +637,7 @@ const renderWip = name => {
 
 const renderTeam = async () => {
   const root = $('#team');
-  if (currentUser?.role !== 'owner') {
+  if (currentUser?.role !== 'co') {
     root.innerHTML = `<section class="wip-hero"><div class="wip-mark">♙</div><div><div class="eyebrow">MEDIA RELATIONS DIVISION · ACCÈS RESTREINT</div><h1>Gestion des comptes</h1><p>La liste des comptes et leur création sont réservées au Owner.</p></div><span class="wip-badge">OWNER</span></section>`;
     return;
   }
@@ -805,6 +824,7 @@ const actions = {
   },
   'test-access': async () => { await api.post('/ping', {}); toast('Serveur accessible.', 'ok'); },
   logout: () => signOut(true),
+  'user-role-save': async el => { const role=el.closest('.user-role-editor')?.querySelector('[data-role-select]')?.value; if(!role)return; await api.post('/users/update-role',{id:el.dataset.userId,role}); toast('Grade du compte mis à jour.','ok'); await renderAccess(); },
   'user-disable': async el => { if (!(await confirmDialog('Ce compte ne pourra plus se connecter tant qu’il sera désactivé.', { title: 'Désactiver ce compte ?', confirmText: 'Désactiver', danger: true }))) return; await api.post('/users/disable', { id: el.dataset.userId }); await renderAccess(); toast('Compte désactivé.', 'ok'); }
 };
 
@@ -819,7 +839,7 @@ async function signIn(username, password) {
   currentUser = data.user;
   $('#login-screen').hidden = true;
   $('#profile-menu-name').textContent = currentUser.username;
-  $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
+  $('#profile-menu-grade').textContent = currentUser.grade;
   $('#login-error').textContent = '';
   applyProfileAvatar();
   applyPermissions();
@@ -833,17 +853,19 @@ async function signOut(show = true) {
   if (show) toast('Déconnexion effectuée.', 'ok');
 }
 function applyPermissions() {
-  const role = currentUser?.role || 'viewer';
-  const canEdit = ['owner','admin','editor'].includes(role);
+  const role = currentUser?.role || 'cto';
+  const canEdit = ['cto', 'eo', 'aco', 'co'].includes(role);
+  const canAdmin = ['aco', 'co'].includes(role);
   $('#save-actions').hidden = !canEdit;
   const home = $('.home-icon'); if (home) home.href = publicPortalUrl();
   $('#profile-menu-name').textContent = currentUser?.username || 'Mon compte';
-  $('#profile-menu-grade').textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
+  $('#profile-menu-grade').textContent = (currentUser?.grade || '');
   applyProfileAvatar();
   $$('[data-action="tab"]').forEach(b => {
-    if (b.dataset.tab === 'team') b.hidden = role !== 'owner';
+    if (b.dataset.tab === 'team') b.hidden = role !== 'co';
+    if (b.dataset.tab === 'logs') b.hidden = !canAdmin;
     if (['newsroom','media','archive'].includes(b.dataset.tab)) b.hidden = true;
-    if (b.dataset.tab === 'access') b.hidden = false;
+    if (b.dataset.tab === 'access') b.hidden = !canAdmin;
   });
   if (!canEdit) {
     $('#edit').innerHTML = '<section class="card"><div class="card-body"><h2>Consultation seule</h2><p>Ton compte ne dispose pas des droits de modification.</p></div></section>';
@@ -860,7 +882,7 @@ async function restoreSession() {
     const data = await api.post('/auth/me', {});
     currentUser = data.user; $('#login-screen').hidden = true;
     $('#profile-menu-name').textContent = currentUser.username;
-    $('#profile-menu-grade').textContent = currentUser.grade + ' · ' + currentUser.role;
+    $('#profile-menu-grade').textContent = currentUser.grade;
     applyProfileAvatar();
     applyPermissions();
   } catch { sessionStorage.removeItem(KEY.token); }
