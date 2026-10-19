@@ -377,7 +377,7 @@ export default {
 
         const username = normUser(b.username);
         const password = String(b.password || "");
-        const grade = String(b.grade || "Owner");
+        const grade = ROLE_GRADE.co;
 
         if (
           !/^[a-z0-9._-]{3,32}$/.test(username) ||
@@ -396,14 +396,14 @@ export default {
         }
 
         const count = await env.DB.prepare(
-          "SELECT COUNT(*) AS n FROM users WHERE role = 'owner'"
+          "SELECT COUNT(*) AS n FROM users WHERE role IN ('owner', 'co')"
         ).first();
 
         if (count && count.n > 0) {
           return json(
             {
               error:
-                "Le compte Owner existe déjà. Configuration verrouillée."
+                "Le compte CO existe déjà. Configuration verrouillée."
             },
             409,
             cors
@@ -422,7 +422,7 @@ export default {
           ph,
           salt,
           grade,
-          "owner",
+          "co",
           1,
           Date.now()
         ).run();
@@ -431,7 +431,7 @@ export default {
           {
             ok: true,
             message:
-              "Compte Owner créé. Supprime le secret OWNER_SETUP_KEY après configuration."
+              "Compte CO créé. Supprime le secret OWNER_SETUP_KEY après configuration."
           },
           201,
           cors
@@ -576,6 +576,14 @@ export default {
       if (route === "/auth/me") {
         return json({ user: publicUser(user) }, 200, cors);
       }
+      if (route === "/logs/list") {
+        if (!isAdmin(user)) return json({ error: "Réservé aux grades ACO et CO." }, 403, cors);
+        const result = await env.DB.prepare(
+          "SELECT id, actor_username, action, target, created_at FROM audit_logs ORDER BY id DESC LIMIT 100"
+        ).all();
+        return json({ logs: result.results || [] }, 200, cors);
+      }
+
 
       if (route === "/auth/profile") {
         const avatarData = b.avatarData === null ? null : String(b.avatarData || "");
@@ -614,112 +622,69 @@ export default {
       }
 
       if (route === "/users/list") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
-        }
-
+        if (!isAdmin(user)) return json({ error: "Réservé aux grades ACO et CO." }, 403, cors);
         const result = await env.DB.prepare(
-          `SELECT id, username, grade, role, active, created_at
-           FROM users ORDER BY created_at DESC`
+          "SELECT id, username, grade, role, active, created_at FROM users ORDER BY created_at DESC"
         ).all();
-
         return json({ users: result.results || [] }, 200, cors);
       }
 
       if (route === "/users/create") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
-        }
-
+        if (!isAdmin(user)) return json({ error: "Réservé aux grades ACO et CO." }, 403, cors);
         const username = normUser(b.username);
         const password = String(b.password || "");
-        const grade = String(b.grade || "").trim();
-        const role = String(b.role || "editor");
-
+        const role = String(b.role || "cto");
+        const grade = ROLE_GRADE[role] || "";
         if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
-          return json(
-            {
-              error:
-                "Identifiant : 3 à 32 caractères (lettres, chiffres, point, tiret, underscore)."
-            },
-            400,
-            cors
-          );
+          return json({ error: "Identifiant : 3 à 32 caractères (lettres, chiffres, point, tiret, underscore)." }, 400, cors);
         }
-
         if (password.length < 12 || password.length > 128) {
-          return json(
-            {
-              error:
-                "Le mot de passe doit contenir au moins 12 caractères."
-            },
-            400,
-            cors
-          );
+          return json({ error: "Le mot de passe doit contenir 12 à 128 caractères." }, 400, cors);
         }
-
-        if (!["admin", "editor", "viewer"].includes(role)) {
-          return json({ error: "Rôle non autorisé." }, 400, cors);
-        }
-
-        if (!grade || grade.length > 60) {
-          return json({ error: "Grade invalide." }, 400, cors);
-        }
-
+        const allowedRoles = isOwner(user) ? ["cto", "eo", "aco"] : ["cto", "eo"];
+        if (!allowedRoles.includes(role)) return json({ error: "Grade non autorisé pour ton compte." }, 403, cors);
         const salt = randomToken(16);
         const ph = await passwordHash(password, salt);
-
         try {
           const r = await env.DB.prepare(
-            `INSERT INTO users
-             (username, password_hash, salt, grade, role, active, created_at)
-             VALUES (?, ?, ?, ?, ?, 1, ?)`
-          ).bind(
-            username,
-            ph,
-            salt,
-            grade,
-            role,
-            Date.now()
-          ).run();
-
-          return json(
-            { ok: true, id: r.meta?.last_row_id },
-            201,
-            cors
-          );
+            "INSERT INTO users (username, password_hash, salt, grade, role, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)"
+          ).bind(username, ph, salt, grade, role, Date.now()).run();
+          await writeAudit(env, user, "account_created", username + " · " + grade);
+          return json({ ok: true, id: r.meta?.last_row_id }, 201, cors);
         } catch (e) {
-          // Ne transforme pas toutes les erreurs SQL en doublon.
-          if (/unique constraint failed/i.test(e.message || "")) {
-            return json(
-              { error: "Cet identifiant existe déjà." },
-              409,
-              cors
-            );
-          }
+          if (/unique constraint failed/i.test(e.message || "")) return json({ error: "Cet identifiant existe déjà." }, 409, cors);
           throw e;
         }
       }
 
       if (route === "/users/disable") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
-        }
-
+        if (!isAdmin(user)) return json({ error: "Réservé aux grades ACO et CO." }, 403, cors);
         const id = Number(b.id);
+        if (!Number.isInteger(id) || id === user.id) return json({ error: "Compte invalide." }, 400, cors);
+        const target = await env.DB.prepare("SELECT id, username, role, active FROM users WHERE id = ?").bind(id).first();
+        if (!target || !target.active || target.role === "co") return json({ error: "Compte introuvable ou non modifiable." }, 404, cors);
+        if (!isOwner(user) && !["cto", "eo"].includes(target.role)) return json({ error: "Un ACO peut uniquement désactiver les comptes CtO et EO." }, 403, cors);
+        await env.DB.prepare("UPDATE users SET active = 0 WHERE id = ?").bind(id).run();
+        await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(id).run();
+        await writeAudit(env, user, "account_disabled", target.username);
+        return json({ ok: true }, 200, cors);
+      }
 
-        if (!Number.isInteger(id) || id === user.id) {
-          return json({ error: "Compte invalide." }, 400, cors);
+      if (route === "/users/update-role") {
+        if (!isAdmin(user)) return json({ error: "Réservé aux grades ACO et CO." }, 403, cors);
+        const id = Number(b.id);
+        const role = String(b.role || "");
+        if (!Number.isInteger(id) || id === user.id) return json({ error: "Compte invalide." }, 400, cors);
+        if (!ROLE_GRADE[role] || role === "co") return json({ error: "Grade non autorisé." }, 400, cors);
+        const target = await env.DB.prepare("SELECT id, username, role FROM users WHERE id = ?").bind(id).first();
+        if (!target || target.role === "co") return json({ error: "Compte introuvable ou non modifiable." }, 404, cors);
+        const allowedRoles = isOwner(user) ? ["cto", "eo", "aco"] : ["cto", "eo"];
+        if (!allowedRoles.includes(role) || (!isOwner(user) && !["cto", "eo"].includes(target.role))) {
+          return json({ error: "Un ACO peut uniquement gérer les grades CtO et EO." }, 403, cors);
         }
-
-        await env.DB.prepare(
-          "UPDATE users SET active = 0 WHERE id = ? AND role <> ?"
-        ).bind(id, "owner").run();
-
-        await env.DB.prepare(
-          "DELETE FROM sessions WHERE user_id = ?"
-        ).bind(id).run();
-
+        if (target.role === role) return json({ ok: true, unchanged: true }, 200, cors);
+        await env.DB.prepare("UPDATE users SET role = ?, grade = ? WHERE id = ?").bind(role, ROLE_GRADE[role], id).run();
+        await writeAudit(env, user, "account_grade_changed", target.username + " · " + ROLE_GRADE[target.role] + " → " + ROLE_GRADE[role]);
         return json({ ok: true }, 200, cors);
       }
 
@@ -799,6 +764,7 @@ export default {
         operation = "lecture du contenu des événements (public/events-content.js)";
         const cf = await read(env, "public/events-content.js");
         const contents = cf ? parseContent(cf.text) : {};
+        const eventWasPublished = Object.prototype.hasOwnProperty.call(contents, b.slug);
 
         const full = b.html
           .replace(/\.\.\/public\//g, "./public/")
@@ -848,6 +814,7 @@ export default {
           `Portail : ${b.slug} (${user.username})`
         );
 
+        await writeAudit(env, user, eventWasPublished ? "event_updated" : "event_created", b.slug);
         return json(
           {
             ok: true,
@@ -873,6 +840,7 @@ export default {
         let list = []; if (listFile) { const start=listFile.text.indexOf("["); const end=listFile.text.lastIndexOf("]"); if(start>=0&&end>start) list=JSON.parse(listFile.text.slice(start,end+1)); }
         list.unshift({ id: slug, kind: b.kind, title: b.title.trim().slice(0,120), summary: String(b.summary||"").slice(0,500), date: String(b.date||"").slice(0,20), mime: b.mime, file: path });
         await write(env, "public/publications-data.js", "window.MRD_PUBLICATIONS = " + JSON.stringify(list, null, 2) + ";\\n", "Publication MRD " + slug + " (" + user.username + ")");
+        await writeAudit(env, user, "publication_published", b.kind + " · " + b.title.trim().slice(0, 100));
         return json({ ok: true, file: path }, 200, cors);
       }
 
@@ -880,29 +848,26 @@ export default {
        * MISE À JOUR DU PORTAIL
        */
       if (route === "/portal") {
-        if (!canPublish(user)) {
-          return json(
-            { error: "Ton grade ne permet pas de modifier le portail." },
-            403,
-            cors
-          );
+        if (!canPublish(user)) return json({ error: "Ton grade ne permet pas de modifier le portail." }, 403, cors);
+        if (!Array.isArray(b.list) || b.list.length > 200 || !b.list.every(okEntry)) return json({ error: "Données refusées." }, 400, cors);
+        const currentFile = await read(env, "public/events-data.js");
+        const previousList = currentFile ? parse(currentFile.text) : [];
+        const previousByHref = new Map(previousList.map(item => [item.href, item]));
+        const nextByHref = new Map(b.list.map(item => [item.href, item]));
+        for (const item of b.list) {
+          const previous = previousByHref.get(item.href);
+          if (!previous) await writeAudit(env, user, "event_added_to_portal", item.title || item.href);
+          else if (["status", "icon", "title", "desc", "date"].some(key => (previous[key] || "") !== (item[key] || ""))) {
+            await writeAudit(env, user, "event_card_updated", item.title || item.href);
+          }
         }
-
-        if (
-          !Array.isArray(b.list) ||
-          b.list.length > 200 ||
-          !b.list.every(okEntry)
-        ) {
-          return json({ error: "Données refusées." }, 400, cors);
+        for (const item of previousList) {
+          if (!nextByHref.has(item.href)) await writeAudit(env, user, "event_removed_from_portal", item.title || item.href);
         }
-
-        await write(
-          env,
-          "public/events-data.js",
-          serialize(b.list),
-          `Portail mis à jour (${user.username})`
-        );
-
+        if (previousList.map(item => item.href).join("|") !== b.list.map(item => item.href).join("|")) {
+          await writeAudit(env, user, "portal_order_updated", "Ordre des cartes");
+        }
+        await write(env, "public/events-data.js", serialize(b.list), "Portail mis à jour (" + user.username + ")");
         return json({ ok: true }, 200, cors);
       }
 
