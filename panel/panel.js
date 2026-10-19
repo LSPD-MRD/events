@@ -13,7 +13,7 @@ const ACCREDITATIONS_BY_GRADE = {
   'Expert Officer': ['Media Relations', 'Community Affairs', 'Interagency'],
   'Certified Officer': ['Media Relations', 'Community Affairs']
 };
-const accreditationTags = (items = []) => items.map(name => {
+const accreditationTags = (items = []) => (Array.isArray(items) ? items : []).map(name => {
   const meta = ACCREDITATION_META[name];
   return meta ? '<span class="accreditation-tag ' + meta.className + '">' + esc(name) + '</span>' : '';
 }).join('');
@@ -438,7 +438,7 @@ const renderAccess = async () => {
       if (count) count.textContent = String(users.length).padStart(2, '0');
       $('#users-list').innerHTML = users.map(u => {
         const allowed = ACCREDITATIONS_BY_GRADE[u.grade] || [];
-        const selected = Array.isArray(u.accreditations) ? u.accreditations : [];
+        const selected = Array.isArray(u.accreditations) ? u.accreditations : (typeof u.accreditations === 'string' ? (() => { try { const parsed = JSON.parse(u.accreditations); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []);
         return `<article class="user-row access-user-row access-user-card">
           <div class="access-user-avatar small">${esc((u.username || 'M').slice(0,1).toUpperCase())}</div>
           <div class="access-user-details">
@@ -844,9 +844,12 @@ const actions = {
   'save-accreditations': async el => {
     if (currentUser?.grade !== 'Commanding Officer' || currentUser?.role !== 'owner') throw new Error('Seul le Commanding Officer peut attribuer des accréditations.');
     const id = el.dataset.userId;
-    const inputs = $('[data-accreditation-user]').filter(input => input.dataset.accreditationUser === id);
+    const inputs = Array.from(document.querySelectorAll('[data-accreditation-user]')).filter(input => input.dataset.accreditationUser === id);
     const accreditations = inputs.filter(input => input.checked).map(input => input.value);
-    await api.post('/users/accreditations', { id, accreditations });
+    const button = el;
+    button.disabled = true;
+    try { await api.post('/users/accreditations', { id, accreditations }); }
+    catch (error) { button.disabled = false; throw error; }
     await renderAccess();
     toast('Accréditations mises à jour.', 'ok');
   }
