@@ -246,9 +246,9 @@ async function ensureAuthSchema(env) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar_data TEXT").run();
   }
   // Migration douce vers les quatre grades officiels.
-  await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner'").run();
-  await env.DB.prepare("UPDATE users SET grade = 'Assistant Commanding Officer' WHERE role = 'admin'").run();
-  await env.DB.prepare("UPDATE users SET role = 'editor', grade = CASE WHEN grade = 'Expert Officer' THEN 'Expert Officer' ELSE 'Certified Officer' END WHERE role IN ('editor', 'viewer')").run();
+  await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner' AND grade <> 'Commanding Officer'").run();
+  await env.DB.prepare("UPDATE users SET grade = 'Assistant Commanding Officer' WHERE role = 'admin' AND grade <> 'Assistant Commanding Officer'").run();
+  await env.DB.prepare("UPDATE users SET role = 'editor', grade = CASE WHEN grade = 'Expert Officer' THEN 'Expert Officer' ELSE 'Certified Officer' END WHERE role = 'viewer' OR (role = 'editor' AND grade NOT IN ('Certified Officer', 'Expert Officer'))").run();
 }
 
 async function getUser(req, env) {
