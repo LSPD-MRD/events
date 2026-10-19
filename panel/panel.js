@@ -348,10 +348,28 @@ const renderEditor = () => {
 };
 
 async function renderPublications() {
-  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>Publications</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><div class="select-wrap"><select id="pub-kind"><option value="news">Media Relations · News classiques</option><option value="comm-presse">Public Information (PIO) · Communiqué de presse</option><option value="comm-interne">Interagency · Communication interne</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="text" placeholder="Choisir une date" autocomplete="off"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
+  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>Publications</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><div class="select-wrap"><select id="pub-kind"><option value="news">Media Relations · News classiques</option><option value="comm-presse">Public Information (PIO) · Communiqué de presse</option><option value="comm-interne">Interagency · Communication interne</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="text" placeholder="Choisir une date" autocomplete="off"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><div class="file-dropzone" id="publication-dropzone" role="button" tabindex="0" aria-controls="pub-file"><span class="file-dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg></span><strong>Dépose ton fichier ici</strong><span class="file-dropzone-copy">ou <button type="button" class="file-dropzone-browse" data-file-browse="pub-file">parcourir tes fichiers</button></span><small class="file-dropzone-status" id="pub-file-status">PDF, PNG, JPG ou WEBP · 10 Mo maximum</small></div><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required class="visually-hidden-file"></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
   if (window.flatpickr) window.flatpickr($('#pub-date'), { locale: window.flatpickr.l10ns.fr, dateFormat: 'Y-m-d', altInput: true, altFormat: 'j F Y', allowInput: true, disableMobile: true });
-  const fileInput=$('#pub-file'), preview=$('#pub-preview');
-  fileInput.onchange=()=>{ const f=fileInput.files[0]; if(!f)return; if(f.size>10*1024*1024){fileInput.value='';preview.textContent='Fichier trop volumineux (10 Mo maximum).';return toast('Maximum 10 Mo par fichier.','err');} const url=URL.createObjectURL(f); preview.innerHTML=f.type==='application/pdf'?'<iframe title="Aperçu PDF" src="'+url+'"></iframe>':'<img alt="Aperçu" src="'+url+'">'; };
+  const fileInput=$('#pub-file'), preview=$('#pub-preview'), dropzone=$('#publication-dropzone'), fileStatus=$('#pub-file-status');
+  const acceptPublicationFile = file => {
+    if (!file) return;
+    if (!/^(application\/pdf|image\/(png|jpeg|webp))$/.test(file.type) || file.size > 10*1024*1024) {
+      fileInput.value=''; preview.textContent=''; fileStatus.textContent='Format invalide ou fichier supérieur à 10 Mo.';
+      dropzone.classList.remove('has-file');
+      toast('Choisis un PDF, PNG, JPG ou WEBP de 10 Mo maximum.','err'); return;
+    }
+    const transfer = new DataTransfer(); transfer.items.add(file); fileInput.files = transfer.files;
+    fileStatus.textContent = file.name + ' · ' + (file.size / (1024*1024) < 1 ? Math.max(1, Math.round(file.size/1024)) + ' Ko' : (file.size/(1024*1024)).toFixed(1) + ' Mo');
+    dropzone.classList.add('has-file');
+    const url=URL.createObjectURL(file);
+    preview.innerHTML=file.type==='application/pdf'?'<iframe title="Aperçu PDF" src="'+url+'"></iframe>':'<img alt="Aperçu" src="'+url+'">';
+  };
+  fileInput.onchange=()=>acceptPublicationFile(fileInput.files[0]);
+  dropzone.addEventListener('click', e => { if (!e.target.closest('[data-file-browse]')) fileInput.click(); });
+  dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+  ['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add('is-dragging'); }));
+  ['dragleave','dragend'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.remove('is-dragging'); }));
+  dropzone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('is-dragging'); acceptPublicationFile(e.dataTransfer?.files?.[0]); });
   try { const r=await fetch('../public/publications-data.js?v='+Date.now()); const t=r.ok?await r.text():''; const a=t.indexOf('['),z=t.lastIndexOf(']'); const data=a>=0&&z>a?JSON.parse(t.slice(a,z+1)):[]; $('#pub-list').innerHTML=data.map(p=>'<div class="row-item"><div class="meta"><b>'+esc(p.title)+'</b><small>'+esc(({news:'Media Relations','comm-presse':'Public Information (PIO)','comm-interne':'Interagency','compte-rendu':'Interagency'})[p.kind]||p.kind)+' · '+esc(p.date||'Sans date')+'</small></div><a class="btn sm" target="_blank" rel="noopener" href="../'+encodeURI(p.file)+'">Ouvrir</a><a class="btn sm" download href="../'+encodeURI(p.file)+'">Télécharger</a><button type="button" class="btn sm danger publication-delete" data-publication-delete="'+esc(p.id)+'">Supprimer</button></div>').join('')||'<p class="empty">Aucune publication en ligne.</p>'; } catch { $('#pub-list').textContent='Impossible de charger les publications.'; }
 }
 document.addEventListener('click', async e => {
@@ -486,7 +504,7 @@ const renderProfile = () => {
       <header class="card-head"><h2>Photo de profil</h2><p>Cette image est enregistrée sur ton compte MRD et reste disponible sur tes autres appareils.</p></header>
       <div class="card-body">
         <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(currentUser?.username || 'Compte MRD')}</strong><small>${esc(currentUser?.grade || '')} · ${esc(currentUser?.role || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div></div></div>
-        <div class="actions"><button class="btn" type="button" data-action="choose-avatar">Choisir une image</button><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
+        <div class="file-dropzone file-dropzone-compact" id="avatar-dropzone" role="button" tabindex="0" aria-controls="avatar-file"><span class="file-dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span><strong>Dépose une photo de profil</strong><span class="file-dropzone-copy">ou <button type="button" class="file-dropzone-browse" data-file-browse="avatar-file">parcourir tes fichiers</button></span><small class="file-dropzone-status">PNG, JPG, WEBP ou GIF · 1 Mo maximum</small></div><div class="actions"><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
         <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1 Mo.</small>
       </div>
     </section>
@@ -590,7 +608,9 @@ const setPreview = (show, remember = true) => {
   }
 };
 
-const canViewLogs = user => ['owner', 'admin'].includes(user?.role);
+const canViewLogs = user =>
+  ['owner', 'admin'].includes(user?.role) ||
+  ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
 
 const setTab = async name => {
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -694,6 +714,8 @@ const actions = {
   tab: el => setTab(el.dataset.tab),
   'toggle-pages': () => {
     const menu = $('#pages-menu'), next = menu.hidden;
+    // Recalculer les droits à l'ouverture pour que Logs reflète la session courante.
+    if (currentUser) applyPermissions();
     closeMenus(); menu.hidden = !next;
     $('#pages-trigger').setAttribute('aria-expanded', String(next));
   },
@@ -898,7 +920,12 @@ function applyPermissions() {
 }
 async function restoreSession() {
   const token = localStorage.getItem(KEY.token);
-  if (!token) return;
+  if (!token) {
+    setLoginFieldsVisible(true);
+    $('#login-screen').hidden = false;
+    document.body.classList.remove('session-checking');
+    return;
+  }
 
   setLoginFieldsVisible(false);
   $('#login-error').textContent = 'Vérification de la session précédente…';
@@ -920,6 +947,8 @@ async function restoreSession() {
       // Une erreur réseau ou serveur temporaire ne doit pas supprimer le jeton.
       $('#login-error').textContent = 'Impossible de vérifier la session auprès du serveur. La session locale est conservée ; vérifie la connexion puis recharge le panel.';
     }
+  } finally {
+    document.body.classList.remove('session-checking');
   }
 }
 $('#login-form').addEventListener('submit', async e => {
@@ -976,13 +1005,33 @@ $('#file').onchange = async e => {
   try { if (e.target.files[0]) load(JSON.parse(await e.target.files[0].text())); } catch { toast('Fichier JSON invalide.', 'err'); }
   e.target.value = '';
 };
-$('#avatar-file').onchange = async e => {
-  const file = e.target.files?.[0];
-  e.target.value = '';
+const editorDropTarget = $('.layout');
+if (editorDropTarget) {
+  ['dragenter','dragover'].forEach(type => editorDropTarget.addEventListener(type, e => {
+    const files = Array.from(e.dataTransfer?.items || []).some(item => item.kind === 'file');
+    if (!files || e.target.closest('.file-dropzone')) return;
+    e.preventDefault(); editorDropTarget.classList.add('file-import-dragging');
+  }));
+  ['dragleave','dragend'].forEach(type => editorDropTarget.addEventListener(type, e => { if (!editorDropTarget.contains(e.relatedTarget)) editorDropTarget.classList.remove('file-import-dragging'); }));
+  editorDropTarget.addEventListener('drop', async e => {
+    editorDropTarget.classList.remove('file-import-dragging');
+    if (e.target.closest('.file-dropzone')) return;
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    if (!/\\.json$/i.test(file.name) || file.size > 5*1024*1024) return;
+    e.preventDefault();
+    try { load(JSON.parse(await file.text())); toast('Événement importé.', 'ok'); } catch { toast('Fichier JSON invalide.', 'err'); }
+  });
+}
+const avatarInput = $('#avatar-file');
+const avatarDropzone = $('#avatar-dropzone');
+const acceptAvatarFile = file => {
   if (!file) return;
   if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1 * 1024 * 1024) {
     toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 1 Mo maximum.', 'err'); return;
   }
+  const transfer = new DataTransfer(); transfer.items.add(file); avatarInput.files = transfer.files;
+  if (avatarDropzone) { avatarDropzone.classList.add('has-file'); const status = avatarDropzone.querySelector('.file-dropzone-status'); if (status) status.textContent = file.name; }
   const reader = new FileReader();
   reader.onload = async () => {
     try {
@@ -994,6 +1043,15 @@ $('#avatar-file').onchange = async e => {
   };
   reader.readAsDataURL(file);
 };
+avatarInput.onchange = e => { const file = e.target.files?.[0]; e.target.value = ''; acceptAvatarFile(file); };
+if (avatarDropzone) {
+  avatarDropzone.addEventListener('click', e => { if (!e.target.closest('[data-file-browse]')) avatarInput.click(); });
+  avatarDropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); avatarInput.click(); } });
+  ['dragenter','dragover'].forEach(type => avatarDropzone.addEventListener(type, e => { e.preventDefault(); e.stopPropagation(); avatarDropzone.classList.add('is-dragging'); }));
+  ['dragleave','dragend'].forEach(type => avatarDropzone.addEventListener(type, e => { e.preventDefault(); avatarDropzone.classList.remove('is-dragging'); }));
+  avatarDropzone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); avatarDropzone.classList.remove('is-dragging'); acceptAvatarFile(e.dataTransfer?.files?.[0]); });
+}
+document.addEventListener('click', e => { const button = e.target.closest('[data-file-browse]'); if (button) { e.preventDefault(); e.stopPropagation(); document.getElementById(button.dataset.fileBrowse)?.click(); } });
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'change-password-form') return;
   e.preventDefault();
