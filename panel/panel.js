@@ -566,7 +566,7 @@ const setPreview = (show, remember = true) => {
 const setTab = async name => {
   if (['access', 'logs'].includes(name) && !['aco', 'co'].includes(currentUser?.role)) return toast('Cet espace est réservé aux grades ACO et CO.', 'err');
   if (name === 'team' && currentUser?.role !== 'co') return toast('Cet espace est réservé au CO.', 'err');
-  $('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
   if (label) label.textContent = PAGE_LABELS[name] || 'Espaces';
