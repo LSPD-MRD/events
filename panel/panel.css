@@ -1105,7 +1105,10 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-tier-heading small{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}
 .ws-tier-heading small i{display:block;width:3px;height:3px;border-radius:50%;background:var(--accent)}
 .ws-tier-rail{position:absolute;top:50%;right:-4px;width:3px;height:25px;transform:translateY(-50%);border-radius:3px;background:var(--accent);opacity:.7}
-.ws-tier-members{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:16px;padding-top:28px}
+.ws-tier-members{position:relative;display:grid;grid-template-columns:repeat(var(--ws-columns,3),minmax(0,1fr));align-items:stretch;justify-content:center;gap:16px;padding-top:28px}
+.ws-tier-members>.ws-member-card{justify-self:center;width:100%;max-width:320px}
+.ws-tier-members.single-member:before{display:none}
+.ws-tier-members.has-multiple:before{left:var(--ws-connector-inset,16.666%);right:var(--ws-connector-inset,16.666%)}
 .ws-tier-members:before{content:"";position:absolute;top:9px;left:calc(100% / 6);right:calc(100% / 6);height:1px;background:linear-gradient(90deg,transparent,var(--line-strong) 12%,var(--line-strong) 88%,transparent)}
 .ws-tier-members>.ws-member-card{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:12px;min-width:0;padding:15px;border:1px solid var(--line-strong);border-radius:14px;background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 5px 16px rgba(0,0,0,.045);transition:transform .18s,border-color .18s,box-shadow .18s}
 .ws-tier-members>.ws-member-card:before{content:"";position:absolute;bottom:100%;left:50%;width:1px;height:19px;background:var(--line-strong)}
@@ -1140,7 +1143,17 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-org-tier+.ws-org-tier:before{content:"";position:absolute;top:-29px;left:50%;height:29px;width:1px;background:linear-gradient(var(--line-strong),var(--accent));opacity:.8}
 .ws-org-board-foot{display:flex;justify-content:space-between;gap:12px;padding:12px 22px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface-2) 65%,transparent);color:var(--muted);font:500 8px 'JetBrains Mono',monospace;letter-spacing:.12em}
 .ws-org-board-foot b{color:var(--accent)}
-@media(min-width:1200px){.ws-tier-members{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}}
-@media(max-width:900px){.ws-tier-members{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ws-tier-members:before{left:25%;right:25%}}
-@media(max-width:560px){.ws-org-board{border-radius:14px}.ws-org-board-head{padding:14px}.ws-org-board-mark{display:none}.ws-org-chart{padding:18px 10px}.ws-tier-heading{max-width:calc(100% - 14px);padding:10px 12px}.ws-tier-heading h3{font-size:14px}.ws-tier-members{grid-template-columns:minmax(0,1fr);gap:14px;padding-top:25px}.ws-tier-members:before{left:50%;right:auto;width:1px;height:100%;background:var(--line-strong);opacity:.6}.ws-tier-members>.ws-member-card{z-index:1;width:calc(100% - 20px);margin:0 auto;background:var(--surface)}.ws-tier-members>.ws-member-card:before{height:12px}.ws-org-board-foot{flex-direction:column;padding:11px 14px;gap:5px;font-size:7px}.ws-member-tag{padding:5px 7px}}
+@media(min-width:1200px){.ws-tier-members{gap:18px}}
+@media(max-width:900px){.ws-tier-members{gap:14px}.ws-tier-members.has-multiple:before{left:var(--ws-connector-inset,16.666%);right:var(--ws-connector-inset,16.666%)}}
+@media(max-width:560px){.ws-org-board{border-radius:14px}.ws-org-board-head{padding:14px}.ws-org-board-mark{display:none}.ws-org-chart{padding:18px 10px}.ws-tier-heading{max-width:calc(100% - 14px);padding:10px 12px}.ws-tier-heading h3{font-size:14px}.ws-tier-members{grid-template-columns:minmax(0,1fr)!important;gap:14px;padding-top:25px}.ws-tier-members>.ws-member-card{grid-column:1!important;z-index:1;width:calc(100% - 20px);margin:0 auto;background:var(--surface)}.ws-tier-members>.ws-member-card:before{height:12px}.ws-org-board-foot{flex-direction:column;padding:11px 14px;gap:5px;font-size:7px}.ws-member-tag{padding:5px 7px}}
 @media(prefers-reduced-motion:reduce){.ws-tier-members>.ws-member-card{transition:none}.ws-tier-members>.ws-member-card:hover{transform:none}}
+
+/* Workspace forms: consistent MRD fields and reliable visibility in every calendar/task flow. */
+.ws-editor-form,.ws-report-form,.ws-task-progress-form,.ws-roster-form{min-width:0}
+.ws-editor-form label,.ws-report-form label,.ws-task-progress-form label,.ws-roster-form label{min-width:0;line-height:1.45}
+.ws-editor-form input,.ws-editor-form select,.ws-editor-form textarea,.ws-report-form input,.ws-report-form select,.ws-report-form textarea,.ws-task-progress-form input,.ws-task-progress-form select,.ws-task-progress-form textarea,.ws-roster-form input,.ws-roster-form select,.ws-roster-form textarea{box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--bg);color:var(--text);font:400 12px Inter,system-ui,sans-serif}
+.ws-editor-form textarea,.ws-report-form textarea,.ws-task-progress-form textarea,.ws-roster-form textarea{min-height:82px;resize:vertical;line-height:1.55}
+.ws-editor-form input:focus,.ws-editor-form select:focus,.ws-editor-form textarea:focus,.ws-report-form input:focus,.ws-report-form select:focus,.ws-report-form textarea:focus,.ws-task-progress-form input:focus,.ws-task-progress-form select:focus,.ws-task-progress-form textarea:focus,.ws-roster-form input:focus,.ws-roster-form select:focus,.ws-roster-form textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ws-editor-form>label,.ws-report-form>label,.ws-task-progress-form>label,.ws-roster-form>label{display:grid;gap:7px}
+.ws-report-form,.ws-task-progress-form,.ws-roster-form{gap:12px}
+.ws-editor-form[hidden]{display:none!important}
