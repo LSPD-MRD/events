@@ -129,6 +129,7 @@ const mrdDateMarkup = input => {
 const initMrdDatePickers = root => {
   (root||document).querySelectorAll('input[type="date"]:not(.mrd-date-native):not([data-native-date-picker])').forEach(mrdDateMarkup);
 };
+document.addEventListener('focusin',e=>{if(e.target.matches?.('input[type="date"]:not(.mrd-date-native):not([data-native-date-picker])'))initMrdDatePickers(e.target.parentElement||document);});
 document.addEventListener('click',e=>{
   if(!e.target.closest('.mrd-date-control'))$$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
 });
@@ -1245,6 +1246,7 @@ function renderWorkspace(){
  const tabs=[['roster','♙','Effectif'],['calendar','▦','Calendrier'],['tasks','☑','To-do list']];
  root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE · VIE DE DIVISION</div><h1>Effectif <span class="ws-title-dot">/</span> Coordination</h1><p>Membres, rendez-vous et suivi des missions réunis au même endroit.</p></div><div class="ws-intro-mark">MRD<small>FIELD OFFICE</small></div></section><div class="ws-tabs">'+tabs.map(([id,ico,label])=>'<button class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'"><span>'+ico+'</span>'+label+(id==='roster'?'<small>'+wsMembers.length+'</small>':'')+'</button>').join('')+'</div><div id="ws-content"></div>';
  const c=$('#ws-content');if(wsSection==='roster')c.innerHTML=renderWsRoster();if(wsSection==='calendar')c.innerHTML=renderWsCalendar();if(wsSection==='tasks')c.innerHTML=renderWsTasks();
+ initMrdDatePickers(c);
 }
 function renderWsRoster(){
  const ordered=[...wsMembers].sort((a,b)=>wsGrades.indexOf(a.grade)-wsGrades.indexOf(b.grade)||Number(ws.roster?.[a.id]?.order??9999)-Number(ws.roster?.[b.id]?.order??9999)||wsName(a).localeCompare(wsName(b),'fr'));
