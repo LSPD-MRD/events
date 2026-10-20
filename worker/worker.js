@@ -712,7 +712,13 @@ export default {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer les tâches." }, 403, cors);
           const t = b.task || {}, id = safeText(t.id, 80) || randomToken(8), title = safeText(t.title, 120);
           if (!title) return json({ error: "Le titre de la tâche est obligatoire." }, 400, cors);
-          const item = { id, title, description: safeText(t.description, 1500), dueDate: safeText(t.dueDate, 10), assignedTo: t.assignedTo === "" || t.assignedTo == null ? null : Number(t.assignedTo), createdBy: user.id, progress: (ws.tasks.find(x => x.id === id) || {}).progress || {} };
+          const assignedTo = t.assignedTo === "" || t.assignedTo == null ? null : Number(t.assignedTo);
+          if (assignedTo !== null) {
+            if (!Number.isInteger(assignedTo)) return json({ error: "Responsable invalide." }, 400, cors);
+            const assignee = await env.DB.prepare("SELECT id, active FROM users WHERE id = ?").bind(assignedTo).first();
+            if (!assignee || !assignee.active) return json({ error: "Le responsable doit être un compte actif." }, 400, cors);
+          }
+          const item = { id, title, description: safeText(t.description, 1500), dueDate: safeText(t.dueDate, 10), assignedTo, createdBy: user.id, progress: (ws.tasks.find(x => x.id === id) || {}).progress || {} };
           const index = ws.tasks.findIndex(x => x.id === id);
           if (index >= 0) ws.tasks[index] = { ...ws.tasks[index], ...item }; else ws.tasks.push(item);
           await saveWs(ws); await audit(env, user, "Tâche modifiée", title);
