@@ -1061,3 +1061,23 @@ input[type="time"],input[type="datetime-local"],input[type="month"]{min-height:4
 :root[data-theme="light"] input[type="time"],:root[data-theme="light"] input[type="datetime-local"],:root[data-theme="light"] input[type="month"]{color-scheme:light}
 input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:hover{border-color:var(--accent)}
 @media(max-width:520px){.mrd-date-popover{animation:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(350px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow-y:auto;box-shadow:0 0 0 100vmax rgba(0,0,0,.42),0 22px 65px rgba(0,0,0,.35)}.mrd-date-control.is-open{z-index:999}.mrd-date-day{border-radius:8px}.mrd-date-trigger{min-height:47px}}
+
+
+/* Flatpickr is used by the publication date field: match the shared MRD calendar theme. */
+.flatpickr-calendar{width:307px;padding:9px;background:var(--surface)!important;border:1px solid var(--line-strong)!important;border-radius:16px!important;box-shadow:0 22px 65px rgba(0,0,0,.28)!important;font-family:Inter,sans-serif!important;color:var(--text)!important}
+.flatpickr-calendar.arrowTop:before{border-bottom-color:var(--line-strong)!important}.flatpickr-calendar.arrowTop:after{border-bottom-color:var(--surface)!important}
+.flatpickr-calendar.arrowBottom:before{border-top-color:var(--line-strong)!important}.flatpickr-calendar.arrowBottom:after{border-top-color:var(--surface)!important}
+.flatpickr-months .flatpickr-month,.flatpickr-weekdays,.flatpickr-months .flatpickr-prev-month,.flatpickr-months .flatpickr-next-month{background:var(--surface)!important;color:var(--text)!important;fill:var(--accent)!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months,.flatpickr-current-month input.cur-year{color:var(--text)!important;font:600 14px Inter,sans-serif!important}
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover{background:var(--surface-2)!important}
+.flatpickr-weekday{background:var(--surface)!important;color:var(--muted)!important;font:600 9px 'JetBrains Mono',monospace!important}
+.flatpickr-day{height:36px;max-width:36px;line-height:34px;border:1px solid transparent!important;border-radius:9px!important;color:var(--text)!important;font:500 12px Inter,sans-serif!important}
+.flatpickr-day:hover,.flatpickr-day:focus{background:var(--accent-soft)!important;border-color:var(--accent)!important;color:var(--accent)!important}
+.flatpickr-day.today{border-color:var(--accent)!important;color:var(--accent)!important}
+.flatpickr-day.selected,.flatpickr-day.startRange,.flatpickr-day.endRange,.flatpickr-day.selected:hover{background:var(--accent)!important;border-color:var(--accent)!important;color:#101820!important;font-weight:700!important}
+.flatpickr-day.flatpickr-disabled,.flatpickr-day.prevMonthDay.flatpickr-disabled,.flatpickr-day.nextMonthDay.flatpickr-disabled{color:var(--muted)!important;opacity:.25}
+.flatpickr-months .flatpickr-prev-month:hover svg,.flatpickr-months .flatpickr-next-month:hover svg{fill:var(--accent)!important}
+.flatpickr-time{border-top:1px solid var(--line)!important}
+.flatpickr-time input,.flatpickr-time .flatpickr-am-pm{background:var(--surface)!important;color:var(--text)!important}
+.flatpickr-time input:hover,.flatpickr-time .flatpickr-am-pm:hover{background:var(--surface-2)!important}
+@media(max-width:520px){.flatpickr-calendar{max-width:calc(100vw - 28px);box-shadow:0 0 0 100vmax rgba(0,0,0,.35),0 22px 65px rgba(0,0,0,.28)!important}}
