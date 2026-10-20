@@ -648,7 +648,7 @@ const renderProfile = () => {
       <div class="card-body">
         <form id="display-profile-form" class="ws-profile-form">
           <div class="profile-edit-row">
-            <button type="button" class="profile-preview-avatar profile-avatar-edit" id="profile-preview-avatar" data-action="choose-avatar" aria-label="Modifier la photo de profil" title="Modifier la photo de profil"><span class="profile-avatar-placeholder">♙</span><span class="profile-avatar-pencil" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></span></button>
+            <div class="profile-avatar-control"><button type="button" class="profile-preview-avatar profile-avatar-edit" id="profile-preview-avatar" data-action="choose-avatar" aria-label="Choisir une photo de profil" title="Choisir une photo de profil"><span class="profile-avatar-placeholder">♙</span></button><button type="button" class="profile-avatar-pencil" data-action="choose-avatar" aria-label="Modifier la photo de profil" title="Modifier la photo de profil"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></button></div>
             <div class="profile-edit-identity"><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div><small class="profile-avatar-hint">Clique sur la photo ou le stylo pour la modifier · 10 Mo maximum</small></div>
           </div>
           <div class="ws-form-grid"><label>Prénom d’affichage<input name="first" maxlength="40" value="${esc(currentUser?.displayFirstName||'')}" placeholder="Prénom"></label><label>Nom d’affichage<input name="last" maxlength="40" value="${esc(currentUser?.displayLastName||'')}" placeholder="Nom"></label></div>
@@ -671,8 +671,6 @@ const renderProfile = () => {
   const preview = $('#profile-preview-avatar');
   const src = currentUser?.avatarData || null;
   preview.innerHTML = (pendingProfileAvatar !== undefined ? pendingProfileAvatar : src) ? `<img src="${pendingProfileAvatar !== undefined ? pendingProfileAvatar : src}" alt="Photo de profil">` : '<span class="profile-avatar-placeholder">♙</span>';
-  const pencil = '<span class="profile-avatar-pencil" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></span>';
-  preview.insertAdjacentHTML('beforeend', pencil);
   pendingProfileAvatar = undefined;
   profileAvatarChanged = false;
   applyProfileAvatar();
@@ -1193,7 +1191,7 @@ const acceptAvatarFile = file => {
     profileAvatarChanged = true;
     const preview = $('#profile-preview-avatar');
     if (preview) {
-      preview.innerHTML = `<img src="${pendingProfileAvatar}" alt="Aperçu de la photo de profil"><span class="profile-avatar-pencil" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></span>`;
+      preview.innerHTML = `<img src="${pendingProfileAvatar}" alt="Aperçu de la photo de profil">`;
     }
   };
   reader.readAsDataURL(file);
