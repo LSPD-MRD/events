@@ -1286,8 +1286,8 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .profile-avatar-edit:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 .profile-avatar-edit img{display:block;width:100%;height:100%;object-fit:cover;transition:filter .18s;}
 .profile-avatar-edit:hover img{filter:brightness(.92);}
-.profile-avatar-pencil{position:absolute;z-index:2;top:0;right:0;transform:translate(38%,-38%);display:grid;place-items:center;width:27px;height:27px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 3px 10px rgba(0,0,0,.24);cursor:pointer;transition:background .18s,border-color .18s,color .18s,box-shadow .18s,scale .18s;}
-.profile-avatar-pencil:hover{background:var(--accent);border-color:var(--accent);color:var(--surface);box-shadow:0 4px 11px rgba(0,0,0,.24);scale:1.04;}
+.profile-avatar-pencil{position:absolute;z-index:2;top:0;right:0;transform:translate(20%,-20%);display:grid;place-items:center;width:27px;height:27px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 3px 10px rgba(0,0,0,.24);cursor:pointer;transition:color .18s;}
+.profile-avatar-pencil:hover{color:var(--accent);}
 .profile-avatar-pencil:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 .profile-avatar-pencil svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 .profile-avatar-placeholder{font-size:27px;}
