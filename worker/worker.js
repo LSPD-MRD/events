@@ -193,8 +193,10 @@ const parseAccreditations = value => {
   try { const parsed = JSON.parse(value || "[]"); return Array.isArray(parsed) ? ACCREDITATIONS.filter(a => parsed.includes(a)) : []; }
   catch { return []; }
 };
+const displayName = u => [u.display_first_name, u.display_last_name].filter(Boolean).join(" ").trim() || u.username;
 const publicUser = u => ({
-  id: u.id, username: u.username, grade: u.grade, role: u.role, active: !!u.active,
+  id: u.id, username: u.username, displayFirstName: u.display_first_name || "", displayLastName: u.display_last_name || "",
+  displayName: displayName(u), grade: u.grade, role: u.role, active: !!u.active,
   accreditations: u.role === "owner" ? [...ACCREDITATIONS] : parseAccreditations(u.accreditations),
   avatarData: u.avatar_data || null
 });
@@ -216,7 +218,9 @@ async function ensureAuthSchema(env) {
       active INTEGER NOT NULL DEFAULT 1,
       created_at INTEGER NOT NULL,
       avatar_data TEXT,
-      accreditations TEXT NOT NULL DEFAULT '[]'
+      accreditations TEXT NOT NULL DEFAULT '[]',
+      display_first_name TEXT NOT NULL DEFAULT '',
+      display_last_name TEXT NOT NULL DEFAULT ''
     )`,
     `CREATE TABLE IF NOT EXISTS sessions (
       token_hash TEXT PRIMARY KEY,
@@ -244,6 +248,12 @@ async function ensureAuthSchema(env) {
       action TEXT NOT NULL,
       target TEXT NOT NULL,
       created_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS mrd_workspace (
+      workspace_key TEXT PRIMARY KEY,
+      workspace_json TEXT NOT NULL,
+      updated_by TEXT NOT NULL DEFAULT '',
+      updated_at INTEGER NOT NULL DEFAULT 0
     )`
   ];
 
@@ -257,6 +267,13 @@ async function ensureAuthSchema(env) {
   if (!(columns.results || []).some(column => column.name === "accreditations")) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN accreditations TEXT NOT NULL DEFAULT '[]'").run();
   }
+  if (!(columns.results || []).some(column => column.name === "display_first_name")) {
+    await env.DB.prepare("ALTER TABLE users ADD COLUMN display_first_name TEXT NOT NULL DEFAULT ''").run();
+  }
+  if (!(columns.results || []).some(column => column.name === "display_last_name")) {
+    await env.DB.prepare("ALTER TABLE users ADD COLUMN display_last_name TEXT NOT NULL DEFAULT ''").run();
+  }
+  await env.DB.prepare("INSERT OR IGNORE INTO mrd_workspace (workspace_key, workspace_json, updated_by, updated_at) VALUES ('main', ?, 'system', ?)").bind(JSON.stringify({ roster: {}, calendar: [], tasks: [] }), Date.now()).run();
   // Migration douce vers les quatre grades officiels.
   await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner' AND grade <> 'Commanding Officer'").run();
   await env.DB.prepare("UPDATE users SET grade = 'Assistant Commanding Officer' WHERE role = 'admin' AND grade <> 'Assistant Commanding Officer'").run();
@@ -273,7 +290,7 @@ async function getUser(req, env) {
 
   const row = await env.DB.prepare(
     `SELECT u.id, u.username, u.grade, u.role, u.active, u.avatar_data, u.accreditations,
-            s.expires_at
+            u.display_first_name, u.display_last_name, s.expires_at
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ?`
@@ -586,17 +603,125 @@ export default {
       }
 
       if (route === "/auth/profile") {
+        const hasAvatar = Object.prototype.hasOwnProperty.call(b, "avatarData");
+        const hasFirst = Object.prototype.hasOwnProperty.call(b, "displayFirstName");
+        const hasLast = Object.prototype.hasOwnProperty.call(b, "displayLastName");
         const avatarData = b.avatarData === null ? null : String(b.avatarData || "");
-        if (avatarData !== null && (
+        const first = String(b.displayFirstName ?? user.display_first_name ?? "").trim();
+        const last = String(b.displayLastName ?? user.display_last_name ?? "").trim();
+        if (first.length > 40 || last.length > 40 || /[<>]/.test(first + last)) {
+          return json({ error: "Le prénom et le nom doivent contenir 40 caractères maximum." }, 400, cors);
+        }
+        if (hasAvatar && avatarData !== null && (
           avatarData.length > 1500000 ||
           !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarData)
         )) {
           return json({ error: "Image invalide ou trop volumineuse (1 Mo maximum)." }, 400, cors);
         }
-        await env.DB.prepare(
-          "UPDATE users SET avatar_data = ? WHERE id = ?"
-        ).bind(avatarData, user.id).run();
-        return json({ ok: true, avatarData }, 200, cors);
+        if (hasAvatar) await env.DB.prepare("UPDATE users SET avatar_data = ? WHERE id = ?").bind(avatarData, user.id).run();
+        if (hasFirst || hasLast) await env.DB.prepare("UPDATE users SET display_first_name = ?, display_last_name = ? WHERE id = ?").bind(first, last, user.id).run();
+        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations, display_first_name, display_last_name FROM users WHERE id = ?").bind(user.id).first();
+        return json({ ok: true, user: publicUser(updated), avatarData: updated.avatar_data || null }, 200, cors);
+      }
+
+      if (route === "/users/profile") {
+        if (!isOwner(user) || user.grade !== "Commanding Officer") return json({ error: "La gestion des profils est réservée au Commanding Officer." }, 403, cors);
+        const id = Number(b.id), first = String(b.displayFirstName || "").trim(), last = String(b.displayLastName || "").trim();
+        if (!Number.isInteger(id) || first.length > 40 || last.length > 40 || /[<>]/.test(first + last)) return json({ error: "Profil invalide. 40 caractères maximum par champ." }, 400, cors);
+        const target = await env.DB.prepare("SELECT id, username, active FROM users WHERE id = ?").bind(id).first();
+        if (!target || !target.active) return json({ error: "Compte cible introuvable ou désactivé." }, 404, cors);
+        await env.DB.prepare("UPDATE users SET display_first_name = ?, display_last_name = ? WHERE id = ?").bind(first, last, id).run();
+        await audit(env, user, "Nom d’affichage modifié", target.username + " · " + ([first, last].filter(Boolean).join(" ") || target.username));
+        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations, display_first_name, display_last_name FROM users WHERE id = ?").bind(id).first();
+        return json({ ok: true, user: publicUser(updated) }, 200, cors);
+      }
+
+      if (route === "/workspace/get") {
+        const row = await env.DB.prepare("SELECT workspace_json FROM mrd_workspace WHERE workspace_key = 'main'").first();
+        let workspace = { roster: {}, calendar: [], tasks: [] };
+        try { workspace = { ...workspace, ...JSON.parse(row?.workspace_json || "{}") }; } catch {}
+        const usersResult = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations, display_first_name, display_last_name, created_at FROM users WHERE active = 1 ORDER BY created_at ASC").all();
+        const members = (usersResult.results || []).map(u => ({ ...publicUser(u), createdAt: u.created_at }));
+        if (!isOwner(user)) {
+          for (const entry of Object.values(workspace.roster || {})) if (entry && typeof entry === "object") delete entry.privateNotes;
+        }
+        return json({ workspace, members, canManageRoster: isOwner(user), canManageCalendar: isAdmin(user), canManageTasks: isAdmin(user) }, 200, cors);
+      }
+
+      if (route === "/workspace/save") {
+        const action = String(b.action || "");
+        const row = await env.DB.prepare("SELECT workspace_json FROM mrd_workspace WHERE workspace_key = 'main'").first();
+        let ws = { roster: {}, calendar: [], tasks: [] };
+        try { ws = { ...ws, ...JSON.parse(row?.workspace_json || "{}") }; } catch {}
+        const saveWs = async target => {
+          await env.DB.prepare("UPDATE mrd_workspace SET workspace_json = ?, updated_by = ?, updated_at = ? WHERE workspace_key = 'main'")
+            .bind(JSON.stringify(target), user.username, Date.now()).run();
+        };
+        const safeText = (value, max = 1000) => String(value || "").trim().slice(0, max);
+        if (action === "roster") {
+          if (!isOwner(user) || user.grade !== "Commanding Officer") return json({ error: "La gestion de l’effectif est réservée au CO." }, 403, cors);
+          const memberId = String(b.userId || "");
+          const target = await env.DB.prepare("SELECT id, username, active FROM users WHERE id = ?").bind(Number(memberId)).first();
+          if (!target || !target.active) return json({ error: "Membre introuvable." }, 404, cors);
+          const data = b.roster || {};
+          ws.roster[memberId] = {
+            order: Math.max(0, Math.min(9999, Number(data.order) || 0)),
+            arrivalDate: safeText(data.arrivalDate, 10),
+            promotionDate: safeText(data.promotionDate, 10),
+            publicNotes: safeText(data.publicNotes, 500),
+            privateNotes: safeText(data.privateNotes, 1500)
+          };
+          await saveWs(ws); await audit(env, user, "Fiche effectif modifiée", target.username);
+        } else if (action === "event-upsert") {
+          if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer le calendrier." }, 403, cors);
+          const e = b.event || {}, id = safeText(e.id, 80) || randomToken(8);
+          const title = safeText(e.title, 120), date = safeText(e.date, 10);
+          if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: "Un titre et une date valide sont obligatoires." }, 400, cors);
+          const item = { id, title, date, time: safeText(e.time, 10), description: safeText(e.description, 1500), location: safeText(e.location, 160), createdBy: user.id, signups: Array.isArray(e.signups) ? e.signups : [] };
+          const index = ws.calendar.findIndex(x => x.id === id);
+          if (index >= 0) ws.calendar[index] = { ...ws.calendar[index], ...item, signups: ws.calendar[index].signups || [] }; else ws.calendar.push(item);
+          ws.calendar.sort((a, z) => (a.date + a.time).localeCompare(z.date + z.time));
+          await saveWs(ws); await audit(env, user, "Calendrier modifié", title);
+        } else if (action === "event-delete") {
+          if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer le calendrier." }, 403, cors);
+          ws.calendar = ws.calendar.filter(x => x.id !== String(b.eventId)); await saveWs(ws);
+        } else if (action === "signup") {
+          const event = ws.calendar.find(x => x.id === String(b.eventId));
+          if (!event) return json({ error: "Événement introuvable." }, 404, cors);
+          event.signups = Array.isArray(event.signups) ? event.signups : [];
+          const found = event.signups.find(x => Number(x.userId) === Number(user.id));
+          if (b.join && !found) event.signups.push({ userId: user.id, notes: "", work: "" });
+          if (!b.join && found) event.signups = event.signups.filter(x => Number(x.userId) !== Number(user.id));
+          await saveWs(ws);
+        } else if (action === "event-report") {
+          const event = ws.calendar.find(x => x.id === String(b.eventId));
+          if (!event) return json({ error: "Événement introuvable." }, 404, cors);
+          const signup = (event.signups || []).find(x => Number(x.userId) === Number(user.id));
+          if (!signup) return json({ error: "Inscris-toi à l’événement avant d’ajouter tes notes." }, 403, cors);
+          signup.notes = safeText(b.notes, 1200); signup.work = safeText(b.work, 2000);
+          await saveWs(ws);
+        } else if (action === "task-upsert") {
+          if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer les tâches." }, 403, cors);
+          const t = b.task || {}, id = safeText(t.id, 80) || randomToken(8), title = safeText(t.title, 120);
+          if (!title) return json({ error: "Le titre de la tâche est obligatoire." }, 400, cors);
+          const item = { id, title, description: safeText(t.description, 1500), dueDate: safeText(t.dueDate, 10), assignedTo: t.assignedTo === "" || t.assignedTo == null ? null : Number(t.assignedTo), createdBy: user.id, progress: (ws.tasks.find(x => x.id === id) || {}).progress || {} };
+          const index = ws.tasks.findIndex(x => x.id === id);
+          if (index >= 0) ws.tasks[index] = { ...ws.tasks[index], ...item }; else ws.tasks.push(item);
+          await saveWs(ws); await audit(env, user, "Tâche modifiée", title);
+        } else if (action === "task-delete") {
+          if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer les tâches." }, 403, cors);
+          ws.tasks = ws.tasks.filter(x => x.id !== String(b.taskId)); await saveWs(ws);
+        } else if (action === "task-progress") {
+          const task = ws.tasks.find(x => x.id === String(b.taskId));
+          if (!task) return json({ error: "Tâche introuvable." }, 404, cors);
+          if (task.assignedTo && Number(task.assignedTo) !== Number(user.id) && !isAdmin(user)) return json({ error: "Cette tâche est attribuée à un autre membre." }, 403, cors);
+          task.progress = task.progress || {};
+          task.progress[String(user.id)] = { status: ["todo", "doing", "done"].includes(b.status) ? b.status : "todo", report: safeText(b.report, 2000), updatedAt: Date.now() };
+          await saveWs(ws);
+        } else {
+          return json({ error: "Action d’espace de travail inconnue." }, 400, cors);
+        }
+        return json({ ok: true }, 200, cors);
       }
 
       if (route === "/auth/change-password") {
