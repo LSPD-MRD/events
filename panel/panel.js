@@ -18,6 +18,8 @@ const accreditationTags = (items = []) => (Array.isArray(items) ? items : []).ma
   return meta ? '<span class="accreditation-tag ' + meta.className + '">' + esc(name) + '</span>' : '';
 }).join('');
 let currentUser = null;
+let pendingProfileAvatar;
+let profileAvatarChanged = false;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -644,10 +646,15 @@ const renderProfile = () => {
     <section class="card">
       <header class="card-head"><h2>Identité & photo de profil</h2><p>Ton nom d’affichage et ta photo sont visibles par les autres membres de la MRD.</p></header>
       <div class="card-body">
-        <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div></div></div>
-        <form id="display-profile-form" class="ws-profile-form"><div class="ws-form-grid"><label>Prénom d’affichage<input name="first" maxlength="40" value="${esc(currentUser?.displayFirstName||'')}" placeholder="Prénom"></label><label>Nom d’affichage<input name="last" maxlength="40" value="${esc(currentUser?.displayLastName||'')}" placeholder="Nom"></label></div><small>Le CO peut aussi gérer ces informations depuis l’espace Effectif.</small><button class="btn primary" type="submit">Enregistrer mon nom d’affichage</button></form>
-        <div class="file-dropzone file-dropzone-compact" id="avatar-dropzone" role="button" tabindex="0" aria-controls="avatar-file"><span class="file-dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span><strong>Dépose une photo de profil</strong><span class="file-dropzone-copy">ou <button type="button" class="file-dropzone-browse" data-file-browse="avatar-file">parcourir tes fichiers</button></span><small class="file-dropzone-status">PNG, JPG, WEBP ou GIF · 1 Mo maximum</small></div><div class="actions"><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
-        <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1 Mo.</small>
+        <form id="display-profile-form" class="ws-profile-form">
+          <div class="profile-edit-row">
+            <button type="button" class="profile-preview-avatar profile-avatar-edit" id="profile-preview-avatar" data-action="choose-avatar" aria-label="Modifier la photo de profil" title="Modifier la photo de profil"><span class="profile-avatar-placeholder">♙</span><span class="profile-avatar-pencil" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></span></button>
+            <div class="profile-edit-identity"><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div><small class="profile-avatar-hint">Clique sur la photo ou le stylo pour la modifier · 10 Mo maximum</small></div>
+          </div>
+          <div class="ws-form-grid"><label>Prénom d’affichage<input name="first" maxlength="40" value="${esc(currentUser?.displayFirstName||'')}" placeholder="Prénom"></label><label>Nom d’affichage<input name="last" maxlength="40" value="${esc(currentUser?.displayLastName||'')}" placeholder="Nom"></label></div>
+          <small>Le CO peut aussi gérer ces informations depuis l’espace Effectif.</small>
+          <button class="btn primary" type="submit">Enregistrer le profil</button>
+        </form>
       </div>
     </section>
     <section class="card">
@@ -663,7 +670,11 @@ const renderProfile = () => {
     </section>`;
   const preview = $('#profile-preview-avatar');
   const src = currentUser?.avatarData || null;
-  preview.innerHTML = src ? `<img src="${src}" alt="Photo de profil">` : '<span>♙</span>';
+  preview.innerHTML = (pendingProfileAvatar !== undefined ? pendingProfileAvatar : src) ? `<img src="${pendingProfileAvatar !== undefined ? pendingProfileAvatar : src}" alt="Photo de profil">` : '<span class="profile-avatar-placeholder">♙</span>';
+  const pencil = '<span class="profile-avatar-pencil" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></span>';
+  preview.insertAdjacentHTML('beforeend', pencil);
+  pendingProfileAvatar = undefined;
+  profileAvatarChanged = false;
   applyProfileAvatar();
 };
 
@@ -906,7 +917,6 @@ const actions = {
     $('#profile-trigger').setAttribute('aria-expanded', String(next));
   },
   'choose-avatar': () => $('#avatar-file').click(),
-  'remove-avatar': async () => { try { await api.post('/auth/profile', { avatarData: null }); if (currentUser) currentUser.avatarData = null; applyProfileAvatar(); renderProfile(); toast('Photo de profil retirée du compte.', 'ok'); } catch (err) { toast(err.message, 'err'); } },
 
   theme: () => { applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); refresh(); },
   device: el => { $('#device-frame').style.width = el.dataset.width; markActive(el); },
@@ -1171,33 +1181,23 @@ if (editorDropTarget) {
   });
 }
 const avatarInput = $('#avatar-file');
-const avatarDropzone = $('#avatar-dropzone');
 const acceptAvatarFile = file => {
   if (!file) return;
-  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 1 * 1024 * 1024) {
-    toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 1 Mo maximum.', 'err'); return;
+  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 10 * 1024 * 1024) {
+    toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 10 Mo maximum.', 'err'); return;
   }
-  const transfer = new DataTransfer(); transfer.items.add(file); avatarInput.files = transfer.files;
-  if (avatarDropzone) { avatarDropzone.classList.add('has-file'); const status = avatarDropzone.querySelector('.file-dropzone-status'); if (status) status.textContent = file.name; }
   const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const data = await api.post('/auth/profile', { avatarData: String(reader.result) });
-      if (currentUser) currentUser.avatarData = data.avatarData;
-      renderProfile();
-      toast('Photo de profil enregistrée sur ton compte MRD.', 'ok');
-    } catch (err) { toast(err.message, 'err'); }
+  reader.onload = () => {
+    pendingProfileAvatar = String(reader.result);
+    profileAvatarChanged = true;
+    const preview = $('#profile-preview-avatar');
+    if (preview) {
+      preview.innerHTML = `<img src="${pendingProfileAvatar}" alt="Aperçu de la photo de profil"><span class="profile-avatar-pencil" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></span>`;
+    }
   };
   reader.readAsDataURL(file);
 };
 avatarInput.onchange = e => { const file = e.target.files?.[0]; e.target.value = ''; acceptAvatarFile(file); };
-if (avatarDropzone) {
-  avatarDropzone.addEventListener('click', e => { if (!e.target.closest('[data-file-browse]')) avatarInput.click(); });
-  avatarDropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); avatarInput.click(); } });
-  ['dragenter','dragover'].forEach(type => avatarDropzone.addEventListener(type, e => { e.preventDefault(); e.stopPropagation(); avatarDropzone.classList.add('is-dragging'); }));
-  ['dragleave','dragend'].forEach(type => avatarDropzone.addEventListener(type, e => { e.preventDefault(); avatarDropzone.classList.remove('is-dragging'); }));
-  avatarDropzone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); avatarDropzone.classList.remove('is-dragging'); acceptAvatarFile(e.dataTransfer?.files?.[0]); });
-}
 document.addEventListener('click', e => { const button = e.target.closest('[data-file-browse]'); if (button) { e.preventDefault(); e.stopPropagation(); document.getElementById(button.dataset.fileBrowse)?.click(); } });
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'change-password-form') return;
@@ -1324,7 +1324,7 @@ document.addEventListener('submit',async e=>{
  if(f.matches('.ws-report-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-report',eventId:f.dataset.id,notes:d.get('notes'),work:d.get('work')});toast('Compte rendu enregistré.','ok');await wsReload('calendar');return;}
  if(f.id==='ws-task-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-upsert',task:{id:f.dataset.id,title:d.get('title'),dueDate:d.get('dueDate'),assignedTo:d.get('assignedTo'),description:d.get('description')}});toast('Tâche enregistrée.','ok');await wsReload('tasks');return;}
  if(f.matches('.ws-task-progress-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-progress',taskId:f.dataset.id,status:d.get('status'),report:d.get('report')});toast('Avancement enregistré.','ok');await wsReload('tasks');return;}
- if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),r=await api.post('/auth/profile',{displayFirstName:d.get('first'),displayLastName:d.get('last')});currentUser={...currentUser,...r.user};applyPermissions();renderProfile();toast('Nom d’affichage enregistré.','ok');return;}
+ if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),payload={displayFirstName:d.get('first'),displayLastName:d.get('last')};if(profileAvatarChanged)payload.avatarData=pendingProfileAvatar;const r=await api.post('/auth/profile',payload);currentUser={...currentUser,...r.user};pendingProfileAvatar=undefined;profileAvatarChanged=false;applyPermissions();renderProfile();toast('Profil enregistré.','ok');return;}
  }catch(err){e.preventDefault();toast(err.message||'Enregistrement impossible.','err');}
 });
 

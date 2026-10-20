@@ -1278,3 +1278,17 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
   .ws-tier-members>.ws-member-card{grid-column:auto!important;width:100%;margin:0}
   .ws-org-tier+.ws-org-tier:before{width:16px}
 }
+
+/* Photo de profil compacte et directement éditable */
+.profile-avatar-edit{position:relative;padding:0;cursor:pointer;transition:border-color .18s,transform .18s;}
+.profile-avatar-edit:hover{border-color:var(--accent);transform:translateY(-1px);}
+.profile-avatar-edit:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+.profile-avatar-edit img{display:block;width:100%;height:100%;object-fit:cover;}
+.profile-avatar-pencil{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.22);}
+.profile-avatar-pencil svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.profile-avatar-placeholder{font-size:27px;}
+.profile-edit-identity{min-width:0;}
+.profile-avatar-hint{display:block;margin-top:7px;color:var(--muted);font-size:10px;}
+#display-profile-form{margin-top:18px;}
+#display-profile-form .btn{justify-self:start;}
+@media(max-width:520px){.profile-edit-row{align-items:flex-start;gap:12px}.profile-avatar-hint{max-width:230px;line-height:1.5}}

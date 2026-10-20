@@ -613,10 +613,10 @@ export default {
           return json({ error: "Le prénom et le nom doivent contenir 40 caractères maximum." }, 400, cors);
         }
         if (hasAvatar && avatarData !== null && (
-          avatarData.length > 1500000 ||
+          avatarData.length > 14000000 ||
           !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarData)
         )) {
-          return json({ error: "Image invalide ou trop volumineuse (1 Mo maximum)." }, 400, cors);
+          return json({ error: "Image invalide ou trop volumineuse (10 Mo maximum)." }, 400, cors);
         }
         if (hasAvatar) await env.DB.prepare("UPDATE users SET avatar_data = ? WHERE id = ?").bind(avatarData, user.id).run();
         if (hasFirst || hasLast) await env.DB.prepare("UPDATE users SET display_first_name = ?, display_last_name = ? WHERE id = ?").bind(first, last, user.id).run();
