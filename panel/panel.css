@@ -1019,8 +1019,8 @@ body.session-checking .toasts { visibility: hidden; }
 
 
 /* ── MRD date controls: custom calendar shared by every panel form ── */
-.mrd-date-control{position:relative;display:block;width:100%;min-width:0;isolation:isolate}
-.mrd-date-control.is-open{z-index:130}
+.mrd-date-control{position:relative;display:block;width:100%;min-width:0;isolation:auto;z-index:1}
+.mrd-date-control.is-open{z-index:2147483000}
 .mrd-date-native{position:absolute!important;left:10px!important;bottom:8px!important;width:1px!important;height:1px!important;min-height:1px!important;padding:0!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important}
 .mrd-date-trigger{display:flex;align-items:center;gap:12px;width:100%;min-height:49px;padding:9px 12px;text-align:left;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--radius-sm);color:var(--text);cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s}
 .mrd-date-trigger:hover,.mrd-date-control.is-open .mrd-date-trigger{border-color:var(--accent);background:var(--surface)}
@@ -1033,20 +1033,20 @@ body.session-checking .toasts { visibility: hidden; }
 .mrd-date-trigger:not(.has-value) .mrd-date-copy strong{color:var(--muted);font-weight:500}
 .mrd-date-chevron{color:var(--muted);font-size:19px;line-height:1;transition:transform .18s}
 .mrd-date-control.is-open .mrd-date-chevron{transform:rotate(180deg);color:var(--accent)}
-.mrd-date-popover{position:absolute;z-index:150;top:calc(100% + 8px);left:0;width:min(330px,calc(100vw - 36px));padding:14px;background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;box-shadow:0 22px 65px rgba(0,0,0,.28);animation:mrd-date-in .16s ease-out;overscroll-behavior:contain}
+.mrd-date-popover{position:fixed;z-index:2147483000;top:0;left:0;width:min(286px,calc(100vw - 24px));max-height:min(370px,calc(100dvh - 24px));overflow-y:auto;padding:10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;box-shadow:0 22px 65px rgba(0,0,0,.28);animation:mrd-date-in .16s ease-out;overscroll-behavior:contain}
 .mrd-date-popover[hidden]{display:none}
 @keyframes mrd-date-in{from{opacity:0;transform:translateY(-5px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-.mrd-date-pop-head{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:8px;margin-bottom:17px}
+.mrd-date-pop-head{display:grid;grid-template-columns:29px 1fr 29px;align-items:center;gap:6px;margin-bottom:10px}
 .mrd-date-pop-head>div{display:grid;gap:4px;text-align:center;min-width:0}
-.mrd-date-pop-head strong{font:700 17px Rajdhani,sans-serif;text-transform:capitalize;letter-spacing:.01em}
+.mrd-date-pop-head strong{font:700 15px Rajdhani,sans-serif;text-transform:capitalize;letter-spacing:.01em}
 .mrd-date-pop-head small{font:500 8px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--muted)}
-.mrd-date-nav{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:23px;line-height:1;cursor:pointer;transition:all .15s}
+.mrd-date-nav{display:grid;place-items:center;width:29px;height:29px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:23px;line-height:1;cursor:pointer;transition:all .15s}
 .mrd-date-nav:hover:not(:disabled){color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 .mrd-date-nav:disabled{opacity:.25;cursor:not-allowed}
-.mrd-date-weekdays,.mrd-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mrd-date-weekdays,.mrd-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
 .mrd-date-weekdays{margin-bottom:6px}
-.mrd-date-weekdays span{display:grid;place-items:center;height:25px;color:var(--muted);font:600 9px 'JetBrains Mono',monospace}
-.mrd-date-day{display:grid;place-items:center;aspect-ratio:1;min-width:0;padding:0;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--text);font:500 12px Inter,sans-serif;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.mrd-date-weekdays span{display:grid;place-items:center;height:20px;color:var(--muted);font:600 9px 'JetBrains Mono',monospace}
+.mrd-date-day{display:grid;place-items:center;aspect-ratio:1;min-width:0;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text);font:500 12px Inter,sans-serif;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
 .mrd-date-day:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .mrd-date-day.is-today{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent);font-weight:700}
 .mrd-date-day.is-selected,.mrd-date-day.is-selected:hover{background:var(--accent);border-color:var(--accent);color:#101820;font-weight:700;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 25%,transparent)}
@@ -1187,3 +1187,6 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 
 /* Date fields: preserve form-grid sizing after native inputs become custom controls */
 .ws-form-grid>label{min-width:0}.ws-form-grid .mrd-date-control{width:100%;min-width:0}.ws-form-grid .mrd-date-control .mrd-date-trigger{min-width:0}.ws-editor-form[hidden]{display:none!important}
+
+/* Compact date popovers: viewport layer above adjacent fields/cards. */
+.mrd-date-control.is-open{z-index:2147483000}.mrd-date-popover{box-sizing:border-box}.mrd-date-popover .mrd-date-pop-foot{margin-top:8px}.mrd-date-popover .mrd-date-today,.mrd-date-popover .mrd-date-clear{font-size:11px}
