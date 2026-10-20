@@ -766,7 +766,7 @@ export default {
         }
 
         const result = await env.DB.prepare(
-          `SELECT id, username, grade, role, active, created_at, accreditations, avatar_data, display_first_name, display_last_name
+          `SELECT id, username, grade, role, active, created_at, accreditations, display_first_name, display_last_name
            FROM users ORDER BY created_at DESC`
         ).all();
         return json({ users: (result.results || []).map(u => ({
