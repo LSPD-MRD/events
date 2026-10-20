@@ -20,6 +20,7 @@ const accreditationTags = (items = []) => (Array.isArray(items) ? items : []).ma
 let currentUser = null;
 let pendingProfileAvatar;
 let profileAvatarChanged = false;
+let profileAvatarChanged = false;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1324,7 +1325,7 @@ document.addEventListener('submit',async e=>{
  if(f.matches('.ws-report-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-report',eventId:f.dataset.id,notes:d.get('notes'),work:d.get('work')});toast('Compte rendu enregistré.','ok');await wsReload('calendar');return;}
  if(f.id==='ws-task-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-upsert',task:{id:f.dataset.id,title:d.get('title'),dueDate:d.get('dueDate'),assignedTo:d.get('assignedTo'),description:d.get('description')}});toast('Tâche enregistrée.','ok');await wsReload('tasks');return;}
  if(f.matches('.ws-task-progress-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-progress',taskId:f.dataset.id,status:d.get('status'),report:d.get('report')});toast('Avancement enregistré.','ok');await wsReload('tasks');return;}
- if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),r=await api.post('/auth/profile',{displayFirstName:d.get('first'),displayLastName:d.get('last')});currentUser={...currentUser,...r.user};applyPermissions();renderProfile();toast('Nom d’affichage enregistré.','ok');return;}
+ if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),payload={displayFirstName:d.get('first'),displayLastName:d.get('last')};if(profileAvatarChanged)payload.avatarData=pendingProfileAvatar;const r=await api.post('/auth/profile',payload);currentUser={...currentUser,...r.user};pendingProfileAvatar=undefined;profileAvatarChanged=false;applyPermissions();renderProfile();toast('Profil enregistré.','ok');return;}
  }catch(err){e.preventDefault();toast(err.message||'Enregistrement impossible.','err');}
 });
 
