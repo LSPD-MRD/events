@@ -1155,6 +1155,12 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-report-form,.ws-task-progress-form,.ws-roster-form{gap:12px}
 .ws-editor-form[hidden]{display:none!important}
 
-/* Note d'effectif — texte secondaire discret, sans modifier la mise en page existante */
-.ws-member-note{display:block;min-width:0;margin:10px 0 0;padding:8px 0 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
-.ws-member-note p{margin:0}
+/* Note d'effectif — signature éditoriale MRD, légère et intégrée à la carte */
+.ws-member-note{position:relative;display:grid;grid-template-columns:2px minmax(0,1fr);column-gap:10px;min-width:0;margin:2px 0 0;padding:9px 0 1px;color:var(--muted);font-size:11px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.ws-member-note:before{content:"";grid-column:1;grid-row:1/3;align-self:stretch;min-height:100%;border-radius:2px;background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 18%,transparent));opacity:.78;transition:opacity .22s,box-shadow .22s}
+.ws-member-note-label{grid-column:2;display:block;margin:0 0 3px;color:var(--accent);font:600 8px/1.35 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.82;transition:opacity .22s}
+.ws-member-note p{grid-column:2;min-width:0;margin:0;color:var(--text);opacity:.76;transition:opacity .22s}
+.ws-tier-members>.ws-member-card:hover .ws-member-note:before{opacity:1;box-shadow:0 0 9px color-mix(in srgb,var(--accent) 24%,transparent)}
+.ws-tier-members>.ws-member-card:hover .ws-member-note-label{opacity:1}
+.ws-tier-members>.ws-member-card:hover .ws-member-note p{opacity:.94}
+@media(prefers-reduced-motion:reduce){.ws-member-note:before,.ws-member-note-label,.ws-member-note p{transition:none}}
