@@ -20,7 +20,7 @@ const accreditationTags = (items = []) => (Array.isArray(items) ? items : []).ma
 let currentUser = null;
 
 const $ = (s, r = document) => r.querySelector(s);
-const $ = (s, r = document) => [...r.querySelectorAll(s)];
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 /* ── MRD custom date picker: consistent across every panel form ── */
 const mrdDateFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
