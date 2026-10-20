@@ -645,6 +645,14 @@ export default {
         if (!isOwner(user)) {
           for (const entry of Object.values(workspace.roster || {})) if (entry && typeof entry === "object") delete entry.privateNotes;
         }
+        if (!isAdmin(user)) {
+          for (const event of workspace.calendar || []) {
+            event.signups = (event.signups || []).map(signup => Number(signup.userId) === Number(user.id) ? signup : { userId: signup.userId });
+          }
+          for (const task of workspace.tasks || []) {
+            task.progress = Object.fromEntries(Object.entries(task.progress || {}).filter(([id]) => Number(id) === Number(user.id)));
+          }
+        }
         return json({ workspace, members, canManageRoster: isOwner(user), canManageCalendar: isAdmin(user), canManageTasks: isAdmin(user) }, 200, cors);
       }
 
@@ -752,11 +760,11 @@ export default {
         }
 
         const result = await env.DB.prepare(
-          `SELECT id, username, grade, role, active, created_at, accreditations
+          `SELECT id, username, grade, role, active, created_at, accreditations, avatar_data, display_first_name, display_last_name
            FROM users ORDER BY created_at DESC`
         ).all();
         return json({ users: (result.results || []).map(u => ({
-          ...u, active: !!u.active,
+          ...publicUser(u), created_at: u.created_at, active: !!u.active,
           accreditations: u.role === "owner" ? [...ACCREDITATIONS] : parseAccreditations(u.accreditations)
         })) }, 200, cors);
       }
