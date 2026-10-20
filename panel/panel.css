@@ -1280,11 +1280,15 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 }
 
 /* Photo de profil compacte et directement éditable */
-.profile-avatar-edit{position:relative;padding:0;cursor:pointer;transition:border-color .18s,transform .18s;}
-.profile-avatar-edit:hover{border-color:var(--accent);transform:translateY(-1px);}
+.profile-avatar-control{position:relative;flex:0 0 64px;width:64px;height:64px;isolation:isolate;}
+.profile-avatar-edit{position:relative;width:64px;height:64px;padding:0;cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .18s;}
+.profile-avatar-edit:hover{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent);transform:translateY(-1px);}
 .profile-avatar-edit:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
-.profile-avatar-edit img{display:block;width:100%;height:100%;object-fit:cover;}
-.profile-avatar-pencil{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:24px;height:24px;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.22);}
+.profile-avatar-edit img{display:block;width:100%;height:100%;object-fit:cover;transition:filter .18s;}
+.profile-avatar-edit:hover img{filter:brightness(.92);}
+.profile-avatar-pencil{position:absolute;z-index:2;top:0;right:0;transform:translate(38%,-38%);display:grid;place-items:center;width:27px;height:27px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 3px 10px rgba(0,0,0,.24);cursor:pointer;transition:background .18s,border-color .18s,color .18s,box-shadow .18s,transform .18s;}
+.profile-avatar-pencil:hover{background:var(--accent);border-color:var(--accent);color:var(--surface);box-shadow:0 4px 13px rgba(0,0,0,.28);transform:translate(38%,-38%) scale(1.08);}
+.profile-avatar-pencil:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 .profile-avatar-pencil svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 .profile-avatar-placeholder{font-size:27px;}
 .profile-edit-identity{min-width:0;}
