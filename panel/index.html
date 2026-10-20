@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-<link rel="stylesheet" href="panel.css?v=20261021o">
+<link rel="stylesheet" href="panel.css?v=20261021p">
 </head>
 <body class="session-checking">
 <header class="topbar">
@@ -33,8 +33,8 @@
   <div class="topbar-actions">
     <span class="draft" id="draft"></span>
     <button class="btn ghost theme-toggle" id="theme-toggle" data-action="theme" aria-label="Changer de thème" title="Changer de thème">☼ <span>Mode clair</span></button>
-    <button class="btn ghost hide-compact" data-action="download-page">Télécharger</button>
-    <div class="save-dropdown" id="save-actions">
+    <button class="btn ghost hide-compact" data-editor-only data-action="download-page" hidden>Télécharger</button>
+    <div class="save-dropdown" id="save-actions" data-editor-only hidden>
       <button class="btn primary save-main" id="publish" data-action="save-draft">Enregistrer</button>
       <button class="btn primary save-caret" id="save-menu-trigger" type="button" data-action="toggle-save-menu" aria-label="Autres options d’enregistrement" aria-expanded="false" aria-controls="save-menu">▾</button>
       <div class="save-menu" id="save-menu" hidden>
@@ -95,6 +95,6 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/fr.js"></script>
 <script src="generator.js?v=20261018h"></script>
-<script src="panel.js?v=20261021o"></script>
+<script src="panel.js?v=20261021p"></script>
 </body>
 </html>
