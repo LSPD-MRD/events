@@ -87,8 +87,10 @@ const mrdDateMarkup = input => {
     popup.innerHTML='<div class="mrd-date-pop-head"><button type="button" class="mrd-date-nav" data-mrd-date-action="prev" aria-label="Mois précédent">‹</button><div><strong>'+mrdMonthFmt.format(first)+'</strong><small>SÉLECTIONNER UNE DATE</small></div><button type="button" class="mrd-date-nav" data-mrd-date-action="next" aria-label="Mois suivant">›</button></div><div class="mrd-date-weekdays"><span>LUN</span><span>MAR</span><span>MER</span><span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span></div><div class="mrd-date-grid">'+cells.join('')+'</div><div class="mrd-date-pop-foot"><button type="button" class="mrd-date-today" data-mrd-date-action="today">Aujourd’hui</button><button type="button" class="mrd-date-clear" data-mrd-date-action="clear">Effacer</button></div>';
     const prev=popup.querySelector('[data-mrd-date-action="prev"]');
     const next=popup.querySelector('[data-mrd-date-action="next"]');
-    if(min&&y===min.getUTCFullYear()&&m===min.getUTCMonth())prev.disabled=true;
-    if(max&&y===max.getUTCFullYear()&&m===max.getUTCMonth())next.disabled=true;
+    if(min&&new Date(Date.UTC(y,m-1,1))<new Date(Date.UTC(min.getUTCFullYear(),min.getUTCMonth(),1)))prev.disabled=true;
+    if(max&&new Date(Date.UTC(y,m+1,1))>new Date(Date.UTC(max.getUTCFullYear(),max.getUTCMonth(),1)))next.disabled=true;
+    const clearButton=popup.querySelector('[data-mrd-date-action="clear"]');
+    if(input.dataset.originalRequired==='true')clearButton.disabled=true;
   };
   const setValue=iso=>{
     input.value=iso;
