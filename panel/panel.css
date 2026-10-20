@@ -1164,3 +1164,26 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-tier-members>.ws-member-card:hover .ws-member-note-label{opacity:1}
 .ws-tier-members>.ws-member-card:hover .ws-member-note p{opacity:.94}
 @media(prefers-reduced-motion:reduce){.ws-member-note:before,.ws-member-note-label,.ws-member-note p{transition:none}}
+
+/* Calendrier hebdomadaire MRD */
+.ws-week-calendar{margin:18px 0 24px;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:15px}
+.ws-week-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.ws-week-toolbar>div:first-child{display:grid;gap:5px}.ws-week-toolbar>div:first-child>strong{font-size:14px;font-weight:600}
+.ws-week-nav{display:flex;gap:7px;align-items:center}.ws-week-nav .btn{min-height:34px;padding:6px 10px}
+.ws-week-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.ws-week-day{min-width:0;min-height:168px;border-right:1px solid var(--line);background:var(--surface)}
+.ws-week-day:last-child{border-right:0}.ws-week-day>header{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px 4px;border-bottom:1px solid var(--line);color:var(--muted);font:500 10px 'JetBrains Mono',monospace;text-transform:uppercase}
+.ws-week-day>header strong{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font:600 12px Inter,sans-serif;color:var(--text)}
+.ws-week-day.is-today>header{color:var(--accent)}.ws-week-day.is-today>header strong{background:var(--accent);color:#101622}
+.ws-week-events{display:grid;align-content:start;gap:7px;padding:7px}
+.ws-week-event{display:grid;gap:4px;min-width:0;padding:8px;border:1px solid color-mix(in srgb,var(--accent) 32%,var(--line));border-left:2px solid var(--accent);border-radius:7px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));}
+.ws-week-event small{color:var(--accent);font:500 9px 'JetBrains Mono',monospace}.ws-week-event strong{font-size:10px;line-height:1.35;overflow-wrap:anywhere}.ws-week-event>span{color:var(--muted);font-size:9px;overflow-wrap:anywhere}
+.ws-week-event button{justify-self:start;margin-top:2px;padding:2px 0;border:0;background:none;color:var(--muted);font-size:9px;cursor:pointer}.ws-week-event button:hover{color:var(--accent)}
+.ws-week-empty{padding:8px 0;color:var(--line-strong);text-align:center;font-size:12px}
+.ws-week-foot{padding:10px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:10px}
+.ws-calendar-list-heading{display:flex;justify-content:space-between;gap:10px;margin:22px 0 10px;color:var(--muted);font-size:11px}
+.ws-calendar-list-heading>span:last-child{font-size:10px}
+@media(max-width:760px){.ws-week-calendar{overflow-x:auto}.ws-week-toolbar{align-items:flex-start;flex-direction:column}.ws-week-grid{min-width:700px}.ws-week-day{min-height:145px}.ws-week-events{padding:5px}.ws-week-event{padding:6px}.ws-calendar-list-heading{margin-top:18px}}
+
+/* Date fields: preserve form-grid sizing after native inputs become custom controls */
+.ws-form-grid>label{min-width:0}.ws-form-grid .mrd-date-control{width:100%;min-width:0}.ws-form-grid .mrd-date-control .mrd-date-trigger{min-width:0}.ws-editor-form[hidden]{display:none!important}
