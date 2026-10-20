@@ -892,6 +892,78 @@ export default {
         return json({ ok: true }, 200, cors);
       }
 
+      if (route === "/users/delete-inactive") {
+        if (!isOwner(user)) {
+          return json({ error: "Réservé au Owner." }, 403, cors);
+        }
+
+        const id = Number(b.id);
+        if (!Number.isInteger(id) || id <= 0 || id === Number(user.id)) {
+          return json({ error: "Compte invalide." }, 400, cors);
+        }
+
+        const targetUser = await env.DB.prepare(
+          "SELECT id, username, role, active FROM users WHERE id = ?"
+        ).bind(id).first();
+
+        // La suppression définitive est réservée aux comptes déjà désactivés.
+        if (!targetUser || targetUser.role === "owner" || targetUser.active) {
+          return json({
+            error: "Seuls les comptes déjà désactivés peuvent être supprimés définitivement. Les comptes Owner sont protégés."
+          }, 400, cors);
+        }
+
+        const workspaceRow = await env.DB.prepare(
+          "SELECT workspace_json FROM mrd_workspace WHERE workspace_key = 'main'"
+        ).first();
+        let workspace = { roster: {}, calendar: [], tasks: [] };
+        try {
+          workspace = { ...workspace, ...JSON.parse(workspaceRow?.workspace_json || "{}") };
+        } catch {
+          return json({ error: "L’espace Effectif n’a pas pu être lu en sécurité ; aucune suppression effectuée." }, 500, cors);
+        }
+
+        workspace.roster = workspace.roster && typeof workspace.roster === "object" ? workspace.roster : {};
+        delete workspace.roster[String(id)];
+
+        workspace.calendar = Array.isArray(workspace.calendar) ? workspace.calendar : [];
+        for (const event of workspace.calendar) {
+          if (!event || typeof event !== "object") continue;
+          if (Array.isArray(event.signups)) {
+            event.signups = event.signups.filter(signup => Number(signup?.userId) !== id);
+          }
+          if (Number(event.createdBy) === id) event.createdBy = null;
+        }
+
+        workspace.tasks = Array.isArray(workspace.tasks) ? workspace.tasks : [];
+        for (const task of workspace.tasks) {
+          if (!task || typeof task !== "object") continue;
+          if (Number(task.assignedTo) === id) task.assignedTo = null;
+          if (Number(task.createdBy) === id) task.createdBy = null;
+          if (task.progress && typeof task.progress === "object") {
+            delete task.progress[String(id)];
+          }
+        }
+
+        const now = Date.now();
+        const results = await env.DB.batch([
+          env.DB.prepare(
+            "UPDATE mrd_workspace SET workspace_json = ?, updated_by = ?, updated_at = ? WHERE workspace_key = 'main'"
+          ).bind(JSON.stringify(workspace), user.username, now),
+          env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(id),
+          env.DB.prepare("DELETE FROM login_attempts WHERE username = ?").bind(targetUser.username),
+          env.DB.prepare("DELETE FROM users WHERE id = ? AND active = 0 AND role <> 'owner'").bind(id)
+        ]);
+
+        const deleted = Number(results?.[3]?.meta?.changes || 0);
+        if (!deleted) {
+          return json({ error: "Le compte n’est plus éligible à la suppression. Recharge la liste des comptes." }, 409, cors);
+        }
+
+        await audit(env, user, "Compte désactivé supprimé", targetUser.username);
+        return json({ ok: true, deleted: true }, 200, cors);
+      }
+
       if (route === "/logs/list") {
         if (!isAdmin(user)) return json({ error: "Réservé aux administrateurs et au Commanding Officer." }, 403, cors);
         const result = await env.DB.prepare(
