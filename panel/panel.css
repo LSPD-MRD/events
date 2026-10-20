@@ -1160,3 +1160,11 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-editor-form>label,.ws-report-form>label,.ws-task-progress-form>label,.ws-roster-form>label{display:grid;gap:7px}
 .ws-report-form,.ws-task-progress-form,.ws-roster-form{gap:12px}
 .ws-editor-form[hidden]{display:none!important}
+
+
+/* Notes d'effectif — présentation sobre, façon interface native moderne */
+.ws-member-card.has-public-note{padding-top:0}
+.ws-member-note{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:start;gap:9px;margin-top:13px;padding:11px 12px;border:1px solid var(--line);border-left:2px solid color-mix(in srgb,var(--accent) 72%,transparent);border-radius:11px;background:color-mix(in srgb,var(--surface-2) 68%,transparent);color:var(--text)}
+.ws-member-note-icon{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:13px;line-height:1}
+.ws-member-note p{min-width:0;margin:1px 0 0;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted)}
+:root[data-theme="light"] .ws-member-note{background:color-mix(in srgb,var(--surface-2) 78%,white)}
