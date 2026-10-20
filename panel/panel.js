@@ -119,7 +119,7 @@ const mrdDateMarkup = input => {
       const today=mrdDateToday(),d=mrdDateUTC(today);
       if((!input.min||today>=input.min)&&(!input.max||today<=input.max)){setValue(today);}
       else{popup.dataset.month=today.slice(0,7);render();}
-    }else if(action==='clear'){if(!input.required)setValue('');}
+    }else if(action==='clear'){if(input.dataset.originalRequired!=='true')setValue('');}
   });
   input.addEventListener('change',()=>{trigger.classList.toggle('has-value',!!input.value);value.textContent=mrdDateText(input.value);});
   input._mrdDateClose=close;
