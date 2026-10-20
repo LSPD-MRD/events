@@ -1199,7 +1199,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
    Cards stay upright; each grade owns a vertical stack of its members. */
 .ws-org-chart{
   display:flex;
-  flex-direction:row-reverse;
+  flex-direction:row;
   align-items:stretch;
   gap:24px;
   padding:24px 24px 28px;
