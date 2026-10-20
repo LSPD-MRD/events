@@ -1016,3 +1016,48 @@ body.session-checking .toasts { visibility: hidden; }
 .ws-task-status{font-family:Inter,sans-serif;font-size:10px}.status-done .ws-task-status{color:var(--ok)}
 @media(max-width:760px){.ws-intro-mark{display:none}.ws-stat-grid{grid-template-columns:1fr 1fr}.ws-stat:last-child{grid-column:1/-1}.ws-member-grid{grid-template-columns:1fr}.ws-section-heading{align-items:flex-start;flex-direction:column}.ws-section-heading>.btn{width:100%}.ws-event-card{grid-template-columns:54px minmax(0,1fr);gap:11px;padding:12px}.ws-event-date{padding:10px 3px}.ws-event-date strong{font-size:23px}.ws-event-title-row,.ws-task-title-row{flex-wrap:wrap}.ws-form-grid{grid-template-columns:1fr}.ws-grade{padding:12px}.ws-tabs{gap:3px}.ws-tab{padding:9px 10px;font-size:12px;flex:1}.ws-task-card{grid-template-columns:28px minmax(0,1fr);gap:9px;padding:12px}.ws-task-check{width:27px;height:27px}}
 @media(max-width:430px){.ws-stat{padding:13px}.ws-stat strong{font-size:25px}.ws-event-card{grid-template-columns:44px minmax(0,1fr)}.ws-event-date strong{font-size:20px}.ws-event-actions .btn{flex:1}.ws-tabs .ws-tab>span{display:none}}
+
+
+/* ── MRD date controls: custom calendar shared by every panel form ── */
+.mrd-date-control{position:relative;display:block;width:100%;min-width:0;isolation:isolate}
+.mrd-date-control.is-open{z-index:130}
+.mrd-date-native{position:absolute!important;left:10px!important;bottom:8px!important;width:1px!important;height:1px!important;min-height:1px!important;padding:0!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)!important}
+.mrd-date-trigger{display:flex;align-items:center;gap:12px;width:100%;min-height:49px;padding:9px 12px;text-align:left;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--radius-sm);color:var(--text);cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s}
+.mrd-date-trigger:hover,.mrd-date-control.is-open .mrd-date-trigger{border-color:var(--accent);background:var(--surface)}
+.mrd-date-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mrd-date-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
+.mrd-date-icon svg{width:19px;height:19px}
+.mrd-date-copy{display:grid;gap:3px;flex:1;min-width:0}
+.mrd-date-copy small{font:600 9px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.mrd-date-copy strong{font-size:12px;font-weight:600;line-height:1.35;color:var(--text)}
+.mrd-date-trigger:not(.has-value) .mrd-date-copy strong{color:var(--muted);font-weight:500}
+.mrd-date-chevron{color:var(--muted);font-size:19px;line-height:1;transition:transform .18s}
+.mrd-date-control.is-open .mrd-date-chevron{transform:rotate(180deg);color:var(--accent)}
+.mrd-date-popover{position:absolute;z-index:150;top:calc(100% + 8px);left:0;width:min(330px,calc(100vw - 36px));padding:14px;background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;box-shadow:0 22px 65px rgba(0,0,0,.28);animation:mrd-date-in .16s ease-out;overscroll-behavior:contain}
+.mrd-date-popover[hidden]{display:none}
+@keyframes mrd-date-in{from{opacity:0;transform:translateY(-5px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mrd-date-pop-head{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:8px;margin-bottom:17px}
+.mrd-date-pop-head>div{display:grid;gap:4px;text-align:center;min-width:0}
+.mrd-date-pop-head strong{font:700 17px Rajdhani,sans-serif;text-transform:capitalize;letter-spacing:.01em}
+.mrd-date-pop-head small{font:500 8px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--muted)}
+.mrd-date-nav{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:23px;line-height:1;cursor:pointer;transition:all .15s}
+.mrd-date-nav:hover:not(:disabled){color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.mrd-date-nav:disabled{opacity:.25;cursor:not-allowed}
+.mrd-date-weekdays,.mrd-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mrd-date-weekdays{margin-bottom:6px}
+.mrd-date-weekdays span{display:grid;place-items:center;height:25px;color:var(--muted);font:600 9px 'JetBrains Mono',monospace}
+.mrd-date-day{display:grid;place-items:center;aspect-ratio:1;min-width:0;padding:0;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--text);font:500 12px Inter,sans-serif;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.mrd-date-day:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.mrd-date-day.is-today{border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent);font-weight:700}
+.mrd-date-day.is-selected,.mrd-date-day.is-selected:hover{background:var(--accent);border-color:var(--accent);color:#101820;font-weight:700;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 25%,transparent)}
+.mrd-date-day:disabled{opacity:.2;cursor:not-allowed}
+.mrd-date-blank{aspect-ratio:1}
+.mrd-date-pop-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+.mrd-date-today,.mrd-date-clear{padding:6px 9px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer}
+.mrd-date-today:hover,.mrd-date-clear:hover{background:var(--accent-soft);border-color:var(--line)}
+.mrd-date-clear{color:var(--muted)}
+.mrd-date-nav:focus-visible,.mrd-date-day:focus-visible,.mrd-date-today:focus-visible,.mrd-date-clear:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type="time"],input[type="datetime-local"],input[type="month"]{min-height:49px;padding:10px 12px;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--radius-sm);color:var(--text);color-scheme:dark;accent-color:var(--accent)}
+:root[data-theme="light"] input[type="time"],:root[data-theme="light"] input[type="datetime-local"],:root[data-theme="light"] input[type="month"]{color-scheme:light}
+input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:hover{border-color:var(--accent)}
+@media(max-width:520px){.mrd-date-popover{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(350px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow-y:auto;box-shadow:0 0 0 100vmax rgba(0,0,0,.42),0 22px 65px rgba(0,0,0,.35)}.mrd-date-control.is-open{z-index:999}.mrd-date-day{border-radius:8px}.mrd-date-trigger{min-height:47px}}
