@@ -64,8 +64,9 @@ const mrdDateMarkup = input => {
   popup.hidden=true;
   popup.setAttribute('role','dialog');
   popup.setAttribute('aria-label','Calendrier de sélection');
-  wrapper.append(trigger,popup);
-  const positionPopup=()=>{if(popup.hidden)return;const r=trigger.getBoundingClientRect(),w=Math.min(286,window.innerWidth-24),h=Math.min(370,window.innerHeight-24);let left=Math.max(12,Math.min(r.left,window.innerWidth-w-12));let top=r.bottom+6;if(top+h>window.innerHeight-12&&r.top-h-6>=12)top=r.top-h-6;else top=Math.min(top,window.innerHeight-h-12);popup.style.left=left+'px';popup.style.top=Math.max(12,top)+'px';};
+  wrapper.append(trigger);
+  document.body.append(popup);
+  const positionPopup=()=>{if(popup.hidden)return;const r=trigger.getBoundingClientRect(),w=Math.min(272,window.innerWidth-24),h=Math.min(360,window.innerHeight-24);const left=Math.max(12,Math.min(r.left,window.innerWidth-w-12));const top=Math.max(12,Math.min(r.bottom+5,window.innerHeight-h-12));popup.style.left=left+'px';popup.style.top=top+'px';popup.style.width=w+'px';};
   const render=()=>{
     const picked=mrdDateUTC(input.value);
     let month=mrdDateUTC((popup.dataset.month||'')+'-01')||picked||mrdDateUTC(mrdDateToday().slice(0,7)+'-01');
@@ -105,11 +106,11 @@ const mrdDateMarkup = input => {
   const open=()=>{
     $$('.mrd-date-popover:not([hidden])').forEach(other=>{if(other!==popup){other.hidden=true;other.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');}});
     popup.dataset.month=(input.value||mrdDateToday()).slice(0,7);
-    render();popup.hidden=false;trigger.setAttribute('aria-expanded','true');wrapper.classList.add('is-open');positionPopup();
+    render();popup.hidden=false;popup._mrdDateTrigger=trigger;trigger.setAttribute('aria-expanded','true');wrapper.classList.add('is-open');positionPopup();
     const selected=popup.querySelector('.is-selected:not(:disabled)')||popup.querySelector('[data-mrd-date]:not(:disabled)');
     if(selected)selected.setAttribute('tabindex','0');
   };
-  function close(){popup.hidden=true;trigger.setAttribute('aria-expanded','false');wrapper.classList.remove('is-open');popup.style.left='';popup.style.top='';}
+  function close(){popup.hidden=true;trigger.setAttribute('aria-expanded','false');wrapper.classList.remove('is-open');popup.style.left='';popup.style.top='';popup.style.width='';}
   trigger.addEventListener('click',()=>popup.hidden?open():close());
   popup.addEventListener('click',e=>{
     const day=e.target.closest('[data-mrd-date]');
@@ -132,10 +133,10 @@ const initMrdDatePickers = root => {
   (root||document).querySelectorAll('input[type="date"]:not(.mrd-date-native):not([data-native-date-picker])').forEach(mrdDateMarkup);
 };
 document.addEventListener('focusin',e=>{if(e.target.matches?.('input[type="date"]:not(.mrd-date-native):not([data-native-date-picker])'))initMrdDatePickers(e.target.parentElement||document);});
-const repositionMrdDatePopovers=()=>document.querySelectorAll('.mrd-date-control.is-open .mrd-date-popover').forEach(p=>{const t=p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger');if(!t)return;const r=t.getBoundingClientRect(),w=Math.min(286,window.innerWidth-24),h=Math.min(370,window.innerHeight-24);let left=Math.max(12,Math.min(r.left,window.innerWidth-w-12)),top=r.bottom+6;if(top+h>window.innerHeight-12&&r.top-h-6>=12)top=r.top-h-6;else top=Math.min(top,window.innerHeight-h-12);p.style.left=left+'px';p.style.top=Math.max(12,top)+'px';});
+const repositionMrdDatePopovers=()=>document.querySelectorAll('.mrd-date-popover:not([hidden])').forEach(p=>{const t=p._mrdDateTrigger;if(!t||!t.isConnected){p.hidden=true;return;}const r=t.getBoundingClientRect(),w=Math.min(272,window.innerWidth-24),h=Math.min(360,window.innerHeight-24);p.style.left=Math.max(12,Math.min(r.left,window.innerWidth-w-12))+'px';p.style.top=Math.max(12,Math.min(r.bottom+5,window.innerHeight-h-12))+'px';});
 window.addEventListener('resize',repositionMrdDatePopovers);window.addEventListener('scroll',repositionMrdDatePopovers,true);
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.mrd-date-control'))$$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
+  if(!e.target.closest('.mrd-date-control')&&!e.target.closest('.mrd-date-popover'))$$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){const p=$$('.mrd-date-popover:not([hidden])').at(-1);if(p){p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.focus();}}
