@@ -20,7 +20,126 @@ const accreditationTags = (items = []) => (Array.isArray(items) ? items : []).ma
 let currentUser = null;
 
 const $ = (s, r = document) => r.querySelector(s);
-const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const $ = (s, r = document) => [...r.querySelectorAll(s)];
+
+/* ── MRD custom date picker: consistent across every panel form ── */
+const mrdDateFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const mrdMonthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const mrdDateUTC = value => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y,m,d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y,m-1,d));
+  return date.getUTCFullYear()===y && date.getUTCMonth()===m-1 && date.getUTCDate()===d ? date : null;
+};
+const mrdISODate = date => date.getUTCFullYear()+'-'+String(date.getUTCMonth()+1).padStart(2,'0')+'-'+String(date.getUTCDate()).padStart(2,'0');
+const mrdDateText = value => { const d=mrdDateUTC(value); return d ? mrdDateFmt.format(d) : 'Choisir une date'; };
+const mrdDateToday = () => {
+  const now = new Date();
+  return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+};
+const mrdDateMarkup = input => {
+  const wrapper=document.createElement('div');
+  wrapper.className='mrd-date-control';
+  input.classList.add('mrd-date-native');
+  input.setAttribute('aria-hidden','true');
+  input.tabIndex=-1;
+  input.dataset.originalRequired=input.required?'true':'false';
+  input.required=false;
+  input.insertAdjacentElement('beforebegin',wrapper);
+  wrapper.append(input);
+  const trigger=document.createElement('button');
+  trigger.type='button';
+  trigger.className='mrd-date-trigger'+(input.value?' has-value':'');
+  trigger.setAttribute('aria-haspopup','dialog');
+  trigger.setAttribute('aria-expanded','false');
+  trigger.setAttribute('aria-label',input.getAttribute('aria-label')||input.closest('label')?.childNodes[0]?.textContent?.trim()||'Choisir une date');
+  trigger.innerHTML='<span class="mrd-date-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 3v4M16.5 3v4M4 9.5h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="m8 14 2 2 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="mrd-date-copy"><small></small><strong></strong></span><span class="mrd-date-chevron" aria-hidden="true">⌄</span>';
+  const label=wrapper.querySelector('.mrd-date-copy small');
+  label.textContent=input.getAttribute('aria-label')||'DATE';
+  const value=wrapper.querySelector('.mrd-date-copy strong');
+  value.textContent=mrdDateText(input.value);
+  const popup=document.createElement('div');
+  popup.className='mrd-date-popover';
+  popup.hidden=true;
+  popup.setAttribute('role','dialog');
+  popup.setAttribute('aria-label','Calendrier de sélection');
+  wrapper.append(trigger,popup);
+  const render=()=>{
+    const picked=mrdDateUTC(input.value);
+    let month=mrdDateUTC((popup.dataset.month||'')+'-01')||picked||mrdDateUTC(mrdDateToday().slice(0,7)+'-01');
+    const y=month.getUTCFullYear(),m=month.getUTCMonth();
+    const first=new Date(Date.UTC(y,m,1));
+    const offset=(first.getUTCDay()+6)%7;
+    const days=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    const min=mrdDateUTC(input.min),max=mrdDateUTC(input.max),today=mrdDateToday();
+    const cells=[];
+    for(let i=0;i<42;i++){
+      const n=i-offset+1;
+      if(n<1||n>days){cells.push('<span class="mrd-date-blank" aria-hidden="true"></span>');continue;}
+      const date=new Date(Date.UTC(y,m,n)),iso=mrdISODate(date);
+      const disabled=(min&&date<min)||(max&&date>max);
+      const classes=['mrd-date-day'];
+      if(iso===input.value)classes.push('is-selected');
+      if(iso===today)classes.push('is-today');
+      cells.push('<button type="button" class="'+classes.join(' ')+'" data-mrd-date="'+iso+'" '+(disabled?'disabled':'')+' aria-label="'+mrdDateFmt.format(date)+'" '+(iso===input.value?'aria-pressed="true"':'aria-pressed="false"')+'>'+n+'</button>');
+    }
+    popup.dataset.month=y+'-'+String(m+1).padStart(2,'0');
+    popup.innerHTML='<div class="mrd-date-pop-head"><button type="button" class="mrd-date-nav" data-mrd-date-action="prev" aria-label="Mois précédent">‹</button><div><strong>'+mrdMonthFmt.format(first)+'</strong><small>SÉLECTIONNER UNE DATE</small></div><button type="button" class="mrd-date-nav" data-mrd-date-action="next" aria-label="Mois suivant">›</button></div><div class="mrd-date-weekdays"><span>LUN</span><span>MAR</span><span>MER</span><span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span></div><div class="mrd-date-grid">'+cells.join('')+'</div><div class="mrd-date-pop-foot"><button type="button" class="mrd-date-today" data-mrd-date-action="today">Aujourd’hui</button><button type="button" class="mrd-date-clear" data-mrd-date-action="clear">Effacer</button></div>';
+    const prev=popup.querySelector('[data-mrd-date-action="prev"]');
+    const next=popup.querySelector('[data-mrd-date-action="next"]');
+    if(min&&y===min.getUTCFullYear()&&m===min.getUTCMonth())prev.disabled=true;
+    if(max&&y===max.getUTCFullYear()&&m===max.getUTCMonth())next.disabled=true;
+  };
+  const setValue=iso=>{
+    input.value=iso;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    trigger.classList.toggle('has-value',!!iso);
+    value.textContent=mrdDateText(iso);
+    close();
+  };
+  const open=()=>{
+    $('.mrd-date-popover:not([hidden])').forEach(other=>{if(other!==popup){other.hidden=true;other.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');}});
+    popup.dataset.month=(input.value||mrdDateToday()).slice(0,7);
+    render();popup.hidden=false;trigger.setAttribute('aria-expanded','true');wrapper.classList.add('is-open');
+    const selected=popup.querySelector('.is-selected:not(:disabled)')||popup.querySelector('[data-mrd-date]:not(:disabled)');
+    if(selected)selected.setAttribute('tabindex','0');
+  };
+  function close(){popup.hidden=true;trigger.setAttribute('aria-expanded','false');wrapper.classList.remove('is-open');}
+  trigger.addEventListener('click',()=>popup.hidden?open():close());
+  popup.addEventListener('click',e=>{
+    const day=e.target.closest('[data-mrd-date]');
+    if(day&&!day.disabled){setValue(day.dataset.mrdDate);return;}
+    const action=e.target.closest('[data-mrd-date-action]')?.dataset.mrdDateAction;
+    if(action==='prev'||action==='next'){
+      const current=mrdDateUTC(popup.dataset.month+'-01');
+      const next=new Date(Date.UTC(current.getUTCFullYear(),current.getUTCMonth()+(action==='next'?1:-1),1));
+      popup.dataset.month=mrdISODate(next).slice(0,7);render();
+    }else if(action==='today'){
+      const today=mrdDateToday(),d=mrdDateUTC(today);
+      if((!input.min||today>=input.min)&&(!input.max||today<=input.max)){setValue(today);}
+      else{popup.dataset.month=today.slice(0,7);render();}
+    }else if(action==='clear'){if(!input.required)setValue('');}
+  });
+  input.addEventListener('change',()=>{trigger.classList.toggle('has-value',!!input.value);value.textContent=mrdDateText(input.value);});
+  input._mrdDateClose=close;
+};
+const initMrdDatePickers = root => {
+  (root||document).querySelectorAll('input[type="date"]:not(.mrd-date-native):not([data-native-date-picker])').forEach(mrdDateMarkup);
+};
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.mrd-date-control'))$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){const p=$('.mrd-date-popover:not([hidden])').at(-1);if(p){p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.focus();}}
+});
+document.addEventListener('submit',e=>{
+  const missing=[...e.target.querySelectorAll('input.mrd-date-native')].find(input=>input.dataset.originalRequired==='true'&&!input.value);
+  if(missing){e.preventDefault();e.stopImmediatePropagation();toast('Choisis une date avant de continuer.','warn');missing.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.focus();}
+},true);
+const mrdDateObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1){if(node.matches?.('input[type="date"]'))initMrdDatePickers(node.parentElement||document);else initMrdDatePickers(node);}})));
+mrdDateObserver.observe(document.documentElement,{childList:true,subtree:true});
+
 const isSessionExpiredError = message => /session absente ou expirée|session invalide|reconnecte-toi/i.test(String(message || ''));
 const setLoginFieldsVisible = visible => {
   const form = $('#login-form');
@@ -1183,6 +1302,7 @@ document.addEventListener('submit',async e=>{
  }catch(err){e.preventDefault();toast(err.message||'Enregistrement impossible.','err');}
 });
 
+initMrdDatePickers(document);
 const activePageLabel = $('#active-page-label');
 if (activePageLabel) activePageLabel.textContent = PAGE_LABELS.edit;
 applyTheme(localStorage.getItem(KEY.theme) || 'dark');
