@@ -1287,7 +1287,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .profile-avatar-edit img{display:block;width:100%;height:100%;object-fit:cover;transition:filter .18s;}
 .profile-avatar-edit:hover img{filter:brightness(.92);}
 .profile-avatar-pencil{position:absolute;z-index:2;top:0;right:0;transform:translate(38%,-38%);display:grid;place-items:center;width:27px;height:27px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 3px 10px rgba(0,0,0,.24);cursor:pointer;transition:background .18s,border-color .18s,color .18s,box-shadow .18s,transform .18s;}
-.profile-avatar-pencil:hover{background:var(--accent);border-color:var(--accent);color:var(--surface);box-shadow:0 4px 13px rgba(0,0,0,.28);transform:translate(38%,-38%) scale(1.08);}
+.profile-avatar-pencil:hover{background:var(--accent);border-color:var(--accent);color:var(--surface);box-shadow:0 4px 11px rgba(0,0,0,.24);scale:1.035;}
 .profile-avatar-pencil:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 .profile-avatar-pencil svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 .profile-avatar-placeholder{font-size:27px;}
@@ -1296,3 +1296,16 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 #display-profile-form{margin-top:18px;}
 #display-profile-form .btn{justify-self:start;}
 @media(max-width:520px){.profile-edit-row{align-items:flex-start;gap:12px}.profile-avatar-hint{max-width:230px;line-height:1.5}}
+
+
+/* Profil — champs de nom compacts et hiérarchie plus discrète */
+#display-profile-form.ws-profile-form{gap:10px;padding:12px}
+#display-profile-form .profile-edit-row{gap:12px}
+#display-profile-form .profile-edit-identity>strong{font-size:14px;font-weight:600;letter-spacing:-.015em}
+#display-profile-form .profile-edit-identity>small{font-size:11px}
+#display-profile-form .profile-avatar-hint{margin-top:5px}
+#display-profile-form .profile-display-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#display-profile-form .profile-display-fields label{display:grid;gap:5px;min-width:0;color:var(--muted);font-size:11px}
+#display-profile-form .profile-display-fields input{min-width:0;padding:8px 10px;font-size:12px;border-radius:8px}
+#display-profile-form .profile-save-button{padding:7px 11px;font-size:12px}
+@media(max-width:520px){#display-profile-form .profile-display-fields{grid-template-columns:1fr 1fr;gap:8px}}
