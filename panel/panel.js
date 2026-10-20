@@ -1,6 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar', activeTab: 'mrdpanel-active-tab' };
-const PAGE_LABELS = { edit: 'Événements', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', profile: 'Mon profil' };
+const PAGE_LABELS = { edit: 'Événements', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', profile: 'Mon profil', effectif: 'Effectif' };
 const ACCREDITATION_META = {
   'Media Relations': { className: 'accred-media' },
   'Interagency': { className: 'accred-interagency' },
@@ -515,9 +515,9 @@ const renderProfile = () => {
   root.innerHTML = `
     <section class="page-intro"><div><div class="eyebrow">COMPTE PERSONNEL <span>· SÉCURITÉ</span></div><h1>Mon profil</h1><p>Gère ta photo de profil et mets à jour le mot de passe de ton compte MRD.</p></div></section>
     <section class="card">
-      <header class="card-head"><h2>Photo de profil</h2><p>Cette image est enregistrée sur ton compte MRD et reste disponible sur tes autres appareils.</p></header>
+      <header class="card-head"><h2>Identité & photo de profil</h2><p>Ton nom d’affichage et ta photo sont visibles par les autres membres de la MRD.</p></header>
       <div class="card-body">
-        <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(currentUser?.username || 'Compte MRD')}</strong><small>${esc(currentUser?.grade || '')} · ${esc(currentUser?.role || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div></div></div>
+        <div class="profile-edit-row"><div class="profile-preview-avatar" id="profile-preview-avatar"></div><div><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div></div></div>
         <div class="file-dropzone file-dropzone-compact" id="avatar-dropzone" role="button" tabindex="0" aria-controls="avatar-file"><span class="file-dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span><strong>Dépose une photo de profil</strong><span class="file-dropzone-copy">ou <button type="button" class="file-dropzone-browse" data-file-browse="avatar-file">parcourir tes fichiers</button></span><small class="file-dropzone-status">PNG, JPG, WEBP ou GIF · 1 Mo maximum</small></div><div class="actions"><button class="btn" type="button" data-action="remove-avatar">Retirer la photo</button></div>
         <small class="hint">Formats acceptés : PNG, JPG, WEBP ou GIF. Taille maximale : 1 Mo.</small>
       </div>
@@ -649,6 +649,7 @@ const setTab = async name => {
   }
   if (name === 'access') await renderAccess();
   if (name === 'profile') renderProfile();
+  if (name === 'effectif') { try { await loadWorkspace(); } catch (err) { $('#effectif').innerHTML = '<section class="card"><div class="card-body">Impossible de charger l’espace Effectif : ' + esc(err.message) + '</div></section>'; } }
 };
 
 const saveDraft = async () => {
@@ -919,7 +920,7 @@ function applyPermissions() {
   const saveActions = $('#save-actions');
   if (saveActions) saveActions.hidden = !canEdit;
   const profileName = $('#profile-menu-name');
-  if (profileName) profileName.textContent = currentUser?.username || 'Mon compte';
+  if (profileName) profileName.textContent = wsName(currentUser);
   const profileGrade = $('#profile-menu-grade');
   if (profileGrade) profileGrade.textContent = (currentUser?.grade || '') + (currentUser?.role ? ' · ' + currentUser.role : '');
   applyProfileAvatar();
@@ -1096,6 +1097,89 @@ document.addEventListener('submit', async e => {
     await api.post('/users/create', payload);
     e.target.reset(); toast('Compte créé. Communique les identifiants en privé.', 'ok'); await renderAccess();
   } catch (err) { toast(err.message, 'err'); }
+});
+
+
+// MRD Effectif / calendrier / tâches
+let ws={roster:{},calendar:[],tasks:[]}, wsMembers=[], wsPerm={};
+let wsSection='roster';
+const wsGrades=['Commanding Officer','Assistant Commanding Officer','Expert Officer','Certified Officer'];
+const wsShort={'Commanding Officer':'CO','Assistant Commanding Officer':'ACO','Expert Officer':'EO','Certified Officer':'CtO'};
+const wsName=u=>[u?.displayFirstName,u?.displayLastName].filter(Boolean).join(' ').trim()||u?.username||'Membre MRD';
+const wsMember=id=>wsMembers.find(u=>Number(u.id)===Number(id));
+const wsDate=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const wsToday=()=>new Date().toISOString().slice(0,10);
+const wsOwner=()=>currentUser?.role==='owner'&&currentUser?.grade==='Commanding Officer';
+const wsAvatar=u=>u?.avatarData?'<img class="ws-avatar" src="'+u.avatarData+'" alt="">':'<span class="ws-avatar ws-avatar-fallback">'+esc(wsName(u).charAt(0).toUpperCase())+'</span>';
+async function loadWorkspace(){
+ const d=await api.post('/workspace/get',{});
+ ws=d.workspace||{roster:{},calendar:[],tasks:[]};wsMembers=d.members||[];
+ wsPerm={roster:!!d.canManageRoster,calendar:!!d.canManageCalendar,tasks:!!d.canManageTasks};
+ const me=wsMembers.find(u=>Number(u.id)===Number(currentUser?.id));if(me)currentUser={...currentUser,...me};
+ applyPermissions();renderWorkspace();
+}
+function renderWorkspace(){
+ const root=$('#effectif');if(!root)return;
+ const tabs=[['roster','♙','Effectif'],['calendar','▦','Calendrier'],['tasks','☑','To-do list']];
+ root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE · VIE DE DIVISION</div><h1>Effectif <span class="ws-title-dot">/</span> Coordination</h1><p>Membres, rendez-vous et suivi des missions réunis au même endroit.</p></div><div class="ws-intro-mark">MRD<small>FIELD OFFICE</small></div></section><div class="ws-tabs">'+tabs.map(([id,ico,label])=>'<button class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'"><span>'+ico+'</span>'+label+(id==='roster'?'<small>'+wsMembers.length+'</small>':'')+'</button>').join('')+'</div><div id="ws-content"></div>';
+ const c=$('#ws-content');if(wsSection==='roster')c.innerHTML=renderWsRoster();if(wsSection==='calendar')c.innerHTML=renderWsCalendar();if(wsSection==='tasks')c.innerHTML=renderWsTasks();
+}
+function renderWsRoster(){
+ const ordered=[...wsMembers].sort((a,b)=>wsGrades.indexOf(a.grade)-wsGrades.indexOf(b.grade)||Number(ws.roster?.[a.id]?.order??9999)-Number(ws.roster?.[b.id]?.order??9999)||wsName(a).localeCompare(wsName(b),'fr'));
+ return '<div class="ws-stat-grid"><article class="ws-stat"><span>Effectif actif</span><strong>'+wsMembers.length+'</strong><small>Membres enregistrés</small></article><article class="ws-stat"><span>À venir</span><strong>'+ws.calendar.filter(e=>e.date>=wsToday()).length+'</strong><small>Rendez-vous planifiés</small></article><article class="ws-stat"><span>Tâches</span><strong>'+ws.tasks.filter(t=>Object.values(t.progress||{}).some(x=>x.status==='doing')).length+'</strong><small>En cours</small></article></div><div class="ws-section-heading"><div><span class="ws-kicker">ORGANISATION</span><h2>Organigramme MRD</h2><p>Les quatre niveaux hiérarchiques et les membres actifs.</p></div></div>'+wsGrades.map((grade,i)=>{
+ const people=ordered.filter(u=>u.grade===grade);
+ return '<section class="ws-grade"><header class="ws-grade-head"><div><span class="ws-grade-index">0'+(i+1)+'</span><div><h3>'+esc(grade)+'</h3><small>'+wsShort[grade]+' · '+people.length+' membre(s)</small></div></div></header>'+(people.length?'<div class="ws-member-grid">'+people.map(u=>{
+ const m=ws.roster?.[u.id]||{};
+ return '<article class="ws-member-card"><div class="ws-member-top">'+wsAvatar(u)+'<div class="ws-member-identity"><strong>'+esc(wsName(u))+'</strong><span>'+wsShort[u.grade]+'</span><small>@'+esc(u.username)+'</small></div>'+(Number(u.id)===Number(currentUser?.id)?'<span class="ws-you">VOUS</span>':'')+'</div>'+(u.accreditations?.length?'<div class="accreditation-tags ws-accreditations">'+accreditationTags(u.accreditations)+'</div>':'')+'<div class="ws-member-dates"><div><span>Arrivée</span><strong>'+wsDate(m.arrivalDate)+'</strong></div><div><span>Promotion</span><strong>'+wsDate(m.promotionDate)+'</strong></div></div>'+(m.publicNotes?'<p class="ws-public-note">'+esc(m.publicNotes)+'</p>':'')+(wsPerm.roster?'<details class="ws-edit-details"><summary>Gérer la fiche</summary><form class="ws-roster-form" data-id="'+u.id+'"><div class="ws-form-grid"><label>Prénom affiché<input name="first" maxlength="40" value="'+esc(u.displayFirstName||'')+'"></label><label>Nom affiché<input name="last" maxlength="40" value="'+esc(u.displayLastName||'')+'"></label><label>Date d’arrivée<input type="date" name="arrival" value="'+esc(m.arrivalDate||'')+'"></label><label>Date de promotion<input type="date" name="promotion" value="'+esc(m.promotionDate||'')+'"></label><label>Ordre d’affichage<input type="number" name="order" min="0" max="9999" value="'+Number(m.order||0)+'"></label></div><label>Note visible à l’effectif<textarea name="publicNotes" maxlength="500" rows="2">'+esc(m.publicNotes||'')+'</textarea></label><label>Notes internes CO<textarea name="privateNotes" maxlength="1500" rows="3">'+esc(m.privateNotes||'')+'</textarea></label><button class="btn primary" type="submit">Enregistrer la fiche</button></form></details>':'')+'</article>';
+ }).join('')+'</div>':'<div class="ws-empty-grade">Aucun membre à ce grade pour le moment.</div>')+'</section>';
+ }).join('');
+}
+function renderWsCalendar(){
+ const events=[...ws.calendar].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ return '<div class="ws-section-heading"><div><span class="ws-kicker">PLANIFICATION</span><h2>Calendrier de la division</h2><p>Inscris-toi aux événements, ajoute tes notes et déclare le travail réalisé.</p></div>'+(wsPerm.calendar?'<button class="btn primary" data-ws-action="new-event">＋ Nouvel événement</button>':'')+'</div>'+(wsPerm.calendar?wsEventForm():'')+'<div class="ws-calendar-list">'+(events.length?events.map(e=>{
+ const signups=Array.isArray(e.signups)?e.signups:[],mine=signups.find(s=>Number(s.userId)===Number(currentUser.id));
+ return '<article class="ws-event-card"><div class="ws-event-date"><strong>'+esc(e.date.slice(8,10))+'</strong><span>'+esc(new Date(e.date+'T12:00:00').toLocaleDateString('fr-FR',{month:'short'}))+'</span><small>'+esc(e.time||'—')+'</small></div><div class="ws-event-main"><div class="ws-event-title-row"><h3>'+esc(e.title)+'</h3><span class="ws-status '+(e.date>=wsToday()?'upcoming':'')+'">'+(e.date>=wsToday()?'À VENIR':'TERMINÉ')+'</span></div><p>'+esc(e.description||'')+'</p><div class="ws-event-meta"><span>'+esc(e.location||'Lieu à préciser')+'</span><span>♙ '+signups.length+' inscrit(s)</span></div><div class="ws-signup-avatars">'+signups.map(s=>{const u=wsMember(s.userId);return u?wsAvatar(u):''}).join('')+'</div>'+(mine?'<details class="ws-report"><summary>Mes notes & travail rendu</summary><form class="ws-report-form" data-id="'+esc(e.id)+'"><label>Notes personnelles<textarea name="notes" rows="2" maxlength="1200">'+esc(mine.notes||'')+'</textarea></label><label>Travail réalisé<textarea name="work" rows="3" maxlength="2000" placeholder="Décris concrètement ce que tu as réalisé…">'+esc(mine.work||'')+'</textarea></label><button class="btn primary" type="submit">Enregistrer mon compte rendu</button></form></details>':'')+'<div class="ws-event-actions">'+(mine?'<button class="btn" data-ws-action="leave" data-id="'+esc(e.id)+'">Se désinscrire</button>':'<button class="btn primary" data-ws-action="join" data-id="'+esc(e.id)+'">＋ M’inscrire</button>')+(wsPerm.calendar?'<button class="btn" data-ws-action="edit-event" data-id="'+esc(e.id)+'">Modifier</button><button class="btn ws-danger" data-ws-action="delete-event" data-id="'+esc(e.id)+'">Supprimer</button>':'')+'</div></div></article>';
+ }).join(''):'<div class="ws-empty"><strong>Aucun événement planifié</strong><p>Les prochains rendez-vous apparaîtront ici.</p></div>')+'</div>';
+}
+function wsEventForm(event){
+ return '<form class="ws-editor-form" id="ws-event-form" data-id="'+esc(event?.id||'')+'" hidden><div class="ws-form-top"><h3>'+ (event?'Modifier l’événement':'Programmer un événement')+'</h3><button type="button" class="ws-icon-button" data-ws-action="cancel-form">×</button></div><div class="ws-form-grid"><label>Intitulé<input name="title" required maxlength="120" value="'+esc(event?.title||'')+'"></label><label>Date<input name="date" type="date" required value="'+esc(event?.date||wsToday())+'"></label><label>Heure<input name="time" type="time" value="'+esc(event?.time||'')+'"></label><label>Lieu<input name="location" maxlength="160" value="'+esc(event?.location||'')+'"></label></div><label>Description<textarea name="description" rows="3" maxlength="1500">'+esc(event?.description||'')+'</textarea></label><button class="btn primary" type="submit">Enregistrer l’événement</button></form>';
+}
+function renderWsTasks(){
+ const tasks=[...ws.tasks].sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+ const mine=t=>t.progress?.[String(currentUser.id)]||{status:'todo',report:''},done=tasks.filter(t=>mine(t).status==='done').length;
+ return '<div class="ws-section-heading"><div><span class="ws-kicker">SUIVI OPÉRATIONNEL</span><h2>To-do list</h2><p>Consignes, responsables et comptes rendus de travail de la MRD.</p></div>'+(wsPerm.tasks?'<button class="btn primary" data-ws-action="new-task">＋ Nouvelle tâche</button>':'')+'</div><div class="ws-task-progress"><div><span>Ma progression</span><strong>'+done+' / '+tasks.length+' terminée(s)</strong></div><div class="ws-progress-track"><span style="width:'+(tasks.length?Math.round(done/tasks.length*100):0)+'%"></span></div></div>'+(wsPerm.tasks?wsTaskForm():'')+'<div class="ws-task-list">'+(tasks.length?tasks.map(t=>{
+ const prog=mine(t),assigned=t.assignedTo?wsMember(t.assignedTo):null,canUpdate=!t.assignedTo||Number(t.assignedTo)===Number(currentUser.id)||wsPerm.tasks,labels={todo:'À faire',doing:'En cours',done:'Terminée'};
+ return '<article class="ws-task-card status-'+esc(prog.status)+'"><div class="ws-task-check">'+(prog.status==='done'?'✓':prog.status==='doing'?'↻':'·')+'</div><div class="ws-task-main"><div class="ws-task-title-row"><h3>'+esc(t.title)+'</h3><span class="ws-task-status">'+labels[prog.status]+'</span></div><p>'+esc(t.description||'')+'</p><div class="ws-task-meta"><span>Échéance : '+wsDate(t.dueDate)+'</span><span>Responsable : '+esc(wsName(assigned)||'Toute la division')+'</span></div><details class="ws-report"><summary>Mon avancement & travail rendu</summary><form class="ws-task-progress-form" data-id="'+esc(t.id)+'"><label>Statut<select name="status" '+(canUpdate?'':'disabled')+'>'+Object.entries(labels).map(([v,l])=>'<option value="'+v+'" '+(prog.status===v?'selected':'')+'>'+l+'</option>').join('')+'</select></label><label>Travail réalisé<textarea name="report" rows="3" maxlength="2000" '+(canUpdate?'':'disabled')+'>'+esc(prog.report||'')+'</textarea></label>'+(canUpdate?'<button class="btn primary" type="submit">Enregistrer mon avancement</button>':'<small>Tâche attribuée à un autre membre.</small>')+'</form></details>'+(wsPerm.tasks?'<div class="ws-event-actions"><button class="btn" data-ws-action="edit-task" data-id="'+esc(t.id)+'">Modifier</button><button class="btn ws-danger" data-ws-action="delete-task" data-id="'+esc(t.id)+'">Supprimer</button></div>':'')+'</div></article>';
+ }).join(''):'<div class="ws-empty"><strong>Aucune tâche en cours</strong><p>Les nouvelles consignes apparaîtront ici.</p></div>')+'</div>';
+}
+function wsTaskForm(task){
+ return '<form class="ws-editor-form" id="ws-task-form" data-id="'+esc(task?.id||'')+'" hidden><div class="ws-form-top"><h3>'+(task?'Modifier la tâche':'Créer une tâche')+'</h3><button type="button" class="ws-icon-button" data-ws-action="cancel-form">×</button></div><div class="ws-form-grid"><label>Titre<input name="title" required maxlength="120" value="'+esc(task?.title||'')+'"></label><label>Échéance<input type="date" name="dueDate" value="'+esc(task?.dueDate||'')+'"></label><label>Responsable<select name="assignedTo"><option value="">Toute la division</option>'+wsMembers.map(u=>'<option value="'+u.id+'" '+(Number(task?.assignedTo)===Number(u.id)?'selected':'')+'>'+esc(wsName(u))+'</option>').join('')+'</select></label></div><label>Description<textarea name="description" rows="3" maxlength="1500">'+esc(task?.description||'')+'</textarea></label><button class="btn primary" type="submit">Enregistrer la tâche</button></form>';
+}
+async function wsReload(section=wsSection){wsSection=section;await loadWorkspace();}
+document.addEventListener('click',async e=>{
+ const tab=e.target.closest('[data-ws-tab]');if(tab){wsSection=tab.dataset.wsTab;renderWorkspace();return;}
+ const b=e.target.closest('[data-ws-action]');if(!b)return;
+ const action=b.dataset.wsAction,id=b.dataset.id;
+ try{
+ if(action==='new-event'){const f=$('#ws-event-form');f.hidden=false;f.scrollIntoView({behavior:'smooth',block:'center'});return;}
+ if(action==='new-task'){const f=$('#ws-task-form');f.hidden=false;f.scrollIntoView({behavior:'smooth',block:'center'});return;}
+ if(action==='cancel-form'){const f=b.closest('form');if(f)f.hidden=true;return;}
+ if(action==='edit-event'){const item=ws.calendar.find(x=>x.id===id);$('#ws-event-form')?.remove();$('#ws-content').insertAdjacentHTML('afterbegin',wsEventForm(item));$('#ws-event-form').hidden=false;return;}
+ if(action==='edit-task'){const item=ws.tasks.find(x=>x.id===id);$('#ws-task-form')?.remove();$('#ws-content').insertAdjacentHTML('afterbegin',wsTaskForm(item));$('#ws-task-form').hidden=false;return;}
+ if(action==='delete-event'||action==='delete-task'){if(!await confirmDialog('Cette suppression est définitive.',{title:'Confirmer la suppression',confirmText:'Supprimer',danger:true}))return;await api.post('/workspace/save',action==='delete-event'?{action:'event-delete',eventId:id}:{action:'task-delete',taskId:id});await wsReload();return;}
+ if(action==='join'||action==='leave'){await api.post('/workspace/save',{action:'signup',eventId:id,join:action==='join'});toast(action==='join'?'Inscription confirmée.':'Désinscription enregistrée.','ok');await wsReload('calendar');}
+ }catch(err){toast(err.message,'err');}
+});
+document.addEventListener('submit',async e=>{
+ const f=e.target;
+ try{
+ if(f.matches('.ws-roster-form')){e.preventDefault();const d=new FormData(f),id=Number(f.dataset.id);await api.post('/users/profile',{id,displayFirstName:d.get('first'),displayLastName:d.get('last')});await api.post('/workspace/save',{action:'roster',userId:id,roster:{order:Number(d.get('order')||0),arrivalDate:d.get('arrival')||'',promotionDate:d.get('promotion')||'',publicNotes:d.get('publicNotes'),privateNotes:d.get('privateNotes')}});toast('Fiche membre enregistrée.','ok');await wsReload('roster');return;}
+ if(f.id==='ws-event-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-upsert',event:{id:f.dataset.id,title:d.get('title'),date:d.get('date'),time:d.get('time'),location:d.get('location'),description:d.get('description')}});toast('Événement enregistré.','ok');await wsReload('calendar');return;}
+ if(f.matches('.ws-report-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-report',eventId:f.dataset.id,notes:d.get('notes'),work:d.get('work')});toast('Compte rendu enregistré.','ok');await wsReload('calendar');return;}
+ if(f.id==='ws-task-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-upsert',task:{id:f.dataset.id,title:d.get('title'),dueDate:d.get('dueDate'),assignedTo:d.get('assignedTo'),description:d.get('description')}});toast('Tâche enregistrée.','ok');await wsReload('tasks');return;}
+ if(f.matches('.ws-task-progress-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-progress',taskId:f.dataset.id,status:d.get('status'),report:d.get('report')});toast('Avancement enregistré.','ok');await wsReload('tasks');return;}
+ if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),r=await api.post('/auth/profile',{displayFirstName:d.get('first'),displayLastName:d.get('last')});currentUser={...currentUser,...r.user};applyPermissions();renderProfile();toast('Nom d’affichage enregistré.','ok');return;}
+ }catch(err){e.preventDefault();toast(err.message||'Enregistrement impossible.','err');}
 });
 
 const activePageLabel = $('#active-page-label');
