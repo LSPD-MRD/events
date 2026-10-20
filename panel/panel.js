@@ -54,9 +54,10 @@ const mrdDateMarkup = input => {
   trigger.setAttribute('aria-expanded','false');
   trigger.setAttribute('aria-label',input.getAttribute('aria-label')||input.closest('label')?.childNodes[0]?.textContent?.trim()||'Choisir une date');
   trigger.innerHTML='<span class="mrd-date-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 3v4M16.5 3v4M4 9.5h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="m8 14 2 2 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="mrd-date-copy"><small></small><strong></strong></span><span class="mrd-date-chevron" aria-hidden="true">⌄</span>';
-  const label=wrapper.querySelector('.mrd-date-copy small');
+  const label=trigger.querySelector('.mrd-date-copy small');
+  const value=trigger.querySelector('.mrd-date-copy strong');
+  if(!label||!value){wrapper.replaceWith(input);return;}
   label.textContent=input.getAttribute('aria-label')||'DATE';
-  const value=wrapper.querySelector('.mrd-date-copy strong');
   value.textContent=mrdDateText(input.value);
   const popup=document.createElement('div');
   popup.className='mrd-date-popover';
