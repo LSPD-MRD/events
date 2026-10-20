@@ -1201,6 +1201,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
   display:flex;
   flex-direction:row;
   align-items:stretch;
+  justify-content:safe center;
   gap:24px;
   padding:24px 24px 28px;
   overflow-x:auto;
