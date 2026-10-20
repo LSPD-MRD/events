@@ -1132,12 +1132,6 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-member-tag strong{font-size:10px;font-weight:650;color:var(--text);white-space:nowrap}
 .ws-member-tag.promotion .ws-tag-icon{background:color-mix(in srgb,var(--accent) 13%,var(--surface-2))}
 .ws-member-card{position:relative;overflow:visible}
-.ws-member-card.has-public-note{padding-top:54px}
-.ws-note-bubble{position:absolute;z-index:5;top:-18px;left:50%;transform:translateX(-50%);display:flex;align-items:flex-start;gap:8px;width:max-content;max-width:min(240px,calc(100vw - 54px));margin:0;padding:10px 12px;border:1px solid color-mix(in srgb,var(--accent) 44%,var(--line-strong));border-radius:15px 15px 15px 5px;background:color-mix(in srgb,var(--surface) 94%,var(--accent-soft));box-shadow:0 9px 24px rgba(0,0,0,.18);color:var(--text)}
-.ws-note-bubble:before{content:"";position:absolute;bottom:-7px;left:25px;width:12px;height:12px;transform:rotate(45deg);background:color-mix(in srgb,var(--surface) 94%,var(--accent-soft));border-right:1px solid color-mix(in srgb,var(--accent) 44%,var(--line-strong));border-bottom:1px solid color-mix(in srgb,var(--accent) 44%,var(--line-strong))}
-.ws-note-bubble-icon{flex:0 0 auto;color:var(--accent);font:700 27px Georgia,serif;line-height:.9;margin-top:1px}
-.ws-note-bubble p{margin:2px 0 0;font-size:11px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
-@media(max-width:560px){.ws-member-card.has-public-note{padding-top:52px}.ws-note-bubble{max-width:calc(100vw - 58px);padding:9px 11px}}
 .ws-tier-members .ws-edit-details{width:100%;margin-top:1px}
 .ws-tier-members .ws-edit-details>summary{font-size:11px}
 .ws-tier-members .ws-empty-grade{grid-column:1/-1;position:relative;margin-top:0;padding:15px;border:1px dashed var(--line-strong);border-radius:11px;background:color-mix(in srgb,var(--surface) 70%,transparent);font-size:11px}
@@ -1161,10 +1155,6 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-report-form,.ws-task-progress-form,.ws-roster-form{gap:12px}
 .ws-editor-form[hidden]{display:none!important}
 
-
-/* Notes d'effectif — présentation sobre, façon interface native moderne */
-.ws-member-card.has-public-note{padding-top:0}
-.ws-member-note{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:start;gap:9px;margin-top:13px;padding:11px 12px;border:1px solid var(--line);border-left:2px solid color-mix(in srgb,var(--accent) 72%,transparent);border-radius:11px;background:color-mix(in srgb,var(--surface-2) 68%,transparent);color:var(--text)}
-.ws-member-note-icon{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:13px;line-height:1}
-.ws-member-note p{min-width:0;margin:1px 0 0;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted)}
-:root[data-theme="light"] .ws-member-note{background:color-mix(in srgb,var(--surface-2) 78%,white)}
+/* Note d'effectif — texte secondaire discret, sans modifier la mise en page existante */
+.ws-member-note{display:block;min-width:0;margin:10px 0 0;padding:8px 0 0;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.ws-member-note p{margin:0}
