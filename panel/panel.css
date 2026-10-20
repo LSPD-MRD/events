@@ -1184,3 +1184,6 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-calendar-list-heading{display:flex;justify-content:space-between;gap:10px;margin:22px 0 10px;color:var(--muted);font-size:11px}
 .ws-calendar-list-heading>span:last-child{font-size:10px}
 @media(max-width:760px){.ws-week-calendar{overflow-x:auto}.ws-week-toolbar{align-items:flex-start;flex-direction:column}.ws-week-grid{min-width:700px}.ws-week-day{min-height:145px}.ws-week-events{padding:5px}.ws-week-event{padding:6px}.ws-calendar-list-heading{margin-top:18px}}
+
+/* Date fields: preserve form-grid sizing after native inputs become custom controls */
+.ws-form-grid>label{min-width:0}.ws-form-grid .mrd-date-control{width:100%;min-width:0}.ws-form-grid .mrd-date-control .mrd-date-trigger{min-width:0}.ws-editor-form[hidden]{display:none!important}
