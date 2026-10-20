@@ -1193,3 +1193,88 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 
 /* Date selector is portaled to body: compact field and predictable dropdown anchor. */
 .mrd-date-control{z-index:auto!important}.mrd-date-control.is-open{z-index:auto!important}.mrd-date-popover{margin:0!important;transform:none!important}
+
+
+/* MRD organization chart — horizontal reading order, command from right to left.
+   Cards stay upright; each grade owns a vertical stack of its members. */
+.ws-org-chart{
+  display:flex;
+  flex-direction:row-reverse;
+  align-items:stretch;
+  gap:24px;
+  padding:24px 24px 28px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
+  scrollbar-color:var(--line-strong) transparent;
+}
+.ws-org-chart::-webkit-scrollbar{height:7px}
+.ws-org-chart::-webkit-scrollbar-track{background:transparent}
+.ws-org-chart::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:10px}
+.ws-org-tier{
+  display:flex;
+  flex:0 0 clamp(250px,23vw,310px);
+  flex-direction:column;
+  align-items:stretch;
+  min-width:0;
+  padding:0;
+  scroll-snap-align:start;
+}
+.ws-org-tier:last-child{padding-bottom:0}
+.ws-org-tier+.ws-org-tier{margin:0}
+.ws-tier-heading{
+  align-self:center;
+  flex:0 0 auto;
+  width:max-content;
+  max-width:100%;
+  margin:0;
+}
+.ws-tier-heading:after{top:100%;left:50%;height:19px;width:1px}
+.ws-tier-members{
+  display:flex;
+  flex:1 0 auto;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:12px;
+  min-width:0;
+  padding:28px 0 0;
+}
+.ws-tier-members:before{display:none!important}
+.ws-tier-members>.ws-member-card{
+  flex:0 0 auto;
+  justify-self:auto;
+  width:100%;
+  max-width:none;
+  margin:0;
+}
+.ws-tier-members>.ws-member-card:before{display:none}
+.ws-tier-members>.ws-member-card:hover{transform:translateY(-2px)}
+.ws-tier-members .ws-empty-grade{width:100%;margin:0}
+.ws-org-tier+.ws-org-tier:before{
+  content:"";
+  position:absolute;
+  top:33px;
+  left:100%;
+  right:auto;
+  width:24px;
+  height:1px;
+  background:linear-gradient(90deg,var(--line-strong),var(--accent));
+  opacity:.8;
+}
+.ws-tier-members:has(.ws-empty-grade):before{display:none!important}
+@media(max-width:900px){
+  .ws-org-chart{gap:18px;padding:20px 16px 24px}
+  .ws-org-tier{flex-basis:270px}
+  .ws-org-tier+.ws-org-tier:before{width:18px}
+}
+@media(max-width:560px){
+  .ws-org-chart{gap:16px;padding:18px 12px 20px}
+  .ws-org-tier{flex-basis:min(78vw,270px)}
+  .ws-tier-heading{max-width:100%;padding:10px 12px}
+  .ws-tier-members{grid-template-columns:none!important;gap:11px;padding-top:26px}
+  .ws-tier-members>.ws-member-card{grid-column:auto!important;width:100%;margin:0}
+  .ws-org-tier+.ws-org-tier:before{width:16px}
+}
