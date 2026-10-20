@@ -101,7 +101,7 @@ const mrdDateMarkup = input => {
     close();
   };
   const open=()=>{
-    $('.mrd-date-popover:not([hidden])').forEach(other=>{if(other!==popup){other.hidden=true;other.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');}});
+    $$('.mrd-date-popover:not([hidden])').forEach(other=>{if(other!==popup){other.hidden=true;other.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');}});
     popup.dataset.month=(input.value||mrdDateToday()).slice(0,7);
     render();popup.hidden=false;trigger.setAttribute('aria-expanded','true');wrapper.classList.add('is-open');
     const selected=popup.querySelector('.is-selected:not(:disabled)')||popup.querySelector('[data-mrd-date]:not(:disabled)');
@@ -130,10 +130,10 @@ const initMrdDatePickers = root => {
   (root||document).querySelectorAll('input[type="date"]:not(.mrd-date-native):not([data-native-date-picker])').forEach(mrdDateMarkup);
 };
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.mrd-date-control'))$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
+  if(!e.target.closest('.mrd-date-control'))$$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){const p=$('.mrd-date-popover:not([hidden])').at(-1);if(p){p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.focus();}}
+  if(e.key==='Escape'){const p=$$('.mrd-date-popover:not([hidden])').at(-1);if(p){p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.focus();}}
 });
 document.addEventListener('submit',e=>{
   const missing=[...e.target.querySelectorAll('input.mrd-date-native')].find(input=>input.dataset.originalRequired==='true'&&!input.value);
@@ -1252,7 +1252,7 @@ function renderWsRoster(){
  const tiers=wsGrades.map((grade,i)=>{
   const people=ordered.filter(u=>u.grade===grade);
   const columnCount=people.length<=1?1:people.length===2?3:people.length===3?3:people.length%2===0?people.length+1:people.length;
-  const memberColumns=people.map((_,index)=>{if(people.length===1)return 1;if(people.length===2)return index===0?1:3;if(people.length===3)return index+1;const center=(columnCount+1)/2;const offset=Math.ceil(index/2);return index===0?center:index%2===1?center-offset:center+offset;});
+  const memberColumns=people.map((_,index)=>{if(people.length===1)return 1;if(people.length===2)return index===0?1:3;if(people.length===3)return index+1;const center=(columnCount+1)/2;if(people.length%2===0){const offset=Math.floor(index/2);return index%2===0?center-1-offset:center+1+offset;}const offset=Math.ceil(index/2);return index===0?center:index%2===1?center-offset:center+offset;});
   const members=people.map((u,memberIndex)=>{
    const m=ws.roster?.[u.id]||{};
    const dates=(m.arrivalDate||m.promotionDate)?'<div class="ws-member-tags">'+(m.arrivalDate?'<span class="ws-member-tag"><span class="ws-tag-icon">↗</span><span><small>ARRIVÉE</small><strong>'+esc(wsDate(m.arrivalDate))+'</strong></span></span>':'')+(m.promotionDate?'<span class="ws-member-tag promotion"><span class="ws-tag-icon">✦</span><span><small>PROMOTION</small><strong>'+esc(wsDate(m.promotionDate))+'</strong></span></span>':'')+'</div>':'';
