@@ -771,7 +771,7 @@ const setTab = async name => {
   localStorage.setItem(KEY.activeTab, name);
   const layout = $('.layout');
   if (layout) layout.dataset.activeTab = name;
-  $('[data-editor-only]').forEach(el => { el.hidden = name !== 'edit' || !['owner','admin','editor'].includes(currentUser?.role); });
+  $$('[data-editor-only]').forEach(el => { el.hidden = name !== 'edit' || !['owner','admin','editor'].includes(currentUser?.role); });
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
   const logsNav = $('[data-tab="logs"]');
