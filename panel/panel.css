@@ -1312,3 +1312,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 #display-profile-form>small{font-size:10px;line-height:1.45;color:var(--muted)}
 #display-profile-form .profile-save-button{min-height:32px;padding:7px 11px;font-size:11px;border-radius:8px}
 @media(max-width:520px){#display-profile-form .profile-display-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+
+
+/* Interface épurée : les titres suffisent, on masque les sous-titres explicatifs répétitifs. */
+.page-intro>div>.eyebrow,.page-intro>div>p,.card-head>p,.ws-section-heading .ws-kicker,.ws-section-heading p{display:none!important}

@@ -143,3 +143,7 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
 .publication-pdf-thumb{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--app-accent)}
 .publication-pdf-thumb b{font-size:34px;letter-spacing:2px}.publication-pdf-thumb small{font-size:11px;color:var(--app-muted)}
 @media(max-width:760px){.publication-modal{padding:8px}.publication-modal-panel{width:100%;height:92vh;border-radius:10px}.publication-modal-head{padding:12px 14px}.publication-modal-content{padding:0}.publication-modal-pdf{height:100%} .publication-thumb img{max-height:420px}}
+
+
+/* Simplification éditoriale : retirer les descriptions répétitives sous les titres. */
+.hero>p,.login-card>p,.section-head .eyebrow,.detail-fallback .wip-note{display:none!important}
