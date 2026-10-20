@@ -771,7 +771,7 @@ const setTab = async name => {
   localStorage.setItem(KEY.activeTab, name);
   const layout = $('.layout');
   if (layout) layout.dataset.activeTab = name;
-  $$('[data-editor-only]').forEach(el => { el.hidden = name !== 'edit'; });
+  $('[data-editor-only]').forEach(el => { el.hidden = name !== 'edit' || !['owner','admin','editor'].includes(currentUser?.role); });
   closeMenus();
   setPreview(name === 'edit' && previewPreference, false);
   const logsNav = $('[data-tab="logs"]');
@@ -1055,8 +1055,6 @@ async function signOut(show = true) {
 function applyPermissions() {
   const role = currentUser?.role || 'viewer';
   const canEdit = ['owner','admin','editor'].includes(role);
-  const saveActions = $('#save-actions');
-  if (saveActions) saveActions.hidden = !canEdit;
   const profileName = $('#profile-menu-name');
   if (profileName) profileName.textContent = wsName(currentUser);
   const profileGrade = $('#profile-menu-grade');
