@@ -1,5 +1,5 @@
 window.MRD_PORTAL_SETTINGS = {
-  "order": ["events", "news", "documents"],
+  "order": ["events", "documents", "news"],
   "visible": { "events": true, "news": false, "documents": true },
   "categories": [
     { "id": "events", "name": "Événements", "type": "events", "description": "Fiches et cartes des événements" },
