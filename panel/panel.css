@@ -1741,3 +1741,19 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
   .topbar .brand-wordmark strong { font-size: 15px; letter-spacing: .045em; }
   .topbar .brand-wordmark span { display: block; font-size: 8px; letter-spacing: .28em; }
 }
+
+
+/* Portal category visibility and ordering controls — CO / ACO only. */
+.portal-category-list { gap: 10px; }
+.portal-category-row { display:flex; align-items:center; gap:14px; min-width:0; padding:13px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
+.portal-category-grip { color:var(--muted); font-size:20px; line-height:1; }
+.portal-category-row .meta { flex:1; min-width:0; }
+.portal-category-row .meta b { display:block; font-size:13px; }
+.portal-category-row .meta small { display:block; color:var(--muted); font-size:11px; margin-top:3px; }
+.portal-visibility { border-radius:999px; padding:5px 9px; font-size:10px; font-weight:700; white-space:nowrap; }
+.portal-visibility.is-visible { color:var(--ok); background:rgba(62,207,142,.1); }
+.portal-visibility.is-hidden { color:var(--muted); background:var(--surface); }
+.portal-category-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid var(--line); }
+.portal-category-footer small { color:var(--muted); font-size:11px; }
+.portal-category-row .row-tools button:disabled { opacity:.3; cursor:not-allowed; }
+@media(max-width:720px) { .portal-category-row { flex-wrap:wrap; gap:10px; } .portal-category-row .meta { flex:1 1 calc(100% - 48px); } .portal-category-row .portal-visibility { margin-left:34px; } .portal-category-row .row-tools { margin-left:auto; } .portal-category-footer { align-items:flex-start; flex-direction:column; } }
