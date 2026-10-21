@@ -429,8 +429,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .select-wrap { position:relative; }
 .select-wrap select { appearance:none; -webkit-appearance:none; width:100%; padding:11px 42px 11px 13px; border-radius:11px; cursor:pointer; background:var(--bg); }
 .select-chevron { position:absolute; top:50%; right:15px; transform:translateY(-55%); pointer-events:none; color:var(--accent); font-size:19px; }
-.access-create-footer { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; padding-top:16px; border-top:1px solid var(--line); }
-.access-create-footer > span { max-width:420px; color:var(--muted); font-size:12px; line-height:1.6; }
+.access-create-footer { grid-column:1/-1; display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:14px; padding-top:0; border-top:0; }
 .create-account-btn { min-height:44px; min-width:180px; padding:11px 20px; border-radius:11px; white-space:nowrap; }
 .create-account-btn span { font-size:18px; line-height:1; }
 .access-list-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:8px 24px 0; padding:20px 0 0; border-top:1px solid var(--line); }
