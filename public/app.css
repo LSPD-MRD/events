@@ -153,3 +153,13 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
   .event-grid-inner,
   .publication-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Desktop: keep cards generously sized while letting the grids extend beyond the content container. */
+@media (min-width: 1081px) {
+  .event-grid-inner,
+  .publication-grid {
+    width: calc(100% + clamp(320px, 32vw, 560px));
+    margin-left: calc(clamp(320px, 32vw, 560px) / -2);
+  }
+}
