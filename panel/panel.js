@@ -1270,7 +1270,7 @@ function renderWsRoster(){
  }).join('');
  return stats+'<div class="ws-section-heading"><div><span class="ws-kicker">ORGANISATION</span><h2>Organigramme MRD</h2><p>Une vue hiérarchique des quatre grades, des membres et de leur ancienneté.</p></div></div><section class="ws-org-board"><div class="ws-org-board-head"><span class="ws-org-pulse"></span><div><strong>MRD · STRUCTURE OPÉRATIONNELLE</strong><small>CHAÎNE DE COMMANDEMENT <span>·</span> '+wsMembers.length+' MEMBRES</small></div><span class="ws-org-board-mark">LSPD / MRD</span></div><div class="ws-org-chart">'+tiers+'</div><div class="ws-org-board-foot"><span>MEDIA RELATIONS DIVISION</span><span>ORGANIGRAMME <b>·</b> EFFECTIF ACTIF</span></div></section>';
 }
-let wsCalendarMonth=(()=>{const saved=localStorage.getItem(WS_CALENDAR_MONTH_KEY);const d=/^\\d{4}-\\d{2}$/.test(saved||'')?new Date(saved+'-01T12:00:00'):new Date();d.setDate(1);d.setHours(12,0,0,0);return d;})();
+let wsCalendarMonth=(()=>{const saved=localStorage.getItem(WS_CALENDAR_MONTH_KEY);const d=/^\d{4}-\d{2}$/.test(saved||'')?new Date(saved+'-01T12:00:00'):new Date();d.setDate(1);d.setHours(12,0,0,0);return d;})();
 function wsCalendarISO(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function wsCalendarMonthLabel(d){return d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}
 function wsCalendarSetMonth(delta){if(delta===null){wsCalendarMonth=new Date();}else{wsCalendarMonth=new Date(wsCalendarMonth.getFullYear(),wsCalendarMonth.getMonth()+delta,1,12);}wsCalendarMonth.setDate(1);localStorage.setItem(WS_CALENDAR_MONTH_KEY,wsCalendarISO(wsCalendarMonth).slice(0,7));}
