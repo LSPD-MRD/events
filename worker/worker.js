@@ -1191,6 +1191,38 @@ export default {
       }
 
       /*
+       * PARAMÈTRES DES CATÉGORIES DU PORTAIL — CO / ACO uniquement
+       */
+      if (route === "/portal/settings") {
+        if (!canManageAccounts(user)) {
+          return json({ error: "La gestion des catégories du portail est réservée au CO et à l’ACO." }, 403, cors);
+        }
+        const settings = b.settings;
+        const allowed = ["events", "news", "documents"];
+        if (!settings || !Array.isArray(settings.order) ||
+            settings.order.length !== allowed.length ||
+            new Set(settings.order).size !== allowed.length ||
+            !settings.order.every(key => allowed.includes(key)) ||
+            !settings.visible ||
+            !allowed.every(key => typeof settings.visible[key] === "boolean")) {
+          return json({ error: "Configuration des catégories invalide." }, 400, cors);
+        }
+        const safeSettings = {
+          order: settings.order,
+          visible: Object.fromEntries(allowed.map(key => [key, settings.visible[key]]))
+        };
+        await write(
+          env,
+          "public/portal-settings.js",
+          "window.MRD_PORTAL_SETTINGS = " + JSON.stringify(safeSettings, null, 2) + ";\n",
+          "Catégories du portail modifiées (" + user.username + ")"
+        );
+        await audit(env, user, "Catégories du portail modifiées",
+          safeSettings.order.map(key => key + (safeSettings.visible[key] ? " affichée" : " masquée")).join(", "));
+        return json({ ok: true, settings: safeSettings }, 200, cors);
+      }
+
+      /*
        * MISE À JOUR DU PORTAIL
        */
       if (route === "/portal") {
