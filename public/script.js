@@ -83,29 +83,84 @@
   backButton.addEventListener('click', closeEvent);
   document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; localStorage.setItem('mrd-event-filter',filter); document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
   const kindLabels = { news:'MEDIA RELATIONS', 'compte-rendu':'INTERAGENCY', 'comm-interne':'INTERAGENCY', 'comm-presse':'PUBLIC INFORMATION · PIO' };
+  const categoryDefaults = {
+    order: ['events','news','documents'], visible: { events: true, news: false, documents: true },
+    categories: [
+      { id:'events', name:'Événements', type:'events', description:'Fiches et cartes des événements' },
+      { id:'news', name:'News & actualités', type:'publications', description:'Actualités et communiqués' },
+      { id:'documents', name:'Communication interne', type:'publications', description:'Documents et communications officielles' }
+    ]
+  };
+  const rawPortalSettings = window.MRD_PORTAL_SETTINGS && typeof window.MRD_PORTAL_SETTINGS === 'object' ? window.MRD_PORTAL_SETTINGS : categoryDefaults;
+  const builtInCategories = categoryDefaults.categories;
+  const incomingCategories = Array.isArray(rawPortalSettings.categories) ? rawPortalSettings.categories : builtInCategories;
+  const categories = incomingCategories.filter(c => c && typeof c.id==='string' && typeof c.name==='string' && c.name.trim() &&
+    (['events','news','documents'].includes(c.id) || /^custom-[a-z0-9-]{1,64}$/.test(c.id)) &&
+    (c.id==='events' ? c.type==='events' : c.type==='publications'))
+    .map(c => ({ id:c.id, name:c.name.trim().slice(0,48), type:c.id==='events'?'events':'publications', description:String(c.description||'').trim().slice(0,100) }));
+  if (!Array.isArray(rawPortalSettings.categories)) builtInCategories.forEach(c => { if(!categories.some(item=>item.id===c.id)) categories.push({...c}); });
+  const categoryIds = categories.map(c=>c.id);
+  const orderFromSettings = Array.isArray(rawPortalSettings.order) ? rawPortalSettings.order : [];
+  const portalSettings = {
+    categories,
+    order: [...orderFromSettings.filter((id,i,all)=>categoryIds.includes(id)&&all.indexOf(id)===i), ...categoryIds.filter(id=>!orderFromSettings.includes(id))],
+    visible: Object.fromEntries(categories.map(c=>[c.id,typeof rawPortalSettings.visible?.[c.id]==='boolean' ? rawPortalSettings.visible[c.id] : c.id!=='news']))
+  };
+  const tabsRoot = document.querySelector('.portal-tabs');
+  const contentRoot = document.querySelector('.content-wrap');
+  const spaces = { events:document.getElementById('space-events'), news:document.getElementById('space-news'), documents:document.getElementById('space-documents') };
+  const defaultDescriptions = { events:'Fiches et cartes des événements', news:'Actualités et communiqués', documents:'Documents et communications officielles' };
+  const tabsFragment = document.createDocumentFragment();
+  const orderedSpaces = document.createDocumentFragment();
+  categories.forEach(category => {
+    let button = document.querySelector('[data-space="'+category.id+'"]');
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button'; button.className = 'portal-tab'; button.dataset.space = category.id; button.setAttribute('role','tab');
+    }
+    button.textContent = category.name;
+    button.hidden = !portalSettings.visible[category.id];
+    tabsFragment.appendChild(button);
+    let space = spaces[category.id];
+    if (!space) {
+      space = document.createElement('section');
+      space.id = 'space-' + category.id; space.className = 'publication-space'; space.hidden = true;
+      space.innerHTML = '<div class="section-head"><div><span class="eyebrow"></span><h2></h2></div></div><div class="publication-grid"></div>';
+      spaces[category.id] = space;
+    }
+    const heading = space.querySelector('.section-head h2'), eyebrow = space.querySelector('.section-head .eyebrow');
+    if (heading) heading.textContent = category.name;
+    if (eyebrow) eyebrow.textContent = (category.description || defaultDescriptions[category.id] || 'Publications de la division').toLocaleUpperCase('fr');
+    space.hidden = true; orderedSpaces.appendChild(space);
+  });
+  tabsRoot.replaceChildren(tabsFragment);
+  contentRoot.appendChild(orderedSpaces);
   function renderPublications() {
     const items = Array.isArray(window.MRD_PUBLICATIONS) ? window.MRD_PUBLICATIONS : [];
-    const card = p => '<article class="publication-card"><div class="publication-label">'+esc(kindLabels[p.kind]||'PUBLICATION MRD')+'</div><h3>'+esc(p.title)+'</h3>'+(p.date?'<div class="publication-date">'+esc(p.date)+'</div>':'')+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+'<button type="button" class="publication-thumb publication-preview-trigger" data-preview="'+esc(p.id)+'" aria-label="Agrandir l’aperçu de '+esc(p.title)+'">'+(p.mime==='application/pdf'?'<span class="publication-pdf-thumb"><b>PDF</b><small>Cliquer pour agrandir</small></span>':'<img src="'+encodeURI(p.file)+'" alt="Aperçu de '+esc(p.title)+'" loading="lazy">')+'</button><div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a></div></article>';
-    const news=items.filter(p=>p.kind==='news'||p.kind==='comm-presse'), docs=items.filter(p=>p.kind!=='news'&&p.kind!=='comm-presse');
-    document.getElementById('news-list').innerHTML=news.map(card).join('')||'<div class="empty-state">Aucune actualité publiée pour le moment.</div>';
-    document.getElementById('documents-list').innerHTML=docs.map(card).join('')||'<div class="empty-state">Aucun document officiel publié pour le moment.</div>';
-    const modal = document.getElementById('publication-preview-modal');
-    if (modal) modal.remove();
+    const customIds = categories.filter(c=>c.id.startsWith('custom-')).map(c=>c.id);
+    const publicationCards = (pubs, category) => pubs.map(p => {
+      const label = customIds.includes(p.kind) ? category.name.toLocaleUpperCase('fr') : (kindLabels[p.kind] || category.name.toLocaleUpperCase('fr'));
+      return '<article class="publication-card"><div class="publication-label">'+esc(label)+'</div><h3>'+esc(p.title)+'</h3>'+(p.date?'<div class="publication-date">'+esc(p.date)+'</div>':'')+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+'<button type="button" class="publication-thumb publication-preview-trigger" data-preview="'+esc(p.id)+'" aria-label="Agrandir l’aperçu de '+esc(p.title)+'">'+(p.mime==='application/pdf'?'<span class="publication-pdf-thumb"><b>PDF</b><small>Cliquer pour agrandir</small></span>':'<img src="'+encodeURI(p.file)+'" alt="Aperçu de '+esc(p.title)+'" loading="lazy">')+'</button><div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a></div></article>';
+    }).join('');
+    categories.filter(c=>c.type==='publications').forEach(category => {
+      let pubs;
+      if (category.id === 'news') pubs = items.filter(p=>p.kind==='news'||p.kind==='comm-presse');
+      else if (category.id === 'documents') pubs = items.filter(p=>p.kind==='comm-interne'||p.kind==='compte-rendu');
+      else pubs = items.filter(p=>p.kind===category.id);
+      const grid = spaces[category.id]?.querySelector('.publication-grid');
+      if (grid) grid.innerHTML = publicationCards(pubs,category) || '<div class="empty-state">Aucune publication dans cette catégorie pour le moment.</div>';
+    });
+    const prior = document.getElementById('publication-preview-modal'); if (prior) prior.remove();
     const shell = document.createElement('div');
-    shell.id = 'publication-preview-modal';
-    shell.className = 'publication-modal';
-    shell.hidden = true;
-    shell.setAttribute('role','dialog');
-    shell.setAttribute('aria-modal','true');
-    shell.setAttribute('aria-label','Aperçu de la publication');
+    shell.id = 'publication-preview-modal'; shell.className = 'publication-modal'; shell.hidden = true;
+    shell.setAttribute('role','dialog'); shell.setAttribute('aria-modal','true'); shell.setAttribute('aria-label','Aperçu de la publication');
     shell.innerHTML = '<div class="publication-modal-backdrop" data-preview-close></div><section class="publication-modal-panel"><header class="publication-modal-head"><div><span class="eyebrow">APERÇU DE LA PUBLICATION</span><h2 id="publication-modal-title"></h2></div><button type="button" class="publication-modal-close" aria-label="Fermer l’aperçu" data-preview-close><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header><div class="publication-modal-content" id="publication-modal-content"></div></section>';
     document.body.appendChild(shell);
     const closePreview = () => { shell.hidden = true; document.body.classList.remove('publication-modal-open'); document.getElementById('publication-modal-content').innerHTML=''; };
     shell.querySelectorAll('[data-preview-close]').forEach(el=>el.addEventListener('click',closePreview));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!shell.hidden)closePreview();});
     document.querySelectorAll('.publication-preview-trigger').forEach(button=>button.addEventListener('click',()=>{
-      const pub=items.find(item=>String(item.id)===button.dataset.preview);
-      if(!pub)return;
+      const pub=items.find(item=>String(item.id)===button.dataset.preview); if(!pub)return;
       document.getElementById('publication-modal-title').textContent=pub.title||'Publication';
       const url=encodeURI(pub.file);
       document.getElementById('publication-modal-content').innerHTML=pub.mime==='application/pdf'
@@ -114,32 +169,13 @@
       shell.hidden=false; document.body.classList.add('publication-modal-open');
     }));
   }
-  const categoryDefaults = { order: ['events','news','documents'], visible: { events: true, news: false, documents: true } };
-  const rawPortalSettings = window.MRD_PORTAL_SETTINGS && typeof window.MRD_PORTAL_SETTINGS === 'object' ? window.MRD_PORTAL_SETTINGS : categoryDefaults;
-  const categoryKeys = ['events','news','documents'];
-  const categoryLabels = { events:'Événements', news:'News & actualités', documents:'Communication interne' };
-  const portalSettings = {
-    order: [...(Array.isArray(rawPortalSettings.order) ? rawPortalSettings.order.filter((key,i,all)=>categoryKeys.includes(key)&&all.indexOf(key)===i) : []), ...categoryKeys.filter(key=>!(rawPortalSettings.order||[]).includes(key))],
-    visible: Object.fromEntries(categoryKeys.map(key=>[key, typeof rawPortalSettings.visible?.[key]==='boolean' ? rawPortalSettings.visible[key] : key!=='news']))
-  };
-  const tabsRoot = document.querySelector('.portal-tabs');
-  const contentRoot = document.querySelector('.content-wrap');
-  const spaces = { events: document.getElementById('space-events'), news: document.getElementById('space-news'), documents: document.getElementById('space-documents') };
-  const orderedTabs = document.createDocumentFragment();
-  const orderedSpaces = document.createDocumentFragment();
-  portalSettings.order.forEach(key => {
-    const button = document.querySelector('[data-space="'+key+'"]');
-    if (button) { button.hidden = !portalSettings.visible[key]; button.textContent = categoryLabels[key]; orderedTabs.appendChild(button); }
-    if (spaces[key]) { spaces[key].hidden = true; orderedSpaces.appendChild(spaces[key]); }
-  });
-  tabsRoot.appendChild(orderedTabs);
-  contentRoot.appendChild(orderedSpaces);
-  let savedSpace = localStorage.getItem('mrd-portal-space');
-  if (!categoryKeys.includes(savedSpace) || !portalSettings.visible[savedSpace]) savedSpace = portalSettings.order.find(key=>portalSettings.visible[key]) || 'events';
+  const savedSpaceInitial = localStorage.getItem('mrd-portal-space');
+  let savedSpace = categoryIds.includes(savedSpaceInitial) && portalSettings.visible[savedSpaceInitial]
+    ? savedSpaceInitial : (portalSettings.order.find(id=>portalSettings.visible[id]) || categories[0]?.id || 'events');
   function activateSpace(space, remember=true) {
-    if (!portalSettings.visible[space]) space = portalSettings.order.find(key=>portalSettings.visible[key]) || 'events';
+    if (!portalSettings.visible[space]) space = portalSettings.order.find(id=>portalSettings.visible[id]) || categories[0]?.id || 'events';
     document.querySelectorAll('[data-space]').forEach(button=>{ button.classList.toggle('active',button.dataset.space===space); button.setAttribute('aria-selected',String(button.dataset.space===space)); });
-    categoryKeys.forEach(key=>{ spaces[key].hidden = key!==space || !portalSettings.visible[key]; });
+    categoryIds.forEach(id=>{ if(spaces[id]) spaces[id].hidden = id!==space || !portalSettings.visible[id]; });
     if (remember) localStorage.setItem('mrd-portal-space',space);
     if(space!=='events' && location.hash.startsWith('#event/')) history.replaceState(null,'','#home');
   }
