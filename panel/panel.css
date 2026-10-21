@@ -1759,17 +1759,28 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
 }
 
 
-/* Portal category visibility and ordering controls — CO / ACO only. */
-.portal-category-list { gap: 10px; }
-.portal-category-row { display:flex; align-items:center; gap:14px; min-width:0; padding:13px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); }
-.portal-category-grip { color:var(--muted); font-size:20px; line-height:1; }
+/* Portal category management — CO / ACO only. */
+.portal-category-list { display:grid; gap:9px; }
+.portal-category-row { display:flex; align-items:center; gap:13px; min-width:0; padding:12px 13px; border:1px solid var(--line); border-radius:13px; background:var(--surface-2); transition:border-color .16s,background .16s,opacity .16s,transform .16s; }
+.portal-category-row.is-dragging { opacity:.38; transform:scale(.99); }
+.portal-category-row.is-drop-target { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--surface-2)); }
+.portal-category-grip { display:grid; place-items:center; flex:0 0 30px; width:30px; height:34px; padding:0; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:23px; line-height:1; cursor:grab; touch-action:none; }
+.portal-category-grip:hover { color:var(--text); background:var(--surface); }
+.portal-category-grip:active { cursor:grabbing; }
 .portal-category-row .meta { flex:1; min-width:0; }
 .portal-category-row .meta b { display:block; font-size:13px; }
 .portal-category-row .meta small { display:block; color:var(--muted); font-size:11px; margin-top:3px; }
 .portal-visibility { border-radius:999px; padding:5px 9px; font-size:10px; font-weight:700; white-space:nowrap; }
 .portal-visibility.is-visible { color:var(--ok); background:rgba(62,207,142,.1); }
 .portal-visibility.is-hidden { color:var(--muted); background:var(--surface); }
+.portal-category-protected { color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:0 8px; }
+.portal-category-add { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; padding:16px; border-top:1px solid var(--line); }
+.portal-category-add-fields { display:grid; grid-template-columns:minmax(150px,.85fr) minmax(220px,1.5fr); gap:12px; flex:1; min-width:0; }
+.portal-category-add label { display:grid; gap:7px; color:var(--muted); font-size:11px; font-weight:700; }
+.portal-category-add label span { font-weight:500; }
+.portal-category-add input { width:100%; min-width:0; height:39px; border:1px solid var(--line-strong); border-radius:9px; background:var(--surface); color:var(--text); padding:0 11px; font:inherit; font-size:12px; outline:none; }
+.portal-category-add input:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent); }
+.portal-category-add > .btn { flex:0 0 auto; height:39px; }
 .portal-category-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid var(--line); }
 .portal-category-footer small { color:var(--muted); font-size:11px; }
-.portal-category-row .row-tools button:disabled { opacity:.3; cursor:not-allowed; }
-@media(max-width:720px) { .portal-category-row { flex-wrap:wrap; gap:10px; } .portal-category-row .meta { flex:1 1 calc(100% - 48px); } .portal-category-row .portal-visibility { margin-left:34px; } .portal-category-row .row-tools { margin-left:auto; } .portal-category-footer { align-items:flex-start; flex-direction:column; } }
+@media(max-width:720px) { .portal-category-row { flex-wrap:wrap; gap:9px; } .portal-category-row .meta { flex:1 1 calc(100% - 48px); } .portal-category-row .portal-visibility { margin-left:40px; } .portal-category-row .row-tools { margin-left:auto; } .portal-category-add { align-items:stretch; flex-direction:column; } .portal-category-add-fields { grid-template-columns:1fr; } .portal-category-footer { align-items:flex-start; flex-direction:column; } }
