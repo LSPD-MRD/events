@@ -98,7 +98,7 @@
     shell.setAttribute('role','dialog');
     shell.setAttribute('aria-modal','true');
     shell.setAttribute('aria-label','Aperçu de la publication');
-    shell.innerHTML = '<div class="publication-modal-backdrop" data-preview-close></div><section class="publication-modal-panel"><header class="publication-modal-head"><div><span class="eyebrow">APERÇU DE LA PUBLICATION</span><h2 id="publication-modal-title"></h2></div><button type="button" class="publication-modal-close" aria-label="Fermer l’aperçu" data-preview-close>×</button></header><div class="publication-modal-content" id="publication-modal-content"></div></section>';
+    shell.innerHTML = '<div class="publication-modal-backdrop" data-preview-close></div><section class="publication-modal-panel"><header class="publication-modal-head"><div><span class="eyebrow">APERÇU DE LA PUBLICATION</span><h2 id="publication-modal-title"></h2></div><button type="button" class="publication-modal-close" aria-label="Fermer l’aperçu" data-preview-close><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header><div class="publication-modal-content" id="publication-modal-content"></div></section>';
     document.body.appendChild(shell);
     const closePreview = () => { shell.hidden = true; document.body.classList.remove('publication-modal-open'); document.getElementById('publication-modal-content').innerHTML=''; };
     shell.querySelectorAll('[data-preview-close]').forEach(el=>el.addEventListener('click',closePreview));
