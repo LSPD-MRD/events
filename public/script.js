@@ -114,14 +114,33 @@
       shell.hidden=false; document.body.classList.add('publication-modal-open');
     }));
   }
-  document.querySelectorAll('[data-space]').forEach(button=>button.addEventListener('click',()=>{
-    const space=button.dataset.space; document.querySelectorAll('[data-space]').forEach(b=>b.classList.toggle('active',b===button));
-    document.getElementById('space-events').hidden=space!=='events'; document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
-    document.getElementById('space-news').hidden=space!=='news'; document.getElementById('space-documents').hidden=space!=='documents';
-    localStorage.setItem('mrd-portal-space',space); if(space!=='events' && location.hash.startsWith('#event/')) history.replaceState(null,'','#home');
-  }));
-  const savedSpace = ['events','news','documents'].includes(localStorage.getItem('mrd-portal-space')) ? localStorage.getItem('mrd-portal-space') : 'events';
-  document.querySelectorAll('[data-space]').forEach(button=>{const active=button.dataset.space===savedSpace;button.classList.toggle('active',active);document.getElementById('space-'+(button.dataset.space==='events'?'events':button.dataset.space==='news'?'news':'documents')).hidden=!active;});
+  const categoryDefaults = { order: ['events','news','documents'], visible: { events: true, news: false, documents: true } };
+  const rawPortalSettings = window.MRD_PORTAL_SETTINGS && typeof window.MRD_PORTAL_SETTINGS === 'object' ? window.MRD_PORTAL_SETTINGS : categoryDefaults;
+  const categoryKeys = ['events','news','documents'];
+  const categoryLabels = { events:'Événements', news:'News & actualités', documents:'Communication interne' };
+  const portalSettings = {
+    order: [...(Array.isArray(rawPortalSettings.order) ? rawPortalSettings.order.filter((key,i,all)=>categoryKeys.includes(key)&&all.indexOf(key)===i) : []), ...categoryKeys.filter(key=>!(rawPortalSettings.order||[]).includes(key))],
+    visible: Object.fromEntries(categoryKeys.map(key=>[key, typeof rawPortalSettings.visible?.[key]==='boolean' ? rawPortalSettings.visible[key] : key!=='news']))
+  };
+  const tabsRoot = document.querySelector('.portal-tabs');
+  const contentRoot = document.querySelector('.content-wrap');
+  const spaces = { events: document.getElementById('space-events'), news: document.getElementById('space-news'), documents: document.getElementById('space-documents') };
+  portalSettings.order.forEach(key => {
+    const button = document.querySelector('[data-space="'+key+'"]');
+    if (button) { button.hidden = !portalSettings.visible[key]; button.textContent = categoryLabels[key]; tabsRoot.appendChild(button); }
+    if (spaces[key]) { spaces[key].hidden = true; contentRoot.appendChild(spaces[key]); }
+  });
+  let savedSpace = localStorage.getItem('mrd-portal-space');
+  if (!categoryKeys.includes(savedSpace) || !portalSettings.visible[savedSpace]) savedSpace = portalSettings.order.find(key=>portalSettings.visible[key]) || 'events';
+  function activateSpace(space, remember=true) {
+    if (!portalSettings.visible[space]) space = portalSettings.order.find(key=>portalSettings.visible[key]) || 'events';
+    document.querySelectorAll('[data-space]').forEach(button=>{ button.classList.toggle('active',button.dataset.space===space); button.setAttribute('aria-selected',String(button.dataset.space===space)); });
+    categoryKeys.forEach(key=>{ spaces[key].hidden = key!==space || !portalSettings.visible[key]; });
+    if (remember) localStorage.setItem('mrd-portal-space',space);
+    if(space!=='events' && location.hash.startsWith('#event/')) history.replaceState(null,'','#home');
+  }
+  document.querySelectorAll('[data-space]').forEach(button=>button.addEventListener('click',()=>activateSpace(button.dataset.space)));
+  activateSpace(savedSpace, false);
   document.querySelectorAll('[data-filter]').forEach(button=>button.classList.toggle('active',button.dataset.filter===filter));
   renderPublications();
   const theme = document.getElementById('theme-toggle');
