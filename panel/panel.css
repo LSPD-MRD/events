@@ -1431,3 +1431,6 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
  .ws-month-event-count{font-size:7px}
  .ws-month-footer{font-size:9px}
 }
+
+.ws-month-event-location{display:block;min-width:0;overflow:hidden;color:var(--muted);font:400 9px/1.25 Inter,system-ui,sans-serif;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px){.ws-month-event-location{display:none}}
