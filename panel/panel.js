@@ -1429,24 +1429,6 @@ $('#file').onchange = async e => {
   try { if (e.target.files[0]) load(JSON.parse(await e.target.files[0].text())); } catch { toast('Fichier JSON invalide.', 'err'); }
   e.target.value = '';
 };
-const editorDropTarget = $('.layout');
-if (editorDropTarget) {
-  ['dragenter','dragover'].forEach(type => editorDropTarget.addEventListener(type, e => {
-    const files = Array.from(e.dataTransfer?.items || []).some(item => item.kind === 'file');
-    if (!files || e.target.closest('.file-dropzone')) return;
-    e.preventDefault(); editorDropTarget.classList.add('file-import-dragging');
-  }));
-  ['dragleave','dragend'].forEach(type => editorDropTarget.addEventListener(type, e => { if (!editorDropTarget.contains(e.relatedTarget)) editorDropTarget.classList.remove('file-import-dragging'); }));
-  editorDropTarget.addEventListener('drop', async e => {
-    editorDropTarget.classList.remove('file-import-dragging');
-    if (e.target.closest('.file-dropzone')) return;
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    if (!/\\.json$/i.test(file.name) || file.size > 5*1024*1024) return;
-    e.preventDefault();
-    try { load(JSON.parse(await file.text())); toast('Événement importé.', 'ok'); } catch { toast('Fichier JSON invalide.', 'err'); }
-  });
-}
 const avatarInput = $('#avatar-file');
 const acceptAvatarFile = async file => {
   if (!file) return;
