@@ -84,7 +84,7 @@
   document.getElementById('filters').addEventListener('click', e => { const b=e.target.closest('[data-filter]'); if(!b)return; filter=b.dataset.filter; localStorage.setItem('mrd-event-filter',filter); document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b)); render(); });
   const kindLabels = { news:'MEDIA RELATIONS', 'compte-rendu':'INTERAGENCY', 'comm-interne':'INTERAGENCY', 'comm-presse':'PUBLIC INFORMATION · PIO' };
   const categoryDefaults = {
-    order: ['events','news','documents'], visible: { events: true, news: false, documents: true },
+    order: ['events','documents','news'], visible: { events: true, news: false, documents: true },
     categories: [
       { id:'events', name:'Événements', type:'events', description:'Fiches et cartes des événements' },
       { id:'news', name:'News & actualités', type:'publications', description:'Actualités et communiqués' },
