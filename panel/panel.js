@@ -22,7 +22,7 @@ let pendingProfileAvatar;
 let profileAvatarChanged = false;
 
 const $ = (s, r = document) => r.querySelector(s);
-const $ = (s, r = document) => [...r.querySelectorAll(s)];
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
  
 /* ── MRD custom select: consistent dropdowns across the entire panel ── */
 const mrdSelectClose = () => {
