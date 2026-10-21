@@ -198,7 +198,7 @@ const publicUser = u => ({
   id: u.id, username: u.username, displayFirstName: u.display_first_name || "", displayLastName: u.display_last_name || "",
   displayName: displayName(u), grade: u.grade, role: u.role, active: !!u.active,
   accreditations: u.role === "owner" ? [...ACCREDITATIONS] : parseAccreditations(u.accreditations),
-  avatarData: u.avatar_data || null
+  hasAvatar: u.has_avatar !== undefined ? !!u.has_avatar : !!u.avatar_data
 });
 
 /*
@@ -289,9 +289,7 @@ async function getUser(req, env) {
   const th = await hash(token);
 
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.grade, u.role, u.active, u.avatar_data, u.accreditations,
-            u.display_first_name, u.display_last_name, s.expires_at
-     FROM sessions s
+    `SELECT u.id, u.username, u.grade, u.role, u.active, CASE WHEN u.avatar_data IS NOT NULL AND length(u.avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, u.accreditations, u.display_first_name, u.display_last_name, s.expires_at FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ?`
   ).bind(th).first();
@@ -504,7 +502,7 @@ export default {
         }
 
         const u = await env.DB.prepare(
-          "SELECT * FROM users WHERE username = ?"
+          "SELECT id, username, password_hash, salt, grade, role, active, created_at, accreditations, display_first_name, display_last_name, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar FROM users WHERE username = ?"
         ).bind(username).first();
 
         const candidate = u
@@ -598,6 +596,15 @@ export default {
         );
       }
 
+      if (route === "/users/avatar") {
+        const id = Number(b.id || user.id);
+        if (!Number.isInteger(id) || id <= 0) return json({ error: "Membre invalide." }, 400, cors);
+        const result = await env.DB.prepare(
+          "SELECT avatar_data FROM users WHERE id = ? AND active = 1"
+        ).bind(id).first();
+        return json({ avatarData: result?.avatar_data || null }, 200, cors);
+      }
+
       if (route === "/auth/me") {
         return json({ user: publicUser(user) }, 200, cors);
       }
@@ -632,7 +639,7 @@ export default {
         if (!target || !target.active) return json({ error: "Compte cible introuvable ou désactivé." }, 404, cors);
         await env.DB.prepare("UPDATE users SET display_first_name = ?, display_last_name = ? WHERE id = ?").bind(first, last, id).run();
         await audit(env, user, "Nom d’affichage modifié", target.username + " · " + ([first, last].filter(Boolean).join(" ") || target.username));
-        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations, display_first_name, display_last_name FROM users WHERE id = ?").bind(id).first();
+        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, accreditations, display_first_name, display_last_name FROM users WHERE id = ?").bind(id).first();
         return json({ ok: true, user: publicUser(updated) }, 200, cors);
       }
 
@@ -640,7 +647,7 @@ export default {
         const row = await env.DB.prepare("SELECT workspace_json FROM mrd_workspace WHERE workspace_key = 'main'").first();
         let workspace = { roster: {}, calendar: [], tasks: [] };
         try { workspace = { ...workspace, ...JSON.parse(row?.workspace_json || "{}") }; } catch {}
-        const usersResult = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations, display_first_name, display_last_name, created_at FROM users WHERE active = 1 ORDER BY created_at ASC").all();
+        const usersResult = await env.DB.prepare("SELECT id, username, grade, role, active, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, accreditations, display_first_name, display_last_name, created_at FROM users WHERE active = 1 ORDER BY created_at ASC").all();
         const members = (usersResult.results || []).map(u => ({ ...publicUser(u), createdAt: u.created_at }));
         if (!isOwner(user)) {
           for (const entry of Object.values(workspace.roster || {})) if (entry && typeof entry === "object") delete entry.privateNotes;
@@ -766,8 +773,7 @@ export default {
         }
 
         const result = await env.DB.prepare(
-          `SELECT id, username, grade, role, active, created_at, accreditations, display_first_name, display_last_name
-           FROM users ORDER BY created_at DESC`
+          `SELECT id, username, grade, role, active, created_at, accreditations, display_first_name, display_last_name, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar FROM users ORDER BY created_at DESC`
         ).all();
         return json({ users: (result.results || []).map(u => ({
           ...publicUser(u), created_at: u.created_at, active: !!u.active,
@@ -786,7 +792,7 @@ export default {
         if (forbidden.length) return json({ error: "Accréditation non accessible pour le grade " + target.grade + " : " + forbidden.join(", ") }, 400, cors);
         await env.DB.prepare("UPDATE users SET accreditations = ? WHERE id = ?").bind(JSON.stringify(unique), id).run();
         await audit(env, user, "Accréditations modifiées", target.username + " · " + (unique.join(", ") || "aucune"));
-        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations FROM users WHERE id = ?").bind(id).first();
+        const updated = await env.DB.prepare("SELECT id, username, grade, role, active, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, accreditations FROM users WHERE id = ?").bind(id).first();
         return json({ ok: true, user: publicUser(updated) }, 200, cors);
       }
 
