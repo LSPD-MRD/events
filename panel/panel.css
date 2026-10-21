@@ -1663,19 +1663,8 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
   #effectif>.ws-tabs .ws-tab{padding-inline:3px}
 }
 
-/* Division — give the embedded org chart enough room on desktop. */
-@media (min-width: 1001px) {
-  .layout:not(.preview-open):has(#effectif:not([hidden])) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .layout:not(.preview-open):has(#effectif:not([hidden])) #effectif.panel {
-    width: 100%;
-    max-width: 1480px;
-  }
-  .layout:not(.preview-open):has(#effectif:not([hidden])) .workspace {
-    min-width: 0;
-  }
-}
+/* Division — adjust only the org chart inside its widget.
+   Keep the overall panel grid unchanged so surrounding widgets stay aligned. */
 .ws-home-org-widget .ws-org-chart {
   width: 100%;
   max-width: 100%;
