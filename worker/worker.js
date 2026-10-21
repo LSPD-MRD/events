@@ -596,6 +596,19 @@ export default {
         );
       }
 
+      if (route === "/users/avatars") {
+        const ids = Array.isArray(b.ids)
+          ? [...new Set(b.ids.map(Number).filter(id => Number.isInteger(id) && id > 0))].slice(0, 50)
+          : [];
+        if (!ids.length) return json({ avatars: {} }, 200, cors);
+        const placeholders = ids.map(() => "?").join(",");
+        const result = await env.DB.prepare(
+          "SELECT id, avatar_data FROM users WHERE active = 1 AND id IN (" + placeholders + ")"
+        ).bind(...ids).all();
+        const avatars = Object.fromEntries((result.results || []).map(row => [String(row.id), row.avatar_data || null]));
+        return json({ avatars }, 200, cors);
+      }
+
       if (route === "/users/avatar") {
         const id = Number(b.id || user.id);
         if (!Number.isInteger(id) || id <= 0) return json({ error: "Membre invalide." }, 400, cors);
