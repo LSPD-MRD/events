@@ -1439,6 +1439,19 @@ const acceptAvatarFile = async file => {
     toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 10 Mo maximum.', 'err'); return;
   }
   try {
+    // Préserve l'animation des GIF ; les formats statiques sont optimisés en WebP.
+    if (file.type === 'image/gif') {
+      pendingProfileAvatar = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Lecture de l’image impossible.'));
+        reader.readAsDataURL(file);
+      });
+      profileAvatarChanged = true;
+      const preview = $('#profile-preview-avatar');
+      if (preview) preview.innerHTML = '<img src="' + pendingProfileAvatar + '" alt="Aperçu de la photo de profil">';
+      return;
+    }
     const objectUrl = URL.createObjectURL(file);
     const image = await new Promise((resolve, reject) => {
       const element = new Image();
