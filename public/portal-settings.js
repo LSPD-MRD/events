@@ -1,4 +1,12 @@
 window.MRD_PORTAL_SETTINGS = {
-  "order": ["events", "news", "documents"],
-  "visible": { "events": true, "news": false, "documents": true }
+  "order": [
+    "events",
+    "documents",
+    "news"
+  ],
+  "visible": {
+    "events": true,
+    "news": false,
+    "documents": true
+  }
 };
