@@ -165,10 +165,14 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
 }
 
 
-/* Align portal navigation, section headings and expanded grids to the same left edge. */
+/* Align headings and category tabs to the publication cards without expanding the page container. */
 @media (min-width: 1081px) {
-  .content-wrap { width: 100%; max-width: none; margin: 0; padding-left: clamp(28px, 4vw, 76px); padding-right: clamp(28px, 4vw, 76px); }
-  .portal-tabs, .section-head { width: calc(100% + clamp(320px, 32vw, 560px)); margin-left: calc(clamp(320px, 32vw, 560px) / -2); }
+  .portal-tabs,
+  .section-head {
+    width: calc(100% + clamp(320px, 32vw, 560px));
+    margin-left: calc(clamp(320px, 32vw, 560px) / -2);
+    box-sizing: border-box;
+  }
   .portal-tabs { justify-content: flex-start; }
   .section-head { align-items: flex-end; }
 }
