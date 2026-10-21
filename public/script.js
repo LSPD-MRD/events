@@ -112,7 +112,7 @@
   const defaultDescriptions = { events:'Fiches et cartes des événements', news:'Actualités et communiqués', documents:'Documents et communications officielles' };
   const tabsFragment = document.createDocumentFragment();
   const orderedSpaces = document.createDocumentFragment();
-  categories.forEach(category => {
+  portalSettings.order.map(id => categories.find(category => category.id === id)).filter(Boolean).forEach(category => {
     let button = document.querySelector('[data-space="'+category.id+'"]');
     if (!button) {
       button = document.createElement('button');
