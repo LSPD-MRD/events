@@ -323,6 +323,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .profile-dropdown { margin-left:4px; }
 .profile-trigger { display:grid; place-items:center; width:42px; height:42px; overflow:hidden; padding:0; color:var(--text); background:var(--surface); border:1px solid var(--line-strong); border-radius:50%; cursor:pointer; transition:border-color .15s,box-shadow .15s; }
 .profile-trigger:hover,.profile-trigger[aria-expanded="true"] { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.profile-trigger [hidden] { display:none!important; }
 .profile-trigger svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 .profile-trigger img { width:100%; height:100%; object-fit:cover; }
 .profile-menu { width:230px; }
