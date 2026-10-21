@@ -310,6 +310,9 @@ async function getUser(req, env) {
 }
 
 const isOwner = u => u && u.role === "owner";
+const isCommandingOfficer = u => u && u.role === "owner" && u.grade === "Commanding Officer";
+const isAssistantCommandingOfficer = u => u && u.role === "admin" && u.grade === "Assistant Commanding Officer";
+const canManageAccounts = u => isCommandingOfficer(u) || isAssistantCommandingOfficer(u);
 const isAdmin = u => u && ["owner", "admin"].includes(u.role);
 const canPublish = u => u && ["owner", "admin", "editor"].includes(u.role);
 
@@ -781,8 +784,8 @@ export default {
       }
 
       if (route === "/users/list") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
+        if (!canManageAccounts(user)) {
+          return json({ error: "Réservé au CO et à l’ACO." }, 403, cors);
         }
 
         const result = await env.DB.prepare(
@@ -795,7 +798,7 @@ export default {
       }
 
       if (route === "/users/accreditations") {
-        if (!isOwner(user) || user.grade !== "Commanding Officer") return json({ error: "L’attribution des accréditations est réservée au Commanding Officer." }, 403, cors);
+        if (!canManageAccounts(user)) return json({ error: "L’attribution des accréditations est réservée au CO et à l’ACO." }, 403, cors);
         const id = Number(b.id), requested = b.accreditations;
         if (!Number.isInteger(id) || id === user.id || !Array.isArray(requested) || requested.some(a => typeof a !== "string" || !ACCREDITATIONS.includes(a))) return json({ error: "Données d’accréditation invalides." }, 400, cors);
         const target = await env.DB.prepare("SELECT id, username, grade, role, active FROM users WHERE id = ?").bind(id).first();
@@ -810,8 +813,8 @@ export default {
       }
 
       if (route === "/users/create") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
+        if (!canManageAccounts(user)) {
+          return json({ error: "La création de comptes est réservée au CO et à l’ACO." }, 403, cors);
         }
 
         const username = normUser(b.username);
@@ -846,8 +849,13 @@ export default {
           );
         }
 
-        if (!role || !["Certified Officer", "Expert Officer", "Assistant Commanding Officer"].includes(grade)) {
-          return json({ error: "Choisis un des grades autorisés. Le Commanding Officer est réservé au compte Owner." }, 400, cors);
+        const allowedGrades = isCommandingOfficer(user)
+          ? ["Certified Officer", "Expert Officer", "Assistant Commanding Officer"]
+          : ["Certified Officer", "Expert Officer"];
+        if (!role || !allowedGrades.includes(grade)) {
+          return json({ error: isAssistantCommandingOfficer(user)
+            ? "L’ACO peut créer des comptes CtO et EO. La création d’un compte ACO est réservée au CO."
+            : "Choisis un grade autorisé. Le Commanding Officer est réservé au compte Owner." }, 400, cors);
         }
 
         const salt = randomToken(16);
@@ -887,8 +895,8 @@ export default {
       }
 
       if (route === "/users/disable") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
+        if (!canManageAccounts(user)) {
+          return json({ error: "La désactivation des comptes est réservée au CO et à l’ACO." }, 403, cors);
         }
 
         const id = Number(b.id);
@@ -912,8 +920,8 @@ export default {
       }
 
       if (route === "/users/delete-inactive") {
-        if (!isOwner(user)) {
-          return json({ error: "Réservé au Owner." }, 403, cors);
+        if (!canManageAccounts(user)) {
+          return json({ error: "La suppression des comptes est réservée au CO et à l’ACO." }, 403, cors);
         }
 
         const id = Number(b.id);
