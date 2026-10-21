@@ -155,24 +155,4 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
 }
 
 
-/* Desktop: keep cards generously sized while letting the grids extend beyond the content container. */
-@media (min-width: 1081px) {
-  .event-grid-inner,
-  .publication-grid {
-    width: calc(100% + clamp(320px, 32vw, 560px));
-    margin-left: calc(clamp(320px, 32vw, 560px) / -2);
-  }
-}
-
-
-/* Align headings and category tabs to the publication cards without expanding the page container. */
-@media (min-width: 1081px) {
-  .portal-tabs,
-  .section-head {
-    width: calc(100% + clamp(320px, 32vw, 560px));
-    margin-left: calc(clamp(320px, 32vw, 560px) / -2);
-    box-sizing: border-box;
-  }
-  .portal-tabs { justify-content: flex-start; }
-  .section-head { align-items: flex-end; }
-}
+/* Keep public cards, headings and category navigation inside the same page container. */
