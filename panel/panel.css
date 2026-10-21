@@ -1697,3 +1697,47 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
     flex-basis: min(88vw, 320px);
   }
 }
+
+
+/* Refined MRD wordmark in the panel header — replaces the event title and logo. */
+.topbar .brand-wordmark {
+  flex: 0 0 auto;
+  gap: 0;
+  min-width: 0;
+}
+.topbar .brand-wordmark > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  line-height: 1;
+}
+.topbar .brand-wordmark strong {
+  font-family: Rajdhani, Inter, sans-serif;
+  font-size: clamp(17px, 1.55vw, 21px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+}
+.topbar .brand-wordmark span {
+  display: block;
+  margin-top: 4px;
+  color: var(--accent);
+  font-family: Inter, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .34em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+@media (max-width: 1000px) {
+  .topbar .brand-wordmark span { display: block; }
+}
+@media (max-width: 640px) {
+  .topbar .brand-wordmark > div { display: flex; }
+  .topbar .brand-wordmark strong { font-size: 15px; letter-spacing: .045em; }
+  .topbar .brand-wordmark span { display: block; font-size: 8px; letter-spacing: .28em; }
+}
