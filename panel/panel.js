@@ -520,7 +520,7 @@ const TYPES = {
 const STATUS = { live: 'Actif', soon: 'À venir', archived: 'Archivé' };
 const PREVIEW_HOOK = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
 
-let ev, list = [], portalSettings = { order: ['events', 'news', 'documents'], visible: { events: true, news: false, documents: true }, categories: [
+let ev, list = [], portalSettingsLoaded = false, portalSettings = { order: ['events', 'documents', 'news'], visible: { events: true, news: false, documents: true }, categories: [
   { id: 'events', name: 'Événements', type: 'events', description: 'Fiches et cartes des événements' },
   { id: 'news', name: 'News & actualités', type: 'publications', description: 'Actualités et communiqués' },
   { id: 'documents', name: 'Communication interne', type: 'publications', description: 'Documents et communications officielles' }
@@ -534,6 +534,7 @@ const BUILTIN_PORTAL_CATEGORIES = [
 const canManagePortalCategories = user => !!user && ((user.role === 'owner' && user.grade === 'Commanding Officer') || (user.role === 'admin' && user.grade === 'Assistant Commanding Officer'));
 const validPortalCategoryId = id => ['events','news','documents'].includes(id) || (typeof id === 'string' && /^custom-[a-z0-9-]{1,64}$/.test(id));
 const loadPortalSettings = async () => {
+  if (portalSettingsLoaded) return;
   const response = await fetch('../public/portal-settings.js', { cache: 'no-store' });
   if (!response.ok) throw new Error('Impossible de lire les paramètres du portail (' + response.status + ').');
   const source = await response.text();
@@ -549,6 +550,7 @@ const loadPortalSettings = async () => {
   const visible = Object.fromEntries(categories.map(c => [c.id, typeof value.visible?.[c.id] === 'boolean' ? value.visible[c.id] : c.id !== 'news']));
   portalSettings = { order: [...order, ...ids.filter(id => !order.includes(id))], visible, categories };
   Object.assign(PORTAL_CATEGORIES, Object.fromEntries(categories.map(c => [c.id, c.name])));
+  portalSettingsLoaded = true;
 };
 
 const api = {
