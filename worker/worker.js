@@ -1176,8 +1176,13 @@ export default {
       if (route === "/publication/publish") {
         if (!canPublish(user)) return json({ error: "Ton grade ne permet pas de publier." }, 403, cors);
         const kinds = ["news", "comm-interne", "comm-presse", "compte-rendu"];
+        const settingsFile = await read(env, "public/portal-settings.js");
+        let categorySettings = null;
+        if (settingsFile) { const a = settingsFile.text.indexOf("{"), z = settingsFile.text.lastIndexOf("}"); if (a >= 0 && z > a) categorySettings = JSON.parse(settingsFile.text.slice(a, z + 1)); }
+        const customKind = typeof b.kind === "string" && /^custom-[a-z0-9-]{1,64}$/.test(b.kind) &&
+          Array.isArray(categorySettings?.categories) && categorySettings.categories.some(c => c.id === b.kind && c.type === "publications");
         const extByMime = { "application/pdf": "pdf", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
-        if (!kinds.includes(b.kind) || !okText(b.title) || !b.title.trim() || !extByMime[b.mime] || typeof b.data !== "string" || b.data.length > 14200000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b.data)) return json({ error: "Fichier ou données invalides (maximum 10 Mo)." }, 400, cors);
+        if (!(kinds.includes(b.kind) || customKind) || !okText(b.title) || !b.title.trim() || !extByMime[b.mime] || typeof b.data !== "string" || b.data.length > 14200000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b.data)) return json({ error: "Fichier ou données invalides (maximum 10 Mo)." }, 400, cors);
         const slug = (b.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "publication").slice(0, 60) + "-" + Date.now().toString(36);
         const path = "public/uploads/" + slug + "." + extByMime[b.mime];
         const upload = await gh(env, path, { method: "PUT", body: JSON.stringify({ message: "Publication MRD : " + b.title.slice(0, 100), content: b.data, branch: env.BRANCH }) });
@@ -1193,32 +1198,100 @@ export default {
       /*
        * PARAMÈTRES DES CATÉGORIES DU PORTAIL — CO / ACO uniquement
        */
-      if (route === "/portal/settings") {
-        if (!canManageAccounts(user)) {
-          return json({ error: "La gestion des catégories du portail est réservée au CO et à l’ACO." }, 403, cors);
+      if (route === "/portal/category/delete") {
+        if (!canManageAccounts(user)) return json({ error: "La gestion des catégories est réservée au CO et à l’ACO." }, 403, cors);
+        const id = String(b.id || "");
+        if (!/^(?:news|documents|custom-[a-z0-9-]{1,64})$/.test(id)) return json({ error: "Cette catégorie ne peut pas être supprimée." }, 400, cors);
+        const settingsFile = await read(env, "public/portal-settings.js");
+        if (!settingsFile) return json({ error: "Paramètres du portail introuvables." }, 404, cors);
+        const settingsStart = settingsFile.text.indexOf("{"), settingsEnd = settingsFile.text.lastIndexOf("}");
+        if (settingsStart < 0 || settingsEnd <= settingsStart) return json({ error: "Paramètres du portail invalides." }, 500, cors);
+        const current = JSON.parse(settingsFile.text.slice(settingsStart, settingsEnd + 1));
+        const currentCategories = Array.isArray(current.categories) ? current.categories : [
+          { id:"events", name:"Événements", type:"events", description:"Fiches et cartes des événements" },
+          { id:"news", name:"News & actualités", type:"publications", description:"Actualités et communiqués" },
+          { id:"documents", name:"Communication interne", type:"publications", description:"Documents et communications officielles" }
+        ];
+        const category = currentCategories.find(c => c.id === id);
+        if (!category) return json({ error: "Cette catégorie n’existe plus." }, 404, cors);
+        const listFile = await read(env, "public/publications-data.js");
+        let list = [];
+        if (listFile) {
+          const a = listFile.text.indexOf("["), z = listFile.text.lastIndexOf("]");
+          if (a < 0 || z <= a) return json({ error: "Catalogue des publications invalide." }, 500, cors);
+          list = JSON.parse(listFile.text.slice(a, z + 1));
         }
+        const matches = item => id === "news" ? ["news","comm-presse"].includes(item.kind)
+          : id === "documents" ? ["comm-interne","compte-rendu"].includes(item.kind)
+          : item.kind === id;
+        const removed = list.filter(matches);
+        for (const item of removed) {
+          if (typeof item.file !== "string" || !/^public\/uploads\/[a-z0-9-]+\.(?:pdf|png|jpg|webp)$/.test(item.file)) {
+            return json({ error: "Un fichier associé à une publication n’a pas un chemin valide. Suppression interrompue." }, 400, cors);
+          }
+        }
+        const next = list.filter(item => !matches(item));
+        await write(env, "public/publications-data.js", "window.MRD_PUBLICATIONS = " + JSON.stringify(next, null, 2) + ";\n", "Suppression catégorie " + id + " (" + user.username + ")");
+        const remainingCategories = currentCategories.filter(c => c.id !== id);
+        const ids = remainingCategories.map(c => c.id);
+        const nextOrder = (Array.isArray(current.order) ? current.order : ["events","news","documents"]).filter(key => ids.includes(key));
+        for (const key of ids) if (!nextOrder.includes(key)) nextOrder.push(key);
+        const nextSettings = {
+          order: nextOrder,
+          visible: Object.fromEntries(remainingCategories.map(c => [c.id, typeof current.visible?.[c.id] === "boolean" ? current.visible[c.id] : c.id !== "news"])),
+          categories: remainingCategories
+        };
+        await write(env, "public/portal-settings.js", "window.MRD_PORTAL_SETTINGS = " + JSON.stringify(nextSettings, null, 2) + ";\n", "Suppression catégorie portail " + id + " (" + user.username + ")");
+        const failedFiles = [];
+        for (const item of removed) {
+          const asset = await gh(env, item.file);
+          if (asset.ok) {
+            const info = await asset.json();
+            const deletion = await gh(env, item.file, { method: "DELETE", body: JSON.stringify({ message: "Suppression publication " + item.id + " avec catégorie " + id, sha: info.sha, branch: env.BRANCH }) });
+            if (!deletion.ok) failedFiles.push(item.file);
+          } else if (asset.status !== 404) failedFiles.push(item.file);
+        }
+        await audit(env, user, "Catégorie supprimée", category.name + " · " + removed.length + " publication(s)");
+        if (failedFiles.length) return json({ error: "La catégorie et ses publications ont été retirées, mais " + failedFiles.length + " fichier(s) n’ont pas pu être supprimés." }, 500, cors);
+        return json({ ok: true, deletedPublications: removed.length, settings: nextSettings }, 200, cors);
+      }
+
+      if (route === "/portal/settings") {
+        if (!canManageAccounts(user)) return json({ error: "La gestion des catégories du portail est réservée au CO et à l’ACO." }, 403, cors);
         const settings = b.settings;
-        const allowed = ["events", "news", "documents"];
+        const validId = id => ["events","news","documents"].includes(id) || (typeof id === "string" && /^custom-[a-z0-9-]{1,64}$/.test(id));
+        const categories = Array.isArray(settings?.categories) ? settings.categories : [
+          { id:"events", name:"Événements", type:"events", description:"Fiches et cartes des événements" },
+          { id:"news", name:"News & actualités", type:"publications", description:"Actualités et communiqués" },
+          { id:"documents", name:"Communication interne", type:"publications", description:"Documents et communications officielles" }
+        ];
+        const safeCategories = categories.map(c => ({
+          id: c?.id,
+          name: typeof c?.name === "string" ? c.name.trim() : "",
+          type: c?.id === "events" ? "events" : "publications",
+          description: typeof c?.description === "string" ? c.description.trim() : ""
+        }));
+        const ids = safeCategories.map(c => c.id);
         if (!settings || !Array.isArray(settings.order) ||
-            settings.order.length !== allowed.length ||
-            new Set(settings.order).size !== allowed.length ||
-            !settings.order.every(key => allowed.includes(key)) ||
-            !settings.visible ||
-            !allowed.every(key => typeof settings.visible[key] === "boolean")) {
-          return json({ error: "Configuration des catégories invalide." }, 400, cors);
+            safeCategories.length < 1 || safeCategories.length > 24 ||
+            new Set(ids).size !== ids.length || !ids.every(validId) || !ids.includes("events") ||
+            !safeCategories.every(c => c.name.length >= 1 && c.name.length <= 48 && !/[<>]/.test(c.name) &&
+              c.description.length <= 100 && !/[<>]/.test(c.description) &&
+              (c.id === "events" ? c.type === "events" : c.type === "publications")) ||
+            settings.order.length !== ids.length || new Set(settings.order).size !== ids.length ||
+            !settings.order.every(id => ids.includes(id)) ||
+            !settings.visible || !ids.every(id => typeof settings.visible[id] === "boolean") ||
+            !ids.some(id => settings.visible[id])) {
+          return json({ error: "Configuration des catégories invalide. Vérifie les noms, l’ordre et la visibilité." }, 400, cors);
         }
         const safeSettings = {
           order: settings.order,
-          visible: Object.fromEntries(allowed.map(key => [key, settings.visible[key]]))
+          visible: Object.fromEntries(ids.map(id => [id, settings.visible[id]])),
+          categories: safeCategories
         };
-        await write(
-          env,
-          "public/portal-settings.js",
-          "window.MRD_PORTAL_SETTINGS = " + JSON.stringify(safeSettings, null, 2) + ";\n",
-          "Catégories du portail modifiées (" + user.username + ")"
-        );
+        await write(env, "public/portal-settings.js", "window.MRD_PORTAL_SETTINGS = " + JSON.stringify(safeSettings, null, 2) + ";\n", "Catégories du portail modifiées (" + user.username + ")");
         await audit(env, user, "Catégories du portail modifiées",
-          safeSettings.order.map(key => key + (safeSettings.visible[key] ? " affichée" : " masquée")).join(", "));
+          safeSettings.order.map(id => safeCategories.find(c => c.id === id).name + (safeSettings.visible[id] ? " affichée" : " masquée")).join(", "));
         return json({ ok: true, settings: safeSettings }, 200, cors);
       }
 
