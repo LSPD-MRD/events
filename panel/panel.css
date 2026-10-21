@@ -1438,6 +1438,9 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 
 
 /* Organigramme horizontal : grades de gauche à droite, connecteurs alignés */
+.ws-org-board{width:fit-content;max-width:100%;margin-inline:auto}
+.ws-org-board-head,.ws-org-board-foot{width:100%;min-width:0}
+
 .ws-org-board{overflow:hidden}
 .ws-org-chart{display:flex;width:max-content;max-width:100%;margin-inline:auto;align-items:flex-start;justify-content:safe center;gap:30px;min-width:0;overflow-x:auto;overflow-y:hidden;padding:24px 24px 28px;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent;overscroll-behavior-x:contain}
 .ws-org-chart::-webkit-scrollbar{height:7px}
