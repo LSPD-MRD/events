@@ -1,5 +1,14 @@
 window.MRD_PUBLICATIONS = [
   {
+    "id": "partenariat-los-santos-police-department-x-san-andreas-medic-mvid5fhi",
+    "kind": "comm-interne",
+    "title": "🤝🏥Partenariat | Los Santos Police Department X San Andreas Medical Service",
+    "summary": "Offre : Accès aux soins 100% gratuits pour tous les agents du LSPD en service.",
+    "date": "",
+    "mime": "image/png",
+    "file": "public/uploads/partenariat-los-santos-police-department-x-san-andreas-medic-mvid5fhi.png"
+  },
+  {
     "id": "partenariat-los-santos-police-department-x-ingleton-s-mvid43z8",
     "kind": "comm-interne",
     "title": "🤝🍹Partenariat | Los Santos Police Department X Ingleton's",
