@@ -834,8 +834,6 @@ const refresh = () => {
   draftTimer = setTimeout(() => {
     try {
       localStorage.setItem(KEY.draft, json(ev));
-      const draft = $('#draft');
-      if (draft) draft.textContent = 'Brouillon enregistré';
     } catch (error) {
       console.warn('Impossible de sauvegarder le brouillon localement:', error);
     }
@@ -923,8 +921,6 @@ const saveDraft = async () => {
   try {
     localStorage.setItem(KEY.draft, json(ev));
     await api.post('/draft/save', { slug: ev.slug, config: json(ev), card: cardOf(ev) });
-    const draft = $('#draft');
-    if (draft) draft.textContent = 'Brouillon enregistré';
     toast('Modifications enregistrées sans changer la page publique.', 'ok');
   } finally {
     button.disabled = false;
