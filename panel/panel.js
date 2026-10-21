@@ -1378,8 +1378,8 @@ function renderWorkspace(){
     tasks:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="m7.5 9 1.5 1.5L12 7.5M13.5 9H17m-9.5 5 1.5 1.5 3-3M13.5 14H17"/></svg>'
   };
   const tabs=[['home','Accueil'],['calendar','Calendrier'],['tasks','To-do list']];
-  root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE</div><h1>Division</h1></div></section><nav class="ws-tabs" aria-label="Navigation de l’effectif">'+tabs.map(([id,label])=>'<button type="button" class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'" '+(wsSection===id?'aria-current="page"':'')+'><span class="ws-tab-icon">'+icons[id]+'</span><span class="ws-tab-label">'+label+'</span>'+(id==='roster'?'<small>'+wsMembers.length+'</small>':'')+'</button>').join('')+'</nav><div id="ws-content"></div>';
-  const c=$('#ws-content');if(wsSection==='home')c.innerHTML=renderWsHome();if(wsSection==='roster')c.innerHTML=renderWsRoster();if(wsSection==='calendar')c.innerHTML=renderWsCalendar();if(wsSection==='tasks')c.innerHTML=renderWsTasks();
+  root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE</div><h1>Division</h1></div></section><nav class="ws-tabs" aria-label="Navigation de l’effectif">'+tabs.map(([id,label])=>'<button type="button" class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'" '+(wsSection===id?'aria-current="page"':'')+'><span class="ws-tab-icon">'+icons[id]+'</span><span class="ws-tab-label">'+label+'</span>'+'</button>').join('')+'</nav><div id="ws-content"></div>';
+  const c=$('#ws-content');if(wsSection==='home')c.innerHTML=renderWsHome();if(wsSection==='calendar')c.innerHTML=renderWsCalendar();if(wsSection==='tasks')c.innerHTML=renderWsTasks();
   initMrdDatePickers(c);
 }
 function renderWsHome(){
