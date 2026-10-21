@@ -1249,7 +1249,7 @@ async function loadWorkspace(){
 function renderWorkspace(){
  const root=$('#effectif');if(!root)return;
  const tabs=[['roster','♙','Effectif'],['calendar','▦','Calendrier'],['tasks','☑','To-do list']];
- root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE · VIE DE DIVISION</div><h1>Effectif <span class="ws-title-dot">/</span> Coordination</h1><p>Membres, rendez-vous et suivi des missions réunis au même endroit.</p></div><div class="ws-intro-mark">MRD<small>FIELD OFFICE</small></div></section><div class="ws-tabs">'+tabs.map(([id,ico,label])=>'<button class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'"><span>'+ico+'</span>'+label+(id==='roster'?'<small>'+wsMembers.length+'</small>':'')+'</button>').join('')+'</div><div id="ws-content"></div>';
+ root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE · VIE DE DIVISION</div><h1>Effectif <span class="ws-title-dot">/</span> Coordination</h1><p>Membres, rendez-vous et suivi des missions réunis au même endroit.</p></div></section><div class="ws-tabs">'+tabs.map(([id,ico,label])=>'<button class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'"><span>'+ico+'</span>'+label+(id==='roster'?'<small>'+wsMembers.length+'</small>':'')+'</button>').join('')+'</div><div id="ws-content"></div>';
  const c=$('#ws-content');if(wsSection==='roster')c.innerHTML=renderWsRoster();if(wsSection==='calendar')c.innerHTML=renderWsCalendar();if(wsSection==='tasks')c.innerHTML=renderWsTasks();
  initMrdDatePickers(c);
 }
