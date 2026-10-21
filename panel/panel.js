@@ -1429,6 +1429,15 @@ $('#file').onchange = async e => {
   try { if (e.target.files[0]) load(JSON.parse(await e.target.files[0].text())); } catch { toast('Fichier JSON invalide.', 'err'); }
   e.target.value = '';
 };
+// Ignore file drops outside dedicated upload controls; never show a global JSON import overlay.
+const preventUnexpectedFileDrop = event => {
+  if (event.target instanceof Element && event.target.closest('.file-dropzone')) return;
+  if (!Array.from(event.dataTransfer?.items || []).some(item => item.kind === 'file')) return;
+  event.preventDefault();
+};
+document.addEventListener('dragover', preventUnexpectedFileDrop);
+document.addEventListener('drop', preventUnexpectedFileDrop);
+
 const avatarInput = $('#avatar-file');
 const acceptAvatarFile = async file => {
   if (!file) return;
