@@ -483,6 +483,85 @@ const api = {
   }
 };
 
+const avatarDataCache = new Map();
+
+async function fetchAvatarData(id) {
+  const key = String(id || '');
+  if (!key) return null;
+  if (!avatarDataCache.has(key)) {
+    avatarDataCache.set(key, api.post('/users/avatar', { id: Number(key) })
+      .then(data => data.avatarData || null)
+      .catch(() => null));
+  }
+  return avatarDataCache.get(key);
+}
+
+function revealLoadedAvatar(image) {
+  image.classList.add('is-loaded');
+  image.hidden = false;
+  if (image.id === 'profile-avatar') {
+    const placeholder = $('#profile-avatar-placeholder');
+    if (placeholder) placeholder.hidden = true;
+    return;
+  }
+  const previous = image.previousElementSibling;
+  if (previous?.classList.contains('avatar-fallback') || previous?.classList.contains('profile-avatar-placeholder')) {
+    previous.classList.add('is-hidden');
+  }
+  const next = image.nextElementSibling;
+  if (next?.classList.contains('profile-avatar-placeholder')) next.hidden = true;
+}
+
+async function loadDeferredAvatar(image) {
+  const src = await fetchAvatarData(image.dataset.avatarUser);
+  if (!image.isConnected) return;
+  if (!src) {
+    image.classList.add('is-missing');
+    if (image.id === 'profile-avatar') {
+      image.hidden = true;
+      const placeholder = $('#profile-avatar-placeholder');
+      if (placeholder) placeholder.hidden = false;
+    }
+    return;
+  }
+  image.addEventListener('load', () => revealLoadedAvatar(image), { once: true });
+  image.addEventListener('error', () => {
+    image.classList.add('is-missing');
+    image.removeAttribute('src');
+    if (image.id === 'profile-avatar') {
+      image.hidden = true;
+      const placeholder = $('#profile-avatar-placeholder');
+      if (placeholder) placeholder.hidden = false;
+    }
+  }, { once: true });
+  image.src = src;
+  if (image.complete && image.naturalWidth) revealLoadedAvatar(image);
+}
+
+const avatarObserver = typeof IntersectionObserver === 'function'
+  ? new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        avatarObserver.unobserve(entry.target);
+        loadDeferredAvatar(entry.target);
+      });
+    }, { rootMargin: '160px' })
+  : null;
+
+function hydrateAvatars(root = document) {
+  if (!root?.querySelectorAll) return;
+  const images = [
+    ...(root.matches?.('img[data-avatar-user]') ? [root] : []),
+    ...root.querySelectorAll('img[data-avatar-user]')
+  ];
+  images.forEach(image => {
+    if (image.dataset.avatarReady === 'true') return;
+    image.dataset.avatarReady = 'true';
+    if (avatarObserver) avatarObserver.observe(image);
+    else loadDeferredAvatar(image);
+  });
+}
+
 const loadList = async () => {
   const response = await fetch('../public/events-data.js', { cache: 'no-store' });
   if (!response.ok) throw new Error('Impossible de lire events-data.js (' + response.status + ').');
