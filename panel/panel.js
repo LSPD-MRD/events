@@ -428,7 +428,20 @@ const TYPES = {
 const STATUS = { live: 'Actif', soon: 'À venir', archived: 'Archivé' };
 const PREVIEW_HOOK = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
 
-let ev, list = [], slugTouched = false, lastScroll = 0, previewTimer, draftTimer, previewPreference = true;
+let ev, list = [], portalSettings = { order: ['events', 'news', 'documents'], visible: { events: true, news: false, documents: true } }, slugTouched = false, lastScroll = 0, previewTimer, draftTimer, previewPreference = true;
+const PORTAL_CATEGORIES = { events: 'Événements', news: 'News & actualités', documents: 'Communication interne' };
+const canManagePortalCategories = user => !!user && ((user.role === 'owner' && user.grade === 'Commanding Officer') || (user.role === 'admin' && user.grade === 'Assistant Commanding Officer'));
+const loadPortalSettings = async () => {
+  const response = await fetch('../public/portal-settings.js', { cache: 'no-store' });
+  if (!response.ok) throw new Error('Impossible de lire les paramètres du portail (' + response.status + ').');
+  const source = await response.text();
+  const start = source.indexOf('{'), end = source.lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('Format des paramètres du portail invalide.');
+  const value = JSON.parse(source.slice(start, end + 1));
+  const keys = Object.keys(PORTAL_CATEGORIES);
+  const order = Array.isArray(value.order) ? value.order.filter((key, i, all) => keys.includes(key) && all.indexOf(key) === i) : [];
+  portalSettings = { order: [...order, ...keys.filter(key => !order.includes(key))], visible: Object.fromEntries(keys.map(key => [key, key === 'news' ? false : true]).map(([key, fallback]) => [key, typeof value.visible?.[key] === 'boolean' ? value.visible[key] : fallback])) };
+};
 
 const api = {
   cfg() {
@@ -756,9 +769,26 @@ document.addEventListener('submit', async e => {
   try { const data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(f);}); await api.post('/publication/publish',{kind:$('#pub-kind').value,title:$('#pub-title').value.trim(),summary:$('#pub-summary').value.trim(),date:$('#pub-date').value,mime:f.type,data}); toast('Publication envoyée. Le portail sera actualisé dans environ une minute.','ok'); await renderPublications(); } catch(err){toast(err.message||'Échec de publication.','err');} finally{b.disabled=false;b.textContent='Publier sur le portail';}
 });
 const renderPortal = () => {
+  const categoryControls = canManagePortalCategories(currentUser) ? `
+    <section class="card portal-category-card">
+      <header class="card-head"><h2>Catégories du portail public</h2><p>Seuls le CO et l’ACO peuvent modifier leur visibilité et leur ordre. Les changements sont appliqués à tous les visiteurs.</p></header>
+      <div class="card-body portal-category-list">${portalSettings.order.map((key, i) => `
+        <div class="portal-category-row" data-category="${key}">
+          <span class="portal-category-grip" aria-hidden="true">⠿</span>
+          <div class="meta"><b>${PORTAL_CATEGORIES[key]}</b><small>${key === 'news' ? 'Publications de type actualité et presse' : key === 'events' ? 'Cartes et fiches des événements' : 'Documents et communications officielles'}</small></div>
+          <span class="portal-visibility ${portalSettings.visible[key] ? 'is-visible' : 'is-hidden'}">${portalSettings.visible[key] ? 'Affichée' : 'Masquée'}</span>
+          <div class="row-tools">
+            <button type="button" class="icon" data-action="p-category-up" data-category-key="${key}" title="Monter" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" class="icon" data-action="p-category-down" data-category-key="${key}" title="Descendre" ${i === portalSettings.order.length - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" class="btn sm ${portalSettings.visible[key] ? '' : 'primary'}" data-action="p-category-toggle" data-category-key="${key}">${portalSettings.visible[key] ? 'Masquer' : 'Afficher'}</button>
+          </div>
+        </div>`).join('')}</div>
+      <div class="card-body portal-category-footer"><small>« News & actualités » est masquée par défaut. Tu peux la réafficher à tout moment.</small><button type="button" class="btn primary" data-action="p-categories-save">Enregistrer les catégories</button></div>
+    </section>` : '';
   $('#portal').innerHTML = `
+    ${categoryControls}
     <section class="card">
-      <header class="card-head"><h2>Portail</h2><p>Statut et ordre des cartes de la page d'accueil.</p></header>
+      <header class="card-head"><h2>Événements</h2><p>Statut et ordre des cartes d’événements sur le portail.</p></header>
       <div class="card-body">${list.map((x, i) => `
         <div class="row-item" data-i="${i}">
           <span class="glyph">${esc(x.icon)}</span>
@@ -773,7 +803,7 @@ const renderPortal = () => {
         </div>`).join('') || '<p class="empty">Aucun événement.</p>'}</div>
     </section>
     <div class="actions">
-      <button class="btn primary" data-action="p-save">Enregistrer le portail</button>
+      <button class="btn primary" data-action="p-save">Enregistrer les événements</button>
       <button class="btn" data-action="p-download">Télécharger events-data.js</button>
     </div>`;
 };
@@ -1051,7 +1081,7 @@ const setTab = async name => {
   if (name === 'publications') await renderPublications();
   if (name === 'logs') await renderLogs();
   if (name === 'portal') {
-    try { list = await loadList(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
+    try { list = await loadList(); if (canManagePortalCategories(currentUser)) await loadPortalSettings(); renderPortal(); } catch (err) { toast('Impossible de charger le portail : ' + err.message, 'err'); }
   }
   if (name === 'access') await renderAccess();
   if (name === 'profile') renderProfile();
@@ -1253,7 +1283,11 @@ const actions = {
     setTab('edit');
     toast('Fiche historique importée dans l’éditeur central. Les blocs HTML restent éditables en mode source.', 'ok');
   },
-  'p-save': async () => { await api.post('/portal', { list }); toast('Portail enregistré. Mise à jour dans environ une minute.', 'ok'); },
+  'p-save': async () => { await api.post('/portal', { list }); toast('Événements enregistrés. Mise à jour dans environ une minute.', 'ok'); },
+  'p-category-toggle': el => { if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err'); const key = el.dataset.categoryKey; if (!Object.hasOwn(portalSettings.visible, key)) return; portalSettings.visible[key] = !portalSettings.visible[key]; renderPortal(); },
+  'p-category-up': el => { if (!canManagePortalCategories(currentUser)) return; move(portalSettings.order, portalSettings.order.indexOf(el.dataset.categoryKey), -1); renderPortal(); },
+  'p-category-down': el => { if (!canManagePortalCategories(currentUser)) return; move(portalSettings.order, portalSettings.order.indexOf(el.dataset.categoryKey), 1); renderPortal(); },
+  'p-categories-save': async el => { if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err'); el.disabled = true; try { await api.post('/portal/settings', { settings: portalSettings }); toast('Catégories du portail enregistrées.', 'ok'); } catch (error) { toast(error.message || 'Impossible d’enregistrer les catégories.', 'err'); } finally { el.disabled = false; } },
   'p-download': () => download('events-data.js', serialize(list)),
   'save-access': () => {
     const input = $('[data-g=\"url\"]');
