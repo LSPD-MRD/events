@@ -157,5 +157,5 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
 
 /* Keep public cards, headings and category navigation inside the same page container. */
 
-/* Desktop: give event/publication cards more room on the right without shifting their left edge. */
-@media (min-width: 761px){body.mrd-app:not(.event-view) .content-wrap{width:calc(100vw - max(20px, (100vw - 1560px)/2));max-width:none;margin-left:max(0px, (100vw - 1560px)/2);margin-right:0;padding-right:clamp(20px,2vw,36px)}}
+/* Desktop: modestly widen event/publication content symmetrically on both sides. */
+@media (min-width: 761px){body.mrd-app:not(.event-view) .content-wrap{width:calc(min(100vw, 1560px) + (100vw - min(100vw, 1560px))/4);max-width:none;margin-left:auto;margin-right:auto;padding-right:clamp(20px,2vw,36px)}}
