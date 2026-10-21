@@ -1,5 +1,14 @@
 window.MRD_PUBLICATIONS = [
   {
+    "id": "partenariat-los-santos-police-department-x-bean-machine-coff-mvid7x32",
+    "kind": "comm-interne",
+    "title": "🤝☕️Partenariat | Los Santos Police Department X Bean Machine Coffee",
+    "summary": "Offre : 5 menus offerts par jour, à récupérer directement sur place.",
+    "date": "",
+    "mime": "image/png",
+    "file": "public/uploads/partenariat-los-santos-police-department-x-bean-machine-coff-mvid7x32.png"
+  },
+  {
     "id": "partenariat-los-santos-police-department-x-san-andreas-medic-mvid5fhi",
     "kind": "comm-interne",
     "title": "🤝🏥Partenariat | Los Santos Police Department X San Andreas Medical Service",
