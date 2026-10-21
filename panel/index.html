@@ -3,12 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Événements · MRD</title>
+<title>Panel MRD · Espace de gestion</title>
+<meta name="description" content="Espace sécurisé de gestion de la Media Relations Division : événements, publications, calendrier, organigramme et accès.">
 <link rel="icon" type="image/png" href="../public/Logo MRD V2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-<link rel="stylesheet" href="panel.css?v=20261021al">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap"></noscript>
+<link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"></noscript>
+<link rel="stylesheet" href="panel.css?v=20261021am">
 </head>
 <body class="session-checking">
 <header class="topbar">
@@ -16,7 +21,7 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
   </a>
   <div class="brand">
-    <img src="../public/Logo MRD V2.png" alt="">
+    <img src="../public/Logo MRD V2.png" alt="" loading="lazy" decoding="async" fetchpriority="low">
     <div><strong>Événements</strong><span>Media Relations Division</span></div>
   </div>
   <div class="pages-dropdown">
@@ -81,7 +86,7 @@
 <div class="toasts" id="toasts"></div>
 <div class="login-screen" id="login-screen">
   <form class="login-card" id="login-form">
-    <div class="login-brand"><img src="../public/Logo MRD V2.png" alt="MRD"><div><strong>MRD WORKSPACE</strong><small>MEDIA RELATIONS DIVISION</small></div></div>
+    <div class="login-brand"><img src="../public/Logo MRD V2.png" alt="MRD" loading="lazy" decoding="async" fetchpriority="low"><div><strong>MRD WORKSPACE</strong><small>MEDIA RELATIONS DIVISION</small></div></div>
     <h1>Connexion sécurisée</h1>
     <p>Connecte-toi avec le compte MRD qui t’a été attribué. Les droits disponibles dépendent de ton grade.</p>
     <div class="field"><label for="login-user">Identifiant</label><input id="login-user" name="username" autocomplete="username" required maxlength="64"></div>
@@ -92,9 +97,9 @@
 </div>
 <input type="file" id="file" name="event-json" accept=".json" hidden>
 <input type="file" id="publication-file" accept="application/pdf,image/png,image/jpeg,image/webp" hidden><input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/fr.js"></script>
-<script src="generator.js?v=20261018h"></script>
-<script src="panel.js?v=20261021ag"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/fr.js"></script>
+<script defer src="generator.js?v=20261018h"></script>
+<script defer src="panel.js?v=20261021ah"></script>
 </body>
 </html>
