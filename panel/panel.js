@@ -883,8 +883,10 @@ const applyProfileAvatar = () => {
     }
   }
   if (placeholder) {
-    placeholder.style.display = src ? 'none' : 'block';
-    placeholder.hidden = !!src;
+    // The fallback icon must be hidden as soon as an avatar exists,
+    // not only after its image data has finished loading.
+    placeholder.style.display = hasAvatar ? 'none' : 'block';
+    placeholder.hidden = hasAvatar;
   }
 };
 const renderProfile = () => {
