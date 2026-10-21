@@ -484,16 +484,42 @@ const api = {
 };
 
 const avatarDataCache = new Map();
+const avatarRequestQueue = new Map();
+let avatarBatchScheduled = false;
 
-async function fetchAvatarData(id) {
-  const key = String(id || '');
-  if (!key) return null;
-  if (!avatarDataCache.has(key)) {
-    avatarDataCache.set(key, api.post('/users/avatar', { id: Number(key) })
-      .then(data => data.avatarData || null)
-      .catch(() => null));
+async function flushAvatarQueue() {
+  avatarBatchScheduled = false;
+  const entries = [...avatarRequestQueue.entries()];
+  avatarRequestQueue.clear();
+  for (let offset = 0; offset < entries.length; offset += 50) {
+    const batch = entries.slice(offset, offset + 50);
+    try {
+      const result = await api.post('/users/avatars', { ids: batch.map(([id]) => Number(id)) });
+      const avatars = result.avatars || {};
+      batch.forEach(([id, resolve]) => resolve(avatars[id] || null));
+    } catch {
+      batch.forEach(([, resolve]) => resolve(null));
+    }
   }
-  return avatarDataCache.get(key);
+  if (avatarRequestQueue.size && !avatarBatchScheduled) {
+    avatarBatchScheduled = true;
+    queueMicrotask(flushAvatarQueue);
+  }
+}
+
+function fetchAvatarData(id) {
+  const key = String(id || '');
+  if (!key) return Promise.resolve(null);
+  if (avatarDataCache.has(key)) return avatarDataCache.get(key);
+  const promise = new Promise(resolve => {
+    avatarRequestQueue.set(key, resolve);
+    if (!avatarBatchScheduled) {
+      avatarBatchScheduled = true;
+      queueMicrotask(flushAvatarQueue);
+    }
+  });
+  avatarDataCache.set(key, promise);
+  return promise;
 }
 
 function revealLoadedAvatar(image) {
