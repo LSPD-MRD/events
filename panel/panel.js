@@ -520,19 +520,37 @@ const TYPES = {
 const STATUS = { live: 'Actif', soon: 'À venir', archived: 'Archivé' };
 const PREVIEW_HOOK = '<script>addEventListener("scroll",()=>parent.postMessage(scrollY,"*"));addEventListener("message",e=>scrollTo(0,e.data))<\/script>';
 
-let ev, list = [], portalSettings = { order: ['events', 'news', 'documents'], visible: { events: true, news: false, documents: true } }, slugTouched = false, lastScroll = 0, previewTimer, draftTimer, previewPreference = true;
+let ev, list = [], portalSettingsLoaded = false, portalSettings = { order: ['events', 'documents', 'news'], visible: { events: true, news: false, documents: true }, categories: [
+  { id: 'events', name: 'Événements', type: 'events', description: 'Fiches et cartes des événements' },
+  { id: 'news', name: 'News & actualités', type: 'publications', description: 'Actualités et communiqués' },
+  { id: 'documents', name: 'Communication interne', type: 'publications', description: 'Documents et communications officielles' }
+] }, slugTouched = false, lastScroll = 0, previewTimer, draftTimer, previewPreference = true;
 const PORTAL_CATEGORIES = { events: 'Événements', news: 'News & actualités', documents: 'Communication interne' };
+const BUILTIN_PORTAL_CATEGORIES = [
+  { id: 'events', name: 'Événements', type: 'events', description: 'Fiches et cartes des événements' },
+  { id: 'news', name: 'News & actualités', type: 'publications', description: 'Actualités et communiqués' },
+  { id: 'documents', name: 'Communication interne', type: 'publications', description: 'Documents et communications officielles' }
+];
 const canManagePortalCategories = user => !!user && ((user.role === 'owner' && user.grade === 'Commanding Officer') || (user.role === 'admin' && user.grade === 'Assistant Commanding Officer'));
+const validPortalCategoryId = id => ['events','news','documents'].includes(id) || (typeof id === 'string' && /^custom-[a-z0-9-]{1,64}$/.test(id));
 const loadPortalSettings = async () => {
+  if (portalSettingsLoaded) return;
   const response = await fetch('../public/portal-settings.js', { cache: 'no-store' });
   if (!response.ok) throw new Error('Impossible de lire les paramètres du portail (' + response.status + ').');
   const source = await response.text();
   const start = source.indexOf('{'), end = source.lastIndexOf('}');
   if (start < 0 || end < start) throw new Error('Format des paramètres du portail invalide.');
   const value = JSON.parse(source.slice(start, end + 1));
-  const keys = Object.keys(PORTAL_CATEGORIES);
-  const order = Array.isArray(value.order) ? value.order.filter((key, i, all) => keys.includes(key) && all.indexOf(key) === i) : [];
-  portalSettings = { order: [...order, ...keys.filter(key => !order.includes(key))], visible: Object.fromEntries(keys.map(key => [key, key === 'news' ? false : true]).map(([key, fallback]) => [key, typeof value.visible?.[key] === 'boolean' ? value.visible[key] : fallback])) };
+  const incoming = Array.isArray(value.categories) ? value.categories : BUILTIN_PORTAL_CATEGORIES;
+  const categories = incoming.filter(c => c && validPortalCategoryId(c.id) && typeof c.name === 'string' && c.name.trim() && (c.id === 'events' ? c.type === 'events' : c.type === 'publications'))
+    .map(c => ({ id: c.id, name: c.name.trim().slice(0, 48), type: c.id === 'events' ? 'events' : 'publications', description: String(c.description || '').trim().slice(0, 100) }));
+  if (!Array.isArray(value.categories)) for (const builtin of BUILTIN_PORTAL_CATEGORIES) if (!categories.some(c => c.id === builtin.id)) categories.push({ ...builtin });
+  const ids = categories.map(c => c.id);
+  const order = Array.isArray(value.order) ? value.order.filter((id, i, all) => ids.includes(id) && all.indexOf(id) === i) : [];
+  const visible = Object.fromEntries(categories.map(c => [c.id, typeof value.visible?.[c.id] === 'boolean' ? value.visible[c.id] : c.id !== 'news']));
+  portalSettings = { order: [...order, ...ids.filter(id => !order.includes(id))], visible, categories };
+  Object.assign(PORTAL_CATEGORIES, Object.fromEntries(categories.map(c => [c.id, c.name])));
+  portalSettingsLoaded = true;
 };
 
 const api = {
@@ -805,7 +823,12 @@ const renderEditor = () => {
 };
 
 async function renderPublications() {
-  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>Publications</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><div class="select-wrap"><select id="pub-kind"><option value="news">Media Relations · News classiques</option><option value="comm-presse">Public Information (PIO) · Communiqué de presse</option><option value="comm-interne">Interagency · Communication interne</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="text" placeholder="Choisir une date" autocomplete="off"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><div class="file-dropzone" id="publication-dropzone" role="button" tabindex="0" aria-controls="pub-file"><span class="file-dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg></span><strong>Dépose ton fichier ici</strong><span class="file-dropzone-copy">ou <button type="button" class="file-dropzone-browse" data-file-browse="pub-file">parcourir tes fichiers</button></span><small class="file-dropzone-status" id="pub-file-status">PDF, PNG, JPG ou WEBP · 10 Mo maximum</small></div><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required class="visually-hidden-file"></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><div class="publication-file-actions"><span class="file-dropzone-status" id="pub-selected-hint">Aucun fichier sélectionné pour le moment.</span><button type="button" class="btn sm publication-file-clear" id="pub-file-clear" hidden>Retirer le fichier</button></div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
+  try { await loadPortalSettings(); } catch (error) { console.warn('Paramètres des catégories indisponibles', error); }
+  $('#publications').innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · PUBLICATIONS</div><h1>Publications</h1><p>Importe tes créations Canva en PDF ou PNG pour conserver exactement leur mise en page.</p></div></section><section class="card"><header class="card-head"><h2>Nouvelle publication</h2><p>Actualités, comptes rendus et communiqués officiels.</p></header><form class="card-body" id="publication-form"><div class="field"><label for="pub-kind">Catégorie</label><div class="select-wrap"><select id="pub-kind">${portalSettings.categories.filter(c => c.id !== 'events').map(c => {
+    if (c.id === 'news') return '<option value="news">Media Relations · ' + esc(c.name) + '</option><option value="comm-presse">Public Information (PIO) · Communiqué de presse</option>';
+    if (c.id === 'documents') return '<option value="comm-interne">Interagency · ' + esc(c.name) + '</option>';
+    return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
+  }).join('')}</select><span class="select-chevron" aria-hidden="true">⌄</span></div></div><div class="field"><label for="pub-title">Titre</label><input id="pub-title" required maxlength="120" placeholder="Titre de la publication"></div><div class="field"><label for="pub-summary">Description (facultative)</label><textarea id="pub-summary" rows="3" maxlength="500"></textarea></div><div class="field"><label for="pub-date">Date</label><input id="pub-date" type="text" placeholder="Choisir une date" autocomplete="off"></div><div class="field"><label for="pub-file">Fichier PDF ou image (max. 10 Mo)</label><div class="file-dropzone" id="publication-dropzone" role="button" tabindex="0" aria-controls="pub-file"><span class="file-dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg></span><strong>Dépose ton fichier ici</strong><span class="file-dropzone-copy">ou <button type="button" class="file-dropzone-browse" data-file-browse="pub-file">parcourir tes fichiers</button></span><small class="file-dropzone-status" id="pub-file-status">PDF, PNG, JPG ou WEBP · 10 Mo maximum</small></div><input id="pub-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" required class="visually-hidden-file"></div><div id="pub-preview" class="publication-preview">L’aperçu apparaîtra ici.</div><div class="publication-file-actions"><span class="file-dropzone-status" id="pub-selected-hint">Aucun fichier sélectionné pour le moment.</span><button type="button" class="btn sm publication-file-clear" id="pub-file-clear" hidden>Retirer le fichier</button></div><button class="btn primary" id="pub-submit" type="submit">Publier sur le portail</button></form></section><section class="card"><header class="card-head"><h2>Publications en ligne</h2></header><div class="card-body" id="pub-list">Chargement…</div></section>';
   if (window.flatpickr) window.flatpickr($('#pub-date'), { locale: window.flatpickr.l10ns.fr, dateFormat: 'Y-m-d', altInput: true, altFormat: 'j F Y', allowInput: true, disableMobile: true });
   const fileInput=$('#pub-file'), preview=$('#pub-preview'), dropzone=$('#publication-dropzone'), fileStatus=$('#pub-file-status'), clearFileButton=$('#pub-file-clear'), selectedHint=$('#pub-selected-hint');
   let publicationPreviewUrl = '';
@@ -841,7 +864,7 @@ async function renderPublications() {
   ['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.add('is-dragging'); }));
   ['dragleave','dragend'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.remove('is-dragging'); }));
   dropzone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('is-dragging'); acceptPublicationFile(e.dataTransfer?.files?.[0]); });
-  try { const r=await fetch('../public/publications-data.js?v='+Date.now()); const t=r.ok?await r.text():''; const a=t.indexOf('['),z=t.lastIndexOf(']'); const data=a>=0&&z>a?JSON.parse(t.slice(a,z+1)):[]; $('#pub-list').innerHTML=data.map(p=>'<div class="row-item"><div class="meta"><b>'+esc(p.title)+'</b><small>'+esc(({news:'Media Relations','comm-presse':'Public Information (PIO)','comm-interne':'Interagency','compte-rendu':'Interagency'})[p.kind]||p.kind)+' · '+esc(p.date||'Sans date')+'</small></div><a class="btn sm" target="_blank" rel="noopener" href="../'+encodeURI(p.file)+'">Ouvrir</a><a class="btn sm" download href="../'+encodeURI(p.file)+'">Télécharger</a><button type="button" class="btn sm danger publication-delete" data-publication-delete="'+esc(p.id)+'">Supprimer</button></div>').join('')||'<p class="empty">Aucune publication en ligne.</p>'; } catch { $('#pub-list').textContent='Impossible de charger les publications.'; }
+  try { const r=await fetch('../public/publications-data.js?v='+Date.now()); const t=r.ok?await r.text():''; const a=t.indexOf('['),z=t.lastIndexOf(']'); const data=a>=0&&z>a?JSON.parse(t.slice(a,z+1)):[]; $('#pub-list').innerHTML=data.map(p=>'<div class="row-item"><div class="meta"><b>'+esc(p.title)+'</b><small>'+esc(portalSettings.categories.find(c => c.id === p.kind)?.name || ({news:'Media Relations','comm-presse':'Public Information (PIO)','comm-interne':'Interagency','compte-rendu':'Interagency'})[p.kind] || p.kind)+' · '+esc(p.date||'Sans date')+'</small></div><a class="btn sm" target="_blank" rel="noopener" href="../'+encodeURI(p.file)+'">Ouvrir</a><a class="btn sm" download href="../'+encodeURI(p.file)+'">Télécharger</a><button type="button" class="btn sm danger publication-delete" data-publication-delete="'+esc(p.id)+'">Supprimer</button></div>').join('')||'<p class="empty">Aucune publication en ligne.</p>'; } catch { $('#pub-list').textContent='Impossible de charger les publications.'; }
 }
 document.addEventListener('click', async e => {
   const button=e.target.closest('[data-publication-delete]');
@@ -863,19 +886,30 @@ document.addEventListener('submit', async e => {
 const renderPortal = () => {
   const categoryControls = canManagePortalCategories(currentUser) ? `
     <section class="card portal-category-card">
-      <header class="card-head"><h2>Catégories du portail public</h2><p>Seuls le CO et l’ACO peuvent modifier la visibilité et l’ordre de ces espaces.</p></header>
-      <div class="card-body portal-category-list">${portalSettings.order.map((key, i) => `
-        <div class="portal-category-row">
-          <span class="portal-category-grip" aria-hidden="true">⠿</span>
-          <div class="meta"><b>${PORTAL_CATEGORIES[key]}</b><small>${key === 'news' ? 'Publications d’actualité et de presse' : key === 'events' ? 'Cartes et fiches des événements' : 'Documents et communications officielles'}</small></div>
+      <header class="card-head"><h2>Catégories du portail public</h2><p>Glisse les poignées pour réorganiser. Les suppressions retirent aussi les publications associées.</p></header>
+      <div class="card-body portal-category-list" id="portal-category-list">${portalSettings.order.map(key => {
+        const category = portalSettings.categories.find(c => c.id === key);
+        if (!category) return '';
+        const builtIn = !key.startsWith('custom-');
+        return `
+        <div class="portal-category-row" data-category-row="${esc(key)}">
+          <button type="button" class="portal-category-grip" draggable="true" data-category-grip="${esc(key)}" aria-label="Déplacer ${esc(category.name)}" title="Attraper pour déplacer">⠿</button>
+          <div class="meta"><b>${esc(category.name)}</b><small>${esc(category.description || (category.type === 'events' ? 'Fiches d’événements' : 'Publications classiques'))}</small></div>
           <span class="portal-visibility ${portalSettings.visible[key] ? 'is-visible' : 'is-hidden'}">${portalSettings.visible[key] ? 'Affichée' : 'Masquée'}</span>
           <div class="row-tools">
-            <button type="button" class="icon" data-action="p-category-up" data-category-key="${key}" title="Monter" ${i === 0 ? 'disabled' : ''}>↑</button>
-            <button type="button" class="icon" data-action="p-category-down" data-category-key="${key}" title="Descendre" ${i === portalSettings.order.length - 1 ? 'disabled' : ''}>↓</button>
-            <button type="button" class="btn sm ${portalSettings.visible[key] ? '' : 'primary'}" data-action="p-category-toggle" data-category-key="${key}">${portalSettings.visible[key] ? 'Masquer' : 'Afficher'}</button>
+            <button type="button" class="btn sm ${portalSettings.visible[key] ? '' : 'primary'}" data-action="p-category-toggle" data-category-key="${esc(key)}">${portalSettings.visible[key] ? 'Masquer' : 'Afficher'}</button>
+            ${builtIn && key === 'events' ? '<span class="portal-category-protected" title="Catégorie système">Système</span>' : `<button type="button" class="icon danger" data-action="p-category-delete" data-category-key="${esc(key)}" title="Supprimer la catégorie">✕</button>`}
           </div>
-        </div>`).join('')}</div>
-      <div class="card-body portal-category-footer"><small>News & actualités est masquée par défaut. Tu peux la réafficher quand tu le souhaites.</small><button type="button" class="btn primary" data-action="p-categories-save">Enregistrer les catégories</button></div>
+        </div>`;
+      }).join('')}</div>
+      <div class="portal-category-add">
+        <div class="portal-category-add-fields">
+          <label>Nouvelle catégorie<input id="p-category-name" maxlength="48" placeholder="Ex. Communiqués, Partenariats…" autocomplete="off"></label>
+          <label>Description courte <span>(facultatif)</span><input id="p-category-description" maxlength="100" placeholder="Ex. Informations et annonces de la division" autocomplete="off"></label>
+        </div>
+        <button type="button" class="btn" data-action="p-category-add"><span aria-hidden="true">＋</span> Ajouter</button>
+      </div>
+      <div class="card-body portal-category-footer"><small>Les catégories personnalisées accueillent les publications classiques (PDF et images).</small><button type="button" class="btn primary" data-action="p-categories-save">Enregistrer les catégories</button></div>
     </section>` : '';
   $('#portal').innerHTML = `
     ${categoryControls}
@@ -898,23 +932,40 @@ const renderPortal = () => {
       <button class="btn primary" data-action="p-save">Enregistrer les événements</button>
       <button class="btn" data-action="p-download">Télécharger events-data.js</button>
     </div>`;
-};
-
-const renderLogs = async () => {
-  const root = $('#logs');
-  if (!["owner", "admin"].includes(currentUser?.role)) {
-    root.innerHTML = '<section class="card"><div class="card-body">Accès réservé aux administrateurs et au Commanding Officer.</div></section>';
-    return;
+  const categoryList = $('#portal-category-list');
+  if (categoryList) {
+    let dragged = null;
+    categoryList.querySelectorAll('[data-category-grip]').forEach(grip => {
+      grip.addEventListener('dragstart', event => {
+        dragged = grip.dataset.categoryGrip;
+        event.dataTransfer?.setData('text/plain', dragged);
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+        grip.closest('.portal-category-row')?.classList.add('is-dragging');
+      });
+      grip.addEventListener('dragend', () => {
+        categoryList.querySelectorAll('.portal-category-row').forEach(row => row.classList.remove('is-dragging','is-drop-target'));
+        dragged = null;
+      });
+    });
+    categoryList.querySelectorAll('[data-category-row]').forEach(row => {
+      row.addEventListener('dragover', event => {
+        if (!dragged || dragged === row.dataset.categoryRow) return;
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        categoryList.querySelectorAll('.portal-category-row').forEach(item => item.classList.toggle('is-drop-target', item === row));
+      });
+      row.addEventListener('drop', event => {
+        event.preventDefault();
+        const from = dragged || event.dataTransfer?.getData('text/plain'), to = row.dataset.categoryRow;
+        if (!from || !to || from === to) return;
+        const fromIndex = portalSettings.order.indexOf(from), toIndex = portalSettings.order.indexOf(to);
+        if (fromIndex < 0 || toIndex < 0) return;
+        portalSettings.order.splice(fromIndex, 1);
+        portalSettings.order.splice(toIndex, 0, from);
+        renderPortal();
+      });
+    });
   }
-  root.innerHTML = '<section class="page-intro"><div><div class="eyebrow">MRD WORKSPACE · SÉCURITÉ</div><h1>Logs d’activité</h1><p>Historique des créations, modifications, publications et désactivations importantes.</p></div><div class="intro-mark">⌁</div></section><section class="card"><header class="card-head"><h2>Dernières opérations</h2><p>Les détails sensibles ne sont pas enregistrés. Les 200 actions les plus récentes sont affichées.</p></header><div class="card-body" id="audit-list"><p class="empty">Chargement des logs…</p></div></section>';
-  try {
-    const result = await api.post('/logs/list', {});
-    const logs = result.logs || [];
-    $('#audit-list').innerHTML = logs.map(item => {
-      const date = new Date(Number(item.created_at)).toLocaleString('fr-FR', { dateStyle:'short', timeStyle:'short' });
-      return '<div class="audit-row"><div class="audit-mark">•</div><div class="audit-copy"><strong>'+esc(item.action)+'</strong><span>'+esc(item.target)+'</span><small>'+esc(item.actor_username)+' · '+esc(item.actor_grade)+'</small></div><time>'+esc(date)+'</time></div>';
-    }).join('') || '<p class="empty">Aucune action enregistrée pour le moment.</p>';
-  } catch (error) { $('#audit-list').textContent = error.message || 'Impossible de charger les logs.'; }
 };
 
 const renderAccess = async () => {
@@ -1377,9 +1428,34 @@ const actions = {
   },
   'p-save': async () => { await api.post('/portal', { list }); toast('Événements enregistrés. Mise à jour dans environ une minute.', 'ok'); },
   'p-category-toggle': el => { if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err'); const key = el.dataset.categoryKey; if (!Object.hasOwn(portalSettings.visible, key)) return; portalSettings.visible[key] = !portalSettings.visible[key]; renderPortal(); },
-  'p-category-up': el => { if (!canManagePortalCategories(currentUser)) return; move(portalSettings.order, portalSettings.order.indexOf(el.dataset.categoryKey), -1); renderPortal(); },
-  'p-category-down': el => { if (!canManagePortalCategories(currentUser)) return; move(portalSettings.order, portalSettings.order.indexOf(el.dataset.categoryKey), 1); renderPortal(); },
-  'p-categories-save': async el => { if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err'); el.disabled = true; try { await api.post('/portal/settings', { settings: portalSettings }); toast('Catégories du portail enregistrées.', 'ok'); } catch (error) { toast(error.message || 'Impossible d’enregistrer les catégories.', 'err'); } finally { el.disabled = false; } },
+  'p-category-add': el => {
+    if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err');
+    const input = $('#p-category-name'), description = $('#p-category-description'), name = String(input?.value || '').trim();
+    if (!name) { input?.focus(); return toast('Nom de catégorie obligatoire', 'warn'); }
+    if (portalSettings.categories.length >= 24) { input?.focus(); return toast('Maximum 24 catégories', 'warn'); }
+    if (portalSettings.categories.some(c => c.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'))) { input?.focus(); return toast('Cette catégorie existe déjà', 'warn'); }
+    const slug = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'publication';
+    let id = 'custom-' + slug;
+    if (portalSettings.categories.some(c => c.id === id)) id += '-' + Date.now().toString(36);
+    portalSettings.categories.push({ id, name: name.slice(0,48), type: 'publications', description: String(description?.value || '').trim().slice(0,100) });
+    portalSettings.order.push(id); portalSettings.visible[id] = true;
+    renderPortal(); toast('Catégorie ajoutée · Pense à enregistrer', 'ok');
+  },
+  'p-category-delete': async el => {
+    if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err');
+    const id = el.dataset.categoryKey, category = portalSettings.categories.find(c => c.id === id);
+    if (!category || id === 'events') return toast('Catégorie système protégée', 'err');
+    if (!(await confirmDialog('Toutes les publications de « ' + category.name + ' » et leurs fichiers seront supprimés définitivement.', { title: 'Supprimer cette catégorie ?', confirmText: 'Supprimer la catégorie', danger: true }))) return;
+    el.disabled = true;
+    try {
+      await api.post('/portal/category/delete', { id });
+      portalSettings.categories = portalSettings.categories.filter(c => c.id !== id);
+      portalSettings.order = portalSettings.order.filter(key => key !== id);
+      delete portalSettings.visible[id];
+      toast('Catégorie et publications supprimées', 'ok'); renderPortal();
+    } catch (error) { toast(error.message || 'Suppression impossible', 'err'); el.disabled = false; }
+  },
+  'p-categories-save': async el => { if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err'); el.disabled = true; try { await api.post('/portal/settings', { settings: portalSettings }); toast('Catégories enregistrées', 'ok'); } catch (error) { toast(error.message || 'Impossible d’enregistrer les catégories.', 'err'); } finally { el.disabled = false; } },
   'p-download': () => download('events-data.js', serialize(list)),
   'save-access': () => {
     const input = $('[data-g=\"url\"]');
