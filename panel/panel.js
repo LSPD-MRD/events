@@ -576,7 +576,7 @@ const renderAccess = async () => {
   const c = api.cfg();
   const owner = currentUser?.role === 'owner';
   $('#access').innerHTML = `
-    <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère les connexions au panel, les rôles de l’équipe et la liaison avec le serveur MRD.</p></div><div class="intro-mark">⌘</div></section>
+    <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère ta session et les autorisations de l’équipe.</p></div><div class="intro-mark">⌘</div></section>
     <div class="access-grid">
       <section class="card access-security">
         <header class="card-head"><span class="access-kicker">SESSION ACTIVE</span><h2>Compte connecté</h2><p>Les autorisations dépendent du rôle associé à ton compte.</p></header>
@@ -585,14 +585,14 @@ const renderAccess = async () => {
           <button class="btn access-logout" data-action="logout" type="button">Se déconnecter</button>
         </div>
       </section>
-      <section class="card access-worker">
+      ${owner ? `      <section class="card access-worker">
         <header class="card-head"><span class="access-kicker">CONNEXION API</span><h2>Serveur MRD</h2><p>Adresse du Worker qui traite les demandes du panel.</p></header>
         <div class="card-body">
           <div class="field"><label for="worker-url">URL du Worker</label><input id="worker-url" data-g="url" value="${esc(c.url)}" spellcheck="false" placeholder="https://votre-worker.workers.dev"><small>Ne change cette adresse que si le Worker est déplacé.</small></div>
           <div class="actions access-worker-actions"><button class="btn primary" data-action="save-access" type="button">Enregistrer l’URL</button><button class="btn" data-action="test-access" type="button"><span aria-hidden="true">↗</span> Tester la connexion</button></div>
           <p class="access-security-note"><span aria-hidden="true">◆</span> Les mots de passe et les droits sont gérés côté serveur. Ne partage jamais les secrets Cloudflare.</p>
         </div>
-      </section>
+      </section>` : ''}
       ${owner ? `<section class="card access-accounts">
         <header class="card-head access-card-head"><div><span class="access-kicker">GESTION DE L’ÉQUIPE</span><h2>Comptes & autorisations</h2><p>Crée un compte individuel et attribue uniquement les droits nécessaires.</p></div><span class="access-count-mark">01</span></header>
         <div class="card-body">
