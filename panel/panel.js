@@ -771,11 +771,11 @@ document.addEventListener('submit', async e => {
 const renderPortal = () => {
   const categoryControls = canManagePortalCategories(currentUser) ? `
     <section class="card portal-category-card">
-      <header class="card-head"><h2>Catégories du portail public</h2><p>Seuls le CO et l’ACO peuvent modifier leur visibilité et leur ordre. Les changements sont appliqués à tous les visiteurs.</p></header>
+      <header class="card-head"><h2>Catégories du portail public</h2><p>Seuls le CO et l’ACO peuvent modifier la visibilité et l’ordre de ces espaces.</p></header>
       <div class="card-body portal-category-list">${portalSettings.order.map((key, i) => `
-        <div class="portal-category-row" data-category="${key}">
+        <div class="portal-category-row">
           <span class="portal-category-grip" aria-hidden="true">⠿</span>
-          <div class="meta"><b>${PORTAL_CATEGORIES[key]}</b><small>${key === 'news' ? 'Publications de type actualité et presse' : key === 'events' ? 'Cartes et fiches des événements' : 'Documents et communications officielles'}</small></div>
+          <div class="meta"><b>${PORTAL_CATEGORIES[key]}</b><small>${key === 'news' ? 'Publications d’actualité et de presse' : key === 'events' ? 'Cartes et fiches des événements' : 'Documents et communications officielles'}</small></div>
           <span class="portal-visibility ${portalSettings.visible[key] ? 'is-visible' : 'is-hidden'}">${portalSettings.visible[key] ? 'Affichée' : 'Masquée'}</span>
           <div class="row-tools">
             <button type="button" class="icon" data-action="p-category-up" data-category-key="${key}" title="Monter" ${i === 0 ? 'disabled' : ''}>↑</button>
@@ -783,7 +783,7 @@ const renderPortal = () => {
             <button type="button" class="btn sm ${portalSettings.visible[key] ? '' : 'primary'}" data-action="p-category-toggle" data-category-key="${key}">${portalSettings.visible[key] ? 'Masquer' : 'Afficher'}</button>
           </div>
         </div>`).join('')}</div>
-      <div class="card-body portal-category-footer"><small>« News & actualités » est masquée par défaut. Tu peux la réafficher à tout moment.</small><button type="button" class="btn primary" data-action="p-categories-save">Enregistrer les catégories</button></div>
+      <div class="card-body portal-category-footer"><small>News & actualités est masquée par défaut. Tu peux la réafficher quand tu le souhaites.</small><button type="button" class="btn primary" data-action="p-categories-save">Enregistrer les catégories</button></div>
     </section>` : '';
   $('#portal').innerHTML = `
     ${categoryControls}
