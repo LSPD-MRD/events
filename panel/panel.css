@@ -1565,3 +1565,14 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
  .ws-home-members{grid-template-columns:minmax(0,1fr)}
  .ws-home-task-status{display:none}
 }
+
+
+/* Division : organigramme intégré à l'accueil */
+.ws-home-org-widget{min-width:0;margin-top:15px;overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 5px 20px rgba(0,0,0,.035)}
+.ws-home-org-widget>.ws-home-card-head{border-bottom:1px solid var(--line)}
+.ws-home-org-count{flex:0 0 auto;padding:6px 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--muted);font:500 10px Inter,system-ui,sans-serif;white-space:nowrap}
+.ws-home-org-widget .ws-org-board{width:100%;max-width:100%;margin:0;border:0;border-radius:0;box-shadow:none}
+.ws-home-org-widget .ws-org-board-head{border-top:0;border-left:0;border-right:0;border-radius:0}
+.ws-home-org-widget .ws-org-board-foot{border-left:0;border-right:0;border-bottom:0;border-radius:0}
+.ws-home-org-widget .ws-org-chart{max-width:100%}
+@media(max-width:560px){.ws-home-org-widget .ws-org-board-head{gap:8px;padding:13px}.ws-home-org-widget .ws-org-board-mark{display:none}.ws-home-org-widget .ws-org-chart{padding:18px 14px 20px}}
