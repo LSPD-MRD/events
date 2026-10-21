@@ -960,8 +960,9 @@ const renderPortal = () => {
         if (!from || !to || from === to) return;
         const fromIndex = portalSettings.order.indexOf(from), toIndex = portalSettings.order.indexOf(to);
         if (fromIndex < 0 || toIndex < 0) return;
+        const insertionIndex = fromIndex < toIndex ? toIndex - 1 : toIndex;
         portalSettings.order.splice(fromIndex, 1);
-        portalSettings.order.splice(toIndex, 0, from);
+        portalSettings.order.splice(insertionIndex, 0, from);
         renderPortal();
       });
     });
@@ -1448,11 +1449,12 @@ const actions = {
     if (!(await confirmDialog('Toutes les publications de « ' + category.name + ' » et leurs fichiers seront supprimés définitivement.', { title: 'Supprimer cette catégorie ?', confirmText: 'Supprimer la catégorie', danger: true }))) return;
     el.disabled = true;
     try {
-      await api.post('/portal/category/delete', { id });
+      const result = await api.post('/portal/category/delete', { id });
       portalSettings.categories = portalSettings.categories.filter(c => c.id !== id);
       portalSettings.order = portalSettings.order.filter(key => key !== id);
       delete portalSettings.visible[id];
-      toast('Catégorie et publications supprimées', 'ok'); renderPortal();
+      toast(result.cleanupWarning ? 'Catégorie supprimée · Nettoyage incomplet' : 'Catégorie et publications supprimées', result.cleanupWarning ? 'warn' : 'ok');
+      renderPortal();
     } catch (error) { toast(error.message || 'Suppression impossible', 'err'); el.disabled = false; }
   },
   'p-categories-save': async el => { if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err'); el.disabled = true; try { await api.post('/portal/settings', { settings: portalSettings }); toast('Catégories enregistrées', 'ok'); } catch (error) { toast(error.message || 'Impossible d’enregistrer les catégories.', 'err'); } finally { el.disabled = false; } },

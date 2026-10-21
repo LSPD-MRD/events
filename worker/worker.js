@@ -1252,8 +1252,7 @@ export default {
           } else if (asset.status !== 404) failedFiles.push(item.file);
         }
         await audit(env, user, "Catégorie supprimée", category.name + " · " + removed.length + " publication(s)");
-        if (failedFiles.length) return json({ error: "La catégorie et ses publications ont été retirées, mais " + failedFiles.length + " fichier(s) n’ont pas pu être supprimés." }, 500, cors);
-        return json({ ok: true, deletedPublications: removed.length, settings: nextSettings }, 200, cors);
+        return json({ ok: true, deletedPublications: removed.length, cleanupWarning: failedFiles.length, settings: nextSettings }, 200, cors);
       }
 
       if (route === "/portal/settings") {
