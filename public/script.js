@@ -125,11 +125,15 @@
   const tabsRoot = document.querySelector('.portal-tabs');
   const contentRoot = document.querySelector('.content-wrap');
   const spaces = { events: document.getElementById('space-events'), news: document.getElementById('space-news'), documents: document.getElementById('space-documents') };
+  const orderedTabs = document.createDocumentFragment();
+  const orderedSpaces = document.createDocumentFragment();
   portalSettings.order.forEach(key => {
     const button = document.querySelector('[data-space="'+key+'"]');
-    if (button) { button.hidden = !portalSettings.visible[key]; button.textContent = categoryLabels[key]; tabsRoot.appendChild(button); }
-    if (spaces[key]) { spaces[key].hidden = true; contentRoot.appendChild(spaces[key]); }
+    if (button) { button.hidden = !portalSettings.visible[key]; button.textContent = categoryLabels[key]; orderedTabs.appendChild(button); }
+    if (spaces[key]) { spaces[key].hidden = true; orderedSpaces.appendChild(spaces[key]); }
   });
+  tabsRoot.appendChild(orderedTabs);
+  contentRoot.appendChild(orderedSpaces);
   let savedSpace = localStorage.getItem('mrd-portal-space');
   if (!categoryKeys.includes(savedSpace) || !portalSettings.visible[savedSpace]) savedSpace = portalSettings.order.find(key=>portalSettings.visible[key]) || 'events';
   function activateSpace(space, remember=true) {
