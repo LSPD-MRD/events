@@ -1,6 +1,6 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar', activeTab: 'mrdpanel-active-tab' };
-const PAGE_LABELS = { edit: 'Événement', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', profile: 'Mon profil', effectif: 'Division' };
+const PAGE_LABELS = { edit: 'Événement', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', profile: 'Mon compte', effectif: 'Division' };
 const ACCREDITATION_META = {
   'Media Relations': { className: 'accred-media' },
   'Interagency': { className: 'accred-interagency' },
@@ -797,17 +797,15 @@ const renderLogs = async () => {
 
 const renderAccess = async () => {
   const c = api.cfg();
-  const owner = currentUser?.role === 'owner';
+  const owner = currentUser?.role === 'owner' && currentUser?.grade === 'Commanding Officer';
+  const accessManager = canManageAccessUser(currentUser);
+  if (!accessManager) {
+    $('#access').innerHTML = '<section class="card"><div class="card-body">L’espace Accès est réservé au CO et à l’ACO.</div></section>';
+    return;
+  }
   $('#access').innerHTML = `
     <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère ta session et les autorisations de l’équipe.</p></div><div class="intro-mark">⌘</div></section>
     <div class="access-grid">
-      <section class="card access-security">
-        <header class="card-head"><span class="access-kicker">SESSION ACTIVE</span><h2>Compte connecté</h2><p>Les autorisations dépendent du rôle associé à ton compte.</p></header>
-        <div class="card-body">
-          <div class="access-user"><div class="access-user-avatar">${esc(wsName(currentUser).slice(0,1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(wsName(currentUser))}</strong><span>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.role || '—')}</span></div>
-          <button class="btn access-logout" data-action="logout" type="button">Se déconnecter</button>
-        </div>
-      </section>
       ${owner ? `      <section class="card access-worker">
         <header class="card-head"><span class="access-kicker">CONNEXION API</span><h2>Serveur MRD</h2><p>Adresse du Worker qui traite les demandes du panel.</p></header>
         <div class="card-body">
@@ -816,12 +814,12 @@ const renderAccess = async () => {
           <p class="access-security-note"><span aria-hidden="true">◆</span> Les mots de passe et les droits sont gérés côté serveur. Ne partage jamais les secrets Cloudflare.</p>
         </div>
       </section>` : ''}
-      ${owner ? `<section class="card access-accounts">
+      ${accessManager ? `<section class="card access-accounts">
         <header class="card-head access-card-head"><div><span class="access-kicker">GESTION DE L’ÉQUIPE</span><h2>Comptes & autorisations</h2><p>Crée un compte individuel et attribue uniquement les droits nécessaires.</p></div><span class="access-count-mark">01</span></header>
         <div class="card-body">
           <form id="user-create-form" class="user-create access-create-form">
             <div class="field"><label for="new-username">Identifiant</label><input id="new-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" placeholder="ex. media.officer"></div>
-            <div class="field"><label for="new-grade">Grade</label><div class="select-wrap"><select id="new-grade" name="grade" required><option value="Certified Officer">Certified Officer (CtO)</option><option value="Expert Officer">Expert Officer (EO)</option><option value="Assistant Commanding Officer">Assistant Commanding Officer (ACO)</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div>
+            <div class="field"><label for="new-grade">Grade</label><div class="select-wrap"><select id="new-grade" name="grade" required><option value="Certified Officer">Certified Officer (CtO)</option><option value="Expert Officer">Expert Officer (EO)</option><option value="Assistant Commanding Officer" ${owner ? '' : 'disabled hidden'}>Assistant Commanding Officer (ACO)</option></select><span class="select-chevron" aria-hidden="true">⌄</span></div></div>
             <div class="field"><label for="new-password">Mot de passe temporaire</label><input id="new-password" name="password" required minlength="12" type="password" autocomplete="new-password" placeholder="12 caractères minimum"><small>Le mot de passe initial doit être communiqué en privé.</small></div>
             <div class="access-create-footer"><button class="btn primary create-account-btn" type="submit"><span aria-hidden="true">＋</span> Créer le compte</button></div>
           </form>
@@ -830,7 +828,7 @@ const renderAccess = async () => {
         <div class="card-body access-users-body"><div id="users-list" class="user-admin"><div class="access-loading"><span class="loading-dot"></span> Chargement des comptes…</div></div></div>
       </section>` : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>La création et la désactivation des comptes sont réservées au Owner.</p></div></section>`}
     </div>`;
-  if (owner) {
+  if (accessManager) {
     try {
       const data = await api.post('/users/list', {});
       const users = data.users || [];
@@ -892,7 +890,14 @@ const applyProfileAvatar = () => {
 const renderProfile = () => {
   const root = $('#profile');
   root.innerHTML = `
-    <section class="page-intro"><div><div class="eyebrow">COMPTE PERSONNEL <span>· SÉCURITÉ</span></div><h1>Mon profil</h1><p>Gère ta photo de profil et mets à jour le mot de passe de ton compte MRD.</p></div></section>
+    <section class="page-intro"><div><div class="eyebrow">COMPTE PERSONNEL <span>· SÉCURITÉ</span></div><h1>Mon compte</h1><p>Gère tes informations personnelles et la sécurité de ton compte MRD.</p></div></section>
+    <section class="card profile-session-card">
+      <header class="card-head"><h2>Compte connecté</h2><p>Informations de ta session actuelle.</p></header>
+      <div class="card-body">
+        <div class="access-user"><div class="access-user-avatar">${esc(wsName(currentUser).slice(0,1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(wsName(currentUser))}</strong><span>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.role || '—')}</span></div>
+        <button class="btn access-logout" data-action="logout" type="button">Se déconnecter</button>
+      </div>
+    </section>
     <section class="card">
       <header class="card-head"><h2>Identité & photo de profil</h2><p>Ton nom d’affichage et ta photo sont visibles par les autres membres de la MRD.</p></header>
       <div class="card-body">
@@ -1018,7 +1023,15 @@ const canViewLogs = user =>
   ['owner', 'admin'].includes(user?.role) ||
   ['Commanding Officer', 'Assistant Commanding Officer'].includes(user?.grade);
 
+const canManageAccessUser = user =>
+  (user?.role === 'owner' && user?.grade === 'Commanding Officer') ||
+  (user?.role === 'admin' && user?.grade === 'Assistant Commanding Officer');
+
 const setTab = async name => {
+  if (name === 'access' && !canManageAccessUser(currentUser)) {
+    toast('L’espace Accès est réservé au Commanding Officer et à l’Assistant Commanding Officer.', 'err');
+    return setTab('edit');
+  }
   $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.panel').forEach(p => { p.hidden = p.id !== name; });
   const label = $('#active-page-label');
@@ -1266,7 +1279,7 @@ const actions = {
     }
   },
   'save-accreditations': async el => {
-    if (currentUser?.grade !== 'Commanding Officer' || currentUser?.role !== 'owner') throw new Error('Seul le Commanding Officer peut attribuer des accréditations.');
+    if (!canManageAccessUser(currentUser)) throw new Error('La gestion des accréditations est réservée au CO et à l’ACO.');
     const id = el.dataset.userId;
     const inputs = Array.from(document.querySelectorAll('[data-accreditation-user]')).filter(input => input.dataset.accreditationUser === id);
     const accreditations = inputs.filter(input => input.checked).map(input => input.value);
@@ -1318,7 +1331,7 @@ function applyPermissions() {
   applyProfileAvatar();
   $$('[data-action="tab"]').forEach(b => {
     if (b.dataset.tab === 'logs') b.hidden = !canViewLogs(currentUser);
-    if (b.dataset.tab === 'access') b.hidden = false;
+    if (b.dataset.tab === 'access') b.hidden = !canManageAccessUser(currentUser);
   });
   if (!canEdit) {
     $('#edit').innerHTML = '<section class="card"><div class="card-body"><h2>Consultation seule</h2><p>Ton compte ne dispose pas des droits de modification.</p></div></section>';
