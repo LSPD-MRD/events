@@ -22,7 +22,125 @@ let pendingProfileAvatar;
 let profileAvatarChanged = false;
 
 const $ = (s, r = document) => r.querySelector(s);
-const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const $ = (s, r = document) => [...r.querySelectorAll(s)];
+ 
+/* ── MRD custom select: consistent dropdowns across the entire panel ── */
+const mrdSelectClose = () => {
+  document.querySelectorAll('.mrd-select-menu:not([hidden])').forEach(menu => {
+    menu.hidden = true;
+    const trigger = document.querySelector('[aria-controls="' + menu.id + '"]');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  });
+};
+let mrdSelectId = 0;
+const mrdEnhanceSelect = select => {
+  if (!(select instanceof HTMLSelectElement) || select.dataset.mrdSelectEnhanced === 'true' || select.multiple || select.size > 1) return;
+  select.dataset.mrdSelectEnhanced = 'true';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'mrd-select-control';
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.append(select);
+  select.classList.add('mrd-select-native');
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'mrd-select-trigger';
+  trigger.setAttribute('aria-haspopup', 'listbox');
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.innerHTML = '<span class="mrd-select-value"></span><svg class="mrd-select-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4 4.5-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const menu = document.createElement('div');
+  menu.className = 'mrd-select-menu';
+  menu.id = 'mrd-select-menu-' + (++mrdSelectId);
+  menu.hidden = true;
+  menu.setAttribute('role', 'listbox');
+  trigger.setAttribute('aria-controls', menu.id);
+  const value = trigger.querySelector('.mrd-select-value');
+  const refresh = () => {
+    const selected = select.options[select.selectedIndex];
+    value.textContent = selected ? selected.textContent.trim() : 'Sélectionner…';
+    trigger.disabled = select.disabled;
+    trigger.classList.toggle('is-placeholder', !selected || selected.value === '');
+    menu.replaceChildren();
+    [...select.options].forEach((option, index) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'mrd-select-option' + (option.selected ? ' is-selected' : '');
+      item.setAttribute('role', 'option');
+      item.setAttribute('aria-selected', option.selected ? 'true' : 'false');
+      item.disabled = option.disabled || (option.parentElement instanceof HTMLOptGroupElement && option.parentElement.disabled);
+      item.textContent = option.textContent.trim();
+      item.addEventListener('click', () => {
+        if (item.disabled) return;
+        select.selectedIndex = index;
+        select.dispatchEvent(new Event('input', { bubbles: true }));
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        refresh();
+        menu.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.focus({ preventScroll: true });
+      });
+      menu.append(item);
+    });
+  };
+  const position = () => {
+    const r = trigger.getBoundingClientRect();
+    const maxH = Math.min(280, window.innerHeight - 24);
+    const below = window.innerHeight - r.bottom - 12;
+    const top = below < Math.min(180, maxH) && r.top > below ? Math.max(12, r.top - Math.min(maxH, r.top - 12)) : r.bottom + 6;
+    menu.style.left = Math.max(12, Math.min(r.left, window.innerWidth - Math.max(r.width, 180) - 12)) + 'px';
+    menu.style.top = top + 'px';
+    menu.style.width = Math.min(Math.max(r.width, 180), window.innerWidth - 24) + 'px';
+    menu.style.maxHeight = maxH + 'px';
+  };
+  trigger.addEventListener('click', () => {
+    if (trigger.disabled) return;
+    const opening = menu.hidden;
+    mrdSelectClose();
+    if (!opening) return;
+    refresh();
+    document.body.append(menu);
+    menu.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    position();
+    const selected = menu.querySelector('.is-selected:not(:disabled)') || menu.querySelector('.mrd-select-option:not(:disabled)');
+    if (selected) selected.scrollIntoView({ block: 'nearest' });
+  });
+  trigger.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (menu.hidden) trigger.click();
+      else (menu.querySelector('.is-selected') || menu.querySelector('.mrd-select-option:not(:disabled)'))?.focus();
+    } else if (event.key === 'Escape') {
+      menu.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+  select.addEventListener('change', refresh);
+  wrapper.append(trigger);
+  document.body.append(menu);
+  refresh();
+  const observer = new MutationObserver(refresh);
+  observer.observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'label', 'value', 'selected'] });
+  select._mrdSelectRefresh = refresh;
+};
+const mrdEnhanceSelects = root => {
+  if (root instanceof HTMLSelectElement) mrdEnhanceSelect(root);
+  root.querySelectorAll?.('select').forEach(mrdEnhanceSelect);
+};
+document.addEventListener('click', event => {
+  if (!event.target.closest('.mrd-select-control') && !event.target.closest('.mrd-select-menu')) mrdSelectClose();
+});
+document.addEventListener('keydown', event => { if (event.key === 'Escape') mrdSelectClose(); });
+window.addEventListener('resize', () => document.querySelectorAll('.mrd-select-menu:not([hidden])').forEach(menu => {
+  const trigger = document.querySelector('[aria-controls="' + menu.id + '"]');
+  if (trigger) { const r = trigger.getBoundingClientRect(); menu.style.left = Math.max(12, Math.min(r.left, window.innerWidth - Math.max(r.width, 180) - 12)) + 'px'; menu.style.top = r.bottom + 6 + 'px'; }
+}));
+const mrdSelectObserver = new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+  if (node.nodeType === 1 && !node.matches?.('.mrd-select-menu')) mrdEnhanceSelects(node);
+})));
+mrdSelectObserver.observe(document.documentElement, { childList: true, subtree: true });
+document.addEventListener('DOMContentLoaded', () => mrdEnhanceSelects(document));
+mrdEnhanceSelects(document);
+
 
 /* ── MRD custom date picker: consistent across every panel form ── */
 const mrdDateFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
