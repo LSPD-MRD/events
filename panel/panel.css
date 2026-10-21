@@ -1663,15 +1663,37 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
   #effectif>.ws-tabs .ws-tab{padding-inline:3px}
 }
 
-/* Division — adjust only the org chart inside its widget.
-   Keep the overall panel grid unchanged so surrounding widgets stay aligned. */
+/* Division — widen only the embedded org chart and its member cards. */
 .ws-home-org-widget .ws-org-chart {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
+.ws-home-org-widget .ws-member-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.ws-home-org-widget .ws-member-tag {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.ws-home-org-widget .ws-member-tag strong {
+  white-space: nowrap;
+}
 @media (min-width: 901px) {
   .ws-home-org-widget .ws-org-tier {
-    flex-basis: 300px;
+    flex-basis: 350px;
+  }
+}
+@media (min-width: 561px) and (max-width: 900px) {
+  .ws-home-org-widget .ws-org-tier {
+    flex-basis: 310px;
+  }
+}
+@media (max-width: 560px) {
+  .ws-home-org-widget .ws-org-tier {
+    flex-basis: min(88vw, 320px);
   }
 }
