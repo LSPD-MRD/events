@@ -1445,7 +1445,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-org-tier{display:flex;flex:0 0 264px;flex-direction:column;min-width:0;gap:0;padding:0 0 4px;scroll-snap-align:start}
 .ws-org-tier:last-child{padding-bottom:4px}
 .ws-tier-heading{box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;width:100%;max-width:none;min-height:82px;margin:0;padding:12px 13px}
-.ws-tier-heading:after{top:100%;left:28px;width:1px;height:20px;transform:none;background:var(--line-strong);opacity:.9}
+.ws-tier-heading:after{top:100%;left:28px;width:1px;height:28px;transform:none;background:var(--line-strong);opacity:.9}
 .ws-tier-rail{display:none}
 .ws-tier-members{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:11px;padding:28px 0 0}
 .ws-tier-members:before{display:none}
@@ -1463,7 +1463,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
  .ws-org-tier{flex-basis:244px}
  .ws-tier-heading{min-height:78px;max-width:none;padding:10px 12px}
  .ws-tier-heading h3{font-size:14px}
- .ws-tier-heading:after{left:25px;height:20px}
+ .ws-tier-heading:after{left:25px;height:28px}
  .ws-org-tier+.ws-org-tier:before{left:-24px;width:24px;top:38px}
  .ws-tier-members{grid-template-columns:minmax(0,1fr)!important;gap:11px;padding-top:28px}
  .ws-tier-members>.ws-member-card{width:100%;margin:0;background:var(--surface)}
