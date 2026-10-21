@@ -302,27 +302,71 @@ const download = (name, text) => {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 
+const compactToastMessage = (message, kind = 'info') => {
+  const raw = String(message || '').replace(/\s+/g, ' ').trim();
+  const rules = [
+    [/choisis une date|date .*obligatoire/i, 'Date obligatoire'],
+    [/titre et l’adresse sont obligatoires|titre et adresse/i, 'Titre et adresse obligatoires'],
+    [/ajoute la date dans la fiche/i, 'Date de l’événement obligatoire'],
+    [/enregistré et publié|enregistrée et publiée/i, 'Publication enregistrée'],
+    [/modifications enregistrées sans changer/i, 'Modifications enregistrées'],
+    [/événements enregistrés/i, 'Événements enregistrés'],
+    [/catégories du portail enregistrées/i, 'Catégories enregistrées'],
+    [/publication envoyée/i, 'Publication envoyée'],
+    [/compte créé/i, 'Compte créé'],
+    [/mot de passe mis à jour/i, 'Mot de passe mis à jour'],
+    [/déconnexion effectuée/i, 'Déconnexion effectuée'],
+    [/serveur accessible/i, 'Serveur accessible'],
+    [/accréditations mises à jour/i, 'Accréditations mises à jour'],
+    [/compte désactivé/i, 'Compte désactivé'],
+    [/a été supprimé/i, 'Compte supprimé'],
+    [/inscription confirmée/i, 'Inscription confirmée'],
+    [/désinscription enregistrée/i, 'Désinscription enregistrée'],
+    [/brouillon chargé/i, 'Brouillon chargé'],
+    [/fiche historique importée/i, 'Fiche importée'],
+    [/url enregistrée/i, 'URL enregistrée'],
+    [/fichier json invalide/i, 'Fichier JSON invalide'],
+    [/image invalide/i, 'Image invalide'],
+    [/maximum 10 mo|10 mo maximum/i, 'Limite : 10 Mo'],
+    [/choisis un fichier/i, 'Fichier obligatoire'],
+    [/action réservée au co et à l’aco/i, 'Réservé au CO et à l’ACO'],
+    [/réservés au commandant|réservé au commanding officer/i, 'Accès réservé'],
+    [/session absente ou expirée|session invalide|reconnecte-toi/i, 'Session expirée · Reconnexion requise'],
+    [/impossible de charger le portail/i, 'Chargement du portail impossible'],
+    [/impossible d’enregistrer les catégories/i, 'Enregistrement impossible'],
+    [/impossible de supprimer la publication/i, 'Suppression impossible'],
+    [/échec de publication/i, 'Publication échouée'],
+    [/confirmation ne correspond pas/i, 'Confirmation incorrecte'],
+    [/au moins 12 caractères/i, '12 caractères minimum'],
+    [/saisis une url https valide/i, 'URL HTTPS invalide'],
+    [/date manquante/i, 'Date obligatoire']
+  ];
+  for (const [pattern, label] of rules) if (pattern.test(raw)) return label;
+  const firstSentence = raw.split(/(?<=[.!?])\s+/)[0] || raw;
+  const cleaned = firstSentence.replace(/\s+(?:le portail sera actualisé|mise à jour en ligne|les prochaines requêtes utiliseront).*$/i, '').trim();
+  if (cleaned.length <= 68) return cleaned.replace(/[.!?]+$/, '');
+  return cleaned.slice(0, 65).replace(/\s+\S*$/, '') + '…';
+};
+
 const toast = (message, kind = '') => {
   const container = $('#toasts');
   if (!container) return;
-  const duration = kind === 'err' ? 7000 : 4200;
-  const titles = { ok: 'C’est enregistré', err: 'Une erreur est survenue', warn: 'Date manquante', info: 'Information' };
-  const icons = { ok: '✓', err: '!', warn: '!', info: 'i' };
+  const type = ['ok', 'err', 'warn', 'info'].includes(kind) ? kind : 'info';
+  const duration = type === 'err' ? 5600 : 3900;
+  const icons = { ok: '✓', err: '×', warn: '!', info: '·' };
   const el = document.createElement('div');
-  el.className = 'toast ' + (kind || 'info');
+  el.className = 'toast ' + type;
   el.style.setProperty('--toast-duration', duration + 'ms');
-  el.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  el.setAttribute('role', type === 'err' ? 'alert' : 'status');
   const icon = document.createElement('span');
   icon.className = 'toast-icon';
   icon.setAttribute('aria-hidden', 'true');
-  icon.textContent = icons[kind] || icons.info;
+  icon.textContent = icons[type];
   const copy = document.createElement('div');
   copy.className = 'toast-copy';
-  const title = document.createElement('strong');
-  title.textContent = titles[kind] || titles.info;
   const text = document.createElement('span');
-  text.textContent = String(message);
-  copy.append(title, text);
+  text.textContent = compactToastMessage(message, type);
+  copy.append(text);
   const close = document.createElement('button');
   close.className = 'toast-close';
   close.type = 'button';
@@ -338,6 +382,54 @@ const toast = (message, kind = '') => {
     setTimeout(() => el.remove(), 220);
   }, duration);
 };
+
+const labelForField = field => {
+  const label = field.labels?.[0] || field.closest('label');
+  const text = label?.textContent?.replace(/\s+/g, ' ').trim();
+  if (text) return text.replace(/\s*[＊*]\s*$/, '').slice(0, 48);
+  return field.getAttribute('aria-label') || field.name || field.id || 'ce champ';
+};
+
+const applyCustomFormValidation = root => {
+  (root || document).querySelectorAll?.('form').forEach(form => { form.noValidate = true; });
+};
+applyCustomFormValidation(document);
+const formValidationObserver = new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+  if (node.nodeType === 1) {
+    if (node.matches?.('form')) node.noValidate = true;
+    applyCustomFormValidation(node);
+  }
+})));
+formValidationObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+document.addEventListener('submit', event => {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  const invalid = [...form.querySelectorAll('input, select, textarea')].find(field => {
+    if (!field.willValidate || field.disabled) return false;
+    if (field.classList.contains('mrd-date-native') && field.dataset.originalRequired === 'true') return !field.value;
+    return !field.validity.valid;
+  });
+  if (!invalid) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const label = labelForField(invalid);
+  const message = invalid.validity.valueMissing || (invalid.classList.contains('mrd-date-native') && !invalid.value)
+    ? 'Champ obligatoire : ' + label
+    : invalid.validity.typeMismatch || invalid.validity.patternMismatch
+      ? 'Format invalide : ' + label
+      : invalid.validity.tooShort || invalid.validity.tooLong
+        ? 'Longueur invalide : ' + label
+        : 'Valeur invalide : ' + label;
+  toast(message, 'warn');
+  const focusTarget = invalid.classList.contains('mrd-date-native')
+    ? invalid.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')
+    : invalid.classList.contains('mrd-select-native')
+      ? invalid.closest('.mrd-select-control')?.querySelector('.mrd-select-trigger')
+      : invalid;
+  focusTarget?.focus({ preventScroll: true });
+  invalid.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+}, true);
 
 const confirmDialog = (message, options = {}) => new Promise(resolve => {
   const { title = 'Confirmer cette action', confirmText = 'Confirmer', danger = false } = options;
