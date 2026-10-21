@@ -931,7 +931,7 @@ body.session-checking .toasts { visibility: hidden; }
 .file-dropzone-browse{display:inline;padding:0;border:0;background:transparent;color:var(--accent);font:inherit;font-weight:650;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .file-dropzone-status{max-width:100%;font-size:11px;line-height:1.5;color:var(--muted,var(--app-muted));overflow-wrap:anywhere}
 .file-dropzone-compact{min-height:132px;margin:14px 0;padding:18px}
-.layout.file-import-dragging:after{content:"Dépose le fichier JSON pour importer l’événement";position:fixed;z-index:1000;inset:18px;display:grid;place-items:center;border:2px dashed var(--accent);border-radius:20px;background:color-mix(in srgb,var(--surface) 92%,transparent);box-shadow:0 0 0 999px #0005;color:var(--text);font-size:clamp(16px,2vw,22px);font-weight:650;pointer-events:none}
+
 @media(max-width:680px){.file-dropzone{min-height:150px;padding:18px 14px}.file-dropzone-compact{min-height:126px}}
 
 
