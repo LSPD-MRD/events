@@ -1351,7 +1351,7 @@ document.addEventListener('submit', async e => {
 
 // MRD Effectif / calendrier / tâches
 let ws={roster:{},calendar:[],tasks:[]}, wsMembers=[], wsPerm={};
-const WS_SECTION_KEY='mrd-effectif-section';
+const WS_SECTION_KEY='mrd-effectif-section-v2';
 const WS_CALENDAR_MONTH_KEY='mrd-effectif-calendar-month';
 let wsSection=(()=>{const saved=localStorage.getItem(WS_SECTION_KEY);return ['home','roster','calendar','tasks'].includes(saved)?saved:'home';})();
 const wsGrades=['Commanding Officer','Assistant Commanding Officer','Expert Officer','Certified Officer'];
