@@ -1662,3 +1662,27 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
   .ws-tab-icon{display:none}
   #effectif>.ws-tabs .ws-tab{padding-inline:3px}
 }
+
+/* Division — give the embedded org chart enough room on desktop. */
+@media (min-width: 1001px) {
+  .layout:not(.preview-open):has(#effectif:not([hidden])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .layout:not(.preview-open):has(#effectif:not([hidden])) #effectif.panel {
+    width: 100%;
+    max-width: 1480px;
+  }
+  .layout:not(.preview-open):has(#effectif:not([hidden])) .workspace {
+    min-width: 0;
+  }
+}
+.ws-home-org-widget .ws-org-chart {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (min-width: 901px) {
+  .ws-home-org-widget .ws-org-tier {
+    flex-basis: 300px;
+  }
+}
