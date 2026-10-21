@@ -1430,6 +1430,7 @@ const actions = {
     if (!canManagePortalCategories(currentUser)) return toast('Action réservée au CO et à l’ACO.', 'err');
     const input = $('#p-category-name'), description = $('#p-category-description'), name = String(input?.value || '').trim();
     if (!name) { input?.focus(); return toast('Nom de catégorie obligatoire', 'warn'); }
+    if (portalSettings.categories.length >= 24) { input?.focus(); return toast('Maximum 24 catégories', 'warn'); }
     if (portalSettings.categories.some(c => c.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'))) { input?.focus(); return toast('Cette catégorie existe déjà', 'warn'); }
     const slug = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'publication';
     let id = 'custom-' + slug;
