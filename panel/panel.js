@@ -804,7 +804,7 @@ const renderAccess = async () => {
     return;
   }
   $('#access').innerHTML = `
-    <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère ta session et les autorisations de l’équipe.</p></div><div class="intro-mark">⌘</div></section>
+    <section class="page-intro access-intro"><div><div class="eyebrow">MRD WORKSPACE <span>· ADMINISTRATION</span></div><h1>Accès & sécurité</h1><p>Gère les comptes de l’équipe et leurs accréditations.</p></div><div class="intro-mark">⌘</div></section>
     <div class="access-grid">
       ${owner ? `      <section class="card access-worker">
         <header class="card-head"><span class="access-kicker">CONNEXION API</span><h2>Serveur MRD</h2><p>Adresse du Worker qui traite les demandes du panel.</p></header>
