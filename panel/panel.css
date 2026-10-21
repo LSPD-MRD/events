@@ -747,7 +747,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .confirm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: 12000;
   display: grid;
   place-items: center;
   padding: 22px;
@@ -1339,7 +1339,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 .ws-month-day>header>span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;color:var(--text);font:500 11px/1 Inter,system-ui,sans-serif}
 .ws-month-day>header>small{color:var(--muted);font:400 9px Inter,system-ui,sans-serif}
 .ws-month-day.is-today>header>span{background:var(--accent);color:#111827;font-weight:700}
-.ws-month-day-events{display:grid;align-content:start;gap:4px;min-width:0}
+.ws-month-day-events{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:5px;min-width:0;container-type:inline-size}
 .ws-month-event{display:grid;gap:3px;width:100%;min-width:0;padding:6px 6px 5px;text-align:left;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--line));border-left:2px solid var(--accent);border-radius:7px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));color:var(--text);cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
 .ws-month-event:hover{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-color:color-mix(in srgb,var(--accent) 48%,var(--line));transform:translateY(-1px)}
 .ws-month-event:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -1433,6 +1433,7 @@ input[type="time"]:hover,input[type="datetime-local"]:hover,input[type="month"]:
 }
 
 .ws-month-event-location{display:block;min-width:0;overflow:hidden;color:var(--muted);font:400 9px/1.25 Inter,system-ui,sans-serif;text-overflow:ellipsis;white-space:nowrap}
+@container (min-width: 220px){.ws-month-day-events{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.ws-month-event-location{display:none}}
 
 
