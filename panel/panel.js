@@ -814,7 +814,7 @@ const renderAccess = async () => {
         const allowed = ACCREDITATIONS_BY_GRADE[u.grade] || [];
         const selected = Array.isArray(u.accreditations) ? u.accreditations : (typeof u.accreditations === 'string' ? (() => { try { const parsed = JSON.parse(u.accreditations); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })() : []);
         return `<article class="user-row access-user-row access-user-card">
-          ${u.avatarData ? `<img class="access-user-avatar small" src="${u.avatarData}" alt="">` : `<div class="access-user-avatar small">${esc((u.displayName || u.username || 'M').slice(0,1).toUpperCase())}</div>`}
+          <span class="avatar-stack access-avatar-stack"><span class="access-user-avatar small avatar-fallback">${esc((u.displayName || u.username || 'M').slice(0,1).toUpperCase())}</span>${u.hasAvatar ? '<img class="access-user-avatar small avatar-lazy" data-avatar-user="' + esc(u.id) + '" loading="lazy" decoding="async" alt="">' : ''}</span>
           <div class="access-user-details">
             <b>${esc(u.displayName || u.username)}</b>
             <small>@${esc(u.username)} <span>·</span> ${esc(u.grade)} <span>·</span> ${esc(u.role)} <span>·</span> <i class="${u.active ? 'status-active' : 'status-disabled'}">${u.active ? 'Actif' : 'Désactivé'}</i></small>
@@ -824,6 +824,7 @@ const renderAccess = async () => {
           <button class="btn danger access-user-action ${u.active ? '' : 'access-user-delete'}" data-action="${u.active ? 'user-disable' : 'user-delete-inactive'}" data-user-id="${esc(u.id)}" data-user-name="${esc(u.username)}" ${Number(u.id) === Number(currentUser.id) || u.role === 'owner' ? 'disabled' : ''}>${u.active ? 'Désactiver' : (u.role === 'owner' ? 'Compte protégé' : 'Supprimer définitivement')}</button>
         </article>`;
       }).join('') || '<p class="empty">Aucun compte n’a été créé.</p>';
+      hydrateAvatars($('#users-list'));
     } catch (e) { $('#users-list').textContent = e.message; }
   }
 };
@@ -833,10 +834,27 @@ const applyProfileAvatar = () => {
   const image = $('#profile-avatar');
   const placeholder = $('#profile-avatar-placeholder');
   const src = currentUser?.avatarData || null;
+  const hasAvatar = !!(src || currentUser?.hasAvatar);
   if (image) {
-    image.style.display = src ? 'block' : 'none';
-    image.hidden = !src;
-    image.src = src || '';
+    image.style.display = hasAvatar ? 'block' : 'none';
+    image.hidden = !hasAvatar;
+    if (src) {
+      image.removeAttribute('data-avatar-user');
+      image.dataset.avatarReady = 'true';
+      image.src = src;
+      image.classList.add('is-loaded');
+    } else if (hasAvatar && currentUser?.id) {
+      image.removeAttribute('src');
+      image.classList.remove('is-loaded', 'is-missing');
+      image.dataset.avatarUser = String(currentUser.id);
+      delete image.dataset.avatarReady;
+      hydrateAvatars(image.parentElement);
+    } else {
+      image.removeAttribute('src');
+      image.classList.remove('is-loaded');
+      delete image.dataset.avatarUser;
+      delete image.dataset.avatarReady;
+    }
   }
   if (placeholder) {
     placeholder.style.display = src ? 'none' : 'block';
@@ -853,7 +871,7 @@ const renderProfile = () => {
         <form id="display-profile-form" class="ws-profile-form">
           <div class="profile-edit-row">
             <div class="profile-avatar-control"><button type="button" class="profile-preview-avatar profile-avatar-edit" id="profile-preview-avatar" data-action="choose-avatar" aria-label="Choisir une photo de profil" title="Choisir une photo de profil"><span class="profile-avatar-placeholder">♙</span></button><button type="button" class="profile-avatar-pencil" data-action="choose-avatar" aria-label="Modifier la photo de profil" title="Modifier la photo de profil"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></button></div>
-            <div class="profile-edit-identity"><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div><small class="profile-avatar-hint">Clique sur la photo ou le stylo pour la modifier · 10 Mo maximum</small></div>
+            <div class="profile-edit-identity"><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div><small class="profile-avatar-hint">La photo est optimisée automatiquement avant son envoi.</small></div>
           </div>
           <div class="profile-display-fields"><label>Prénom d’affichage<input name="first" maxlength="40" value="${esc(currentUser?.displayFirstName||'')}" placeholder="Prénom"></label><label>Nom d’affichage<input name="last" maxlength="40" value="${esc(currentUser?.displayLastName||'')}" placeholder="Nom"></label></div>
           <small>Le CO peut aussi gérer ces informations depuis l’espace Effectif.</small>
@@ -873,8 +891,15 @@ const renderProfile = () => {
       </div>
     </section>`;
   const preview = $('#profile-preview-avatar');
-  const src = currentUser?.avatarData || null;
-  preview.innerHTML = (pendingProfileAvatar !== undefined ? pendingProfileAvatar : src) ? `<img src="${pendingProfileAvatar !== undefined ? pendingProfileAvatar : src}" alt="Photo de profil">` : '<span class="profile-avatar-placeholder">♙</span>';
+  const src = pendingProfileAvatar !== undefined ? pendingProfileAvatar : (currentUser?.avatarData || null);
+  if (src) {
+    preview.innerHTML = '<img src="' + src + '" alt="Photo de profil">';
+  } else if (currentUser?.hasAvatar) {
+    preview.innerHTML = '<span class="profile-avatar-placeholder">♙</span><img class="avatar-lazy" data-avatar-user="' + esc(currentUser.id) + '" alt="" loading="lazy" decoding="async">';
+  } else {
+    preview.innerHTML = '<span class="profile-avatar-placeholder">♙</span>';
+  }
+  hydrateAvatars(preview);
   pendingProfileAvatar = undefined;
   profileAvatarChanged = false;
   applyProfileAvatar();
@@ -1235,6 +1260,7 @@ async function signIn(username, password) {
   if (!r.ok) throw new Error(data.error || ('Connexion refusée (' + r.status + ')'));
   localStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
+  applyProfileAvatar();
   setLoginFieldsVisible(true);
   try {
     applyPermissions();
@@ -1289,6 +1315,7 @@ async function restoreSession() {
     const data = await api.post('/auth/me', {});
     if (!data.user) throw new Error('Le serveur n’a pas renvoyé les informations du compte.');
     currentUser = data.user;
+    applyProfileAvatar();
     applyPermissions();
     setLoginFieldsVisible(true);
     $('#login-screen').hidden = true;
@@ -1380,21 +1407,41 @@ if (editorDropTarget) {
   });
 }
 const avatarInput = $('#avatar-file');
-const acceptAvatarFile = file => {
+const acceptAvatarFile = async file => {
   if (!file) return;
   if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 10 * 1024 * 1024) {
     toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 10 Mo maximum.', 'err'); return;
   }
-  const reader = new FileReader();
-  reader.onload = () => {
-    pendingProfileAvatar = String(reader.result);
+  try {
+    const objectUrl = URL.createObjectURL(file);
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => { URL.revokeObjectURL(objectUrl); resolve(element); };
+      element.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Image illisible.')); };
+      element.src = objectUrl;
+    });
+    const maxEdge = 320;
+    const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Optimisation d’image indisponible.');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+    if (!blob) throw new Error('Impossible de compresser cette image.');
+    pendingProfileAvatar = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('Lecture de l’image impossible.'));
+      reader.readAsDataURL(blob);
+    });
     profileAvatarChanged = true;
     const preview = $('#profile-preview-avatar');
-    if (preview) {
-      preview.innerHTML = `<img src="${pendingProfileAvatar}" alt="Aperçu de la photo de profil">`;
-    }
-  };
-  reader.readAsDataURL(file);
+    if (preview) preview.innerHTML = '<img src="' + pendingProfileAvatar + '" alt="Aperçu de la photo de profil">';
+  } catch (error) {
+    toast(error.message || 'Impossible de traiter cette image.', 'err');
+  }
 };
 avatarInput.onchange = e => { const file = e.target.files?.[0]; e.target.value = ''; acceptAvatarFile(file); };
 document.addEventListener('click', e => { const button = e.target.closest('[data-file-browse]'); if (button) { e.preventDefault(); e.stopPropagation(); document.getElementById(button.dataset.fileBrowse)?.click(); } });
@@ -1440,7 +1487,7 @@ const wsMember=id=>wsMembers.find(u=>Number(u.id)===Number(id));
 const wsDate=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
 const wsToday=()=>new Date().toISOString().slice(0,10);
 const wsOwner=()=>currentUser?.role==='owner'&&currentUser?.grade==='Commanding Officer';
-const wsAvatar=u=>u?.avatarData?'<img class="ws-avatar" src="'+u.avatarData+'" alt="">':'<span class="ws-avatar ws-avatar-fallback">'+esc(wsName(u).charAt(0).toUpperCase())+'</span>';
+const wsAvatar=u=>'<span class="avatar-stack ws-avatar-stack"><span class="ws-avatar ws-avatar-fallback avatar-fallback">'+esc(wsName(u).charAt(0).toUpperCase())+'</span>'+(u?.hasAvatar?'<img class="ws-avatar avatar-lazy" data-avatar-user="'+esc(u.id)+'" loading="lazy" decoding="async" alt="">':'')+'</span>';
 async function loadWorkspace(){
  const d=await api.post('/workspace/get',{});
  ws=d.workspace||{roster:{},calendar:[],tasks:[]};wsMembers=d.members||[];
@@ -1457,9 +1504,10 @@ function renderWorkspace(){
     tasks:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="m7.5 9 1.5 1.5L12 7.5M13.5 9H17m-9.5 5 1.5 1.5 3-3M13.5 14H17"/></svg>'
   };
   const tabs=[['home','Accueil'],['calendar','Calendrier'],['tasks','To-do list']];
-  root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE</div><h1>Division</h1></div></section><nav class="ws-tabs" aria-label="Navigation de l’effectif">'+tabs.map(([id,label])=>'<button type="button" class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'" '+(wsSection===id?'aria-current="page"':'')+'><span class="ws-tab-icon">'+icons[id]+'</span><span class="ws-tab-label">'+label+'</span>'+'</button>').join('')+'</nav><div id="ws-content"></div>';
+  root.innerHTML='<section class="page-intro ws-intro"><div><div class="eyebrow">MRD WORKSPACE</div><h1>Division</h1></div></section><nav class="ws-tabs" aria-label="Navigation de l’effectif">'+tabs.map(([id,label])=>'<button type="button" class="ws-tab '+(wsSection===id?'active':'')+'" data-ws-tab="'+id+'" aria-label="'+label+'" title="'+label+'" '+(wsSection===id?'aria-current="page"':'')+'><span class="ws-tab-icon" aria-hidden="true">'+icons[id]+'</span><span class="ws-tab-label">'+label+'</span>'+'</button>').join('')+'</nav><div id="ws-content"></div>';
   const c=$('#ws-content');if(wsSection==='home')c.innerHTML=renderWsHome();if(wsSection==='calendar')c.innerHTML=renderWsCalendar();if(wsSection==='tasks')c.innerHTML=renderWsTasks();
   initMrdDatePickers(c);
+  hydrateAvatars(root);
 }
 function renderWsHome(){
   const today=wsToday(),upcoming=[...ws.calendar].filter(e=>e.date>=today).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''))).slice(0,3);
@@ -1555,7 +1603,7 @@ document.addEventListener('submit',async e=>{
  if(f.matches('.ws-report-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-report',eventId:f.dataset.id,notes:d.get('notes'),work:d.get('work')});toast('Compte rendu enregistré.','ok');await wsReload('calendar');return;}
  if(f.id==='ws-task-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-upsert',task:{id:f.dataset.id,title:d.get('title'),dueDate:d.get('dueDate'),assignedTo:d.get('assignedTo'),description:d.get('description')}});toast('Tâche enregistrée.','ok');await wsReload('tasks');return;}
  if(f.matches('.ws-task-progress-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-progress',taskId:f.dataset.id,status:d.get('status'),report:d.get('report')});toast('Avancement enregistré.','ok');await wsReload('tasks');return;}
- if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),payload={displayFirstName:d.get('first'),displayLastName:d.get('last')};if(profileAvatarChanged)payload.avatarData=pendingProfileAvatar;const r=await api.post('/auth/profile',payload);currentUser={...currentUser,...r.user};pendingProfileAvatar=undefined;profileAvatarChanged=false;applyPermissions();renderProfile();toast('Profil enregistré.','ok');return;}
+ if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),payload={displayFirstName:d.get('first'),displayLastName:d.get('last')};if(profileAvatarChanged)payload.avatarData=pendingProfileAvatar;const r=await api.post('/auth/profile',payload);currentUser={...currentUser,...r.user,avatarData:r.avatarData||null,hasAvatar:!!r.avatarData};avatarDataCache.set(String(currentUser.id),Promise.resolve(r.avatarData||null));pendingProfileAvatar=undefined;profileAvatarChanged=false;applyPermissions();renderProfile();toast('Profil enregistré.','ok');return;}
  }catch(err){e.preventDefault();toast(err.message||'Enregistrement impossible.','err');}
 });
 
