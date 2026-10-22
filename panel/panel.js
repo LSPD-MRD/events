@@ -1342,6 +1342,7 @@ const renderEditorPageMenu = () => {
 
 const actions = {
   tab: el => setTab(el.dataset.tab),
+  'logs-refresh': () => renderLogs(),
   'toggle-pages': () => {
     const menu = $('#pages-menu'), next = menu.hidden;
     // Recalculer les droits à l'ouverture pour que Logs reflète la session courante.
