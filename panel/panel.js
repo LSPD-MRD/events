@@ -969,6 +969,40 @@ const renderPortal = () => {
   }
 };
 
+const renderLogs = async () => {
+  const root = $('#logs');
+  if (!root) return;
+  root.innerHTML = `
+    <section class="page-intro logs-intro">
+      <div><div class="eyebrow">MRD WORKSPACE <span>· SÉCURITÉ</span></div><h1>Journal d’activité</h1><p>Historique des actions récentes effectuées dans le panel.</p></div>
+      <button type="button" class="btn" data-action="logs-refresh">Actualiser</button>
+    </section>
+    <section class="card logs-card">
+      <header class="card-head"><h2>Dernières activités</h2><p>Les 200 entrées les plus récentes.</p></header>
+      <div class="card-body"><div class="logs-state"><span class="spinner" aria-hidden="true"></span> Chargement du journal…</div></div>
+    </section>`;
+  try {
+    const data = await api.post('/logs/list');
+    const logs = Array.isArray(data.logs) ? data.logs : [];
+    const body = root.querySelector('.logs-card .card-body');
+    if (!body) return;
+    if (!logs.length) {
+      body.innerHTML = '<div class="logs-empty"><strong>Aucune activité enregistrée</strong><span>Les actions apparaîtront ici lorsqu’elles seront effectuées.</span></div>';
+      return;
+    }
+    const formatDate = value => {
+      const date = new Date(Number(value));
+      return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(date) : 'Date inconnue';
+    };
+    body.innerHTML = '<div class="logs-table-wrap"><table class="logs-table"><thead><tr><th>Date</th><th>Compte</th><th>Action</th><th>Cible</th></tr></thead><tbody>' +
+      logs.map(log => '<tr><td class="logs-date">' + esc(formatDate(log.created_at)) + '</td><td><strong>' + esc(log.actor_username || 'Système') + '</strong><small class="logs-grade">' + esc(log.actor_grade || '—') + '</small></td><td><span class="logs-action">' + esc(log.action || 'Action') + '</span></td><td class="logs-target">' + esc(log.target || '—') + '</td></tr>').join('') +
+      '</tbody></table></div><div class="logs-count">' + logs.length + ' entrée' + (logs.length > 1 ? 's' : '') + ' affichée' + (logs.length > 1 ? 's' : '') + '</div>';
+  } catch (error) {
+    const body = root.querySelector('.logs-card .card-body');
+    if (body) body.innerHTML = '<div class="logs-error"><strong>Impossible de charger les logs</strong><span>' + esc(error?.message || 'Une erreur est survenue.') + '</span><button type="button" class="btn" data-action="logs-refresh">Réessayer</button></div>';
+  }
+};
+
 const renderAccess = async () => {
   const c = api.cfg();
   const owner = currentUser?.role === 'owner' && currentUser?.grade === 'Commanding Officer';
@@ -1308,6 +1342,7 @@ const renderEditorPageMenu = () => {
 
 const actions = {
   tab: el => setTab(el.dataset.tab),
+  'logs-refresh': () => renderLogs(),
   'toggle-pages': () => {
     const menu = $('#pages-menu'), next = menu.hidden;
     // Recalculer les droits à l'ouverture pour que Logs reflète la session courante.
