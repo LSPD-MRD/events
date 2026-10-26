@@ -1017,13 +1017,12 @@ const renderAccess = async () => {
       ${owner ? `      <section class="card access-worker">
         <header class="card-head"><span class="access-kicker">CONNEXION API</span><h2>Serveur MRD</h2><p>Adresse du Worker qui traite les demandes du panel.</p></header>
         <div class="card-body">
-          <div class="field"><label for="worker-url">URL du Worker</label><input id="worker-url" data-g="url" value="${esc(c.url)}" spellcheck="false" placeholder="https://votre-worker.workers.dev"><small>Ne change cette adresse que si le Worker est déplacé.</small></div>
+          <div class="field"><label for="worker-url">URL du Worker</label><input id="worker-url" data-g="url" value="${esc(c.url)}" spellcheck="false" placeholder="https://votre-worker.workers.dev"></div>
           <div class="actions access-worker-actions"><button class="btn primary" data-action="save-access" type="button">Enregistrer l’URL</button><button class="btn" data-action="test-access" type="button"><span aria-hidden="true">↗</span> Tester la connexion</button></div>
-          <p class="access-security-note"><span aria-hidden="true">◆</span> Les mots de passe et les droits sont gérés côté serveur. Ne partage jamais les secrets Cloudflare.</p>
         </div>
       </section>` : ''}
       ${accessManager ? `<section class="card access-accounts">
-        <header class="card-head access-card-head"><div><span class="access-kicker">GESTION DE L’ÉQUIPE</span><h2>Comptes & autorisations</h2><p>Crée un compte individuel et attribue uniquement les droits nécessaires.</p></div><span class="access-count-mark">01</span></header>
+        <header class="card-head access-card-head"><div><span class="access-kicker">GESTION DE L’ÉQUIPE</span><h2>Comptes & autorisations</h2></div><span class="access-count-mark">01</span></header>
         <div class="card-body">
           <form id="user-create-form" class="user-create access-create-form">
             <div class="field"><label for="new-username">Identifiant</label><input id="new-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="off" placeholder="ex. media.officer"></div>
@@ -1032,7 +1031,7 @@ const renderAccess = async () => {
             <div class="access-create-footer"><button class="btn primary create-account-btn" type="submit"><span aria-hidden="true">＋</span> Créer le compte</button></div>
           </form>
         </div>
-        <div class="access-list-head"><div><h3>Comptes existants</h3><p>Les comptes désactivés ne peuvent plus se connecter. Tu peux supprimer définitivement ceux qui ne sont plus nécessaires.</p></div><span id="access-user-count" class="access-user-count">—</span></div>
+        <div class="access-list-head"><div><h3>Comptes existants</h3></div><span id="access-user-count" class="access-user-count">—</span></div>
         <div class="card-body access-users-body"><div id="users-list" class="user-admin"><div class="access-loading"><span class="loading-dot"></span> Chargement des comptes…</div></div></div>
       </section>` : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>La création et la désactivation des comptes sont réservées au Owner.</p></div></section>`}
     </div>`;
