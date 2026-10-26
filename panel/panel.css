@@ -1859,3 +1859,7 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
 
 /* Dernière connexion dans les fiches de comptes de l’espace Accès */
 .access-last-login { display:block; margin-top:7px; color:var(--muted); font-size:10px; line-height:1.4; font-weight:500; font-variant-numeric:tabular-nums; }
+
+
+/* Protected built-in portal category: show the standard disabled delete control. */
+.portal-category-delete-disabled:disabled{opacity:.32;cursor:not-allowed;pointer-events:none;box-shadow:none;transform:none;filter:saturate(.45)}
