@@ -898,7 +898,7 @@ const renderPortal = () => {
           <span class="portal-visibility ${portalSettings.visible[key] ? 'is-visible' : 'is-hidden'}">${portalSettings.visible[key] ? 'Affichée' : 'Masquée'}</span>
           <div class="row-tools">
             <button type="button" class="btn sm ${portalSettings.visible[key] ? '' : 'primary'}" data-action="p-category-toggle" data-category-key="${esc(key)}">${portalSettings.visible[key] ? 'Masquer' : 'Afficher'}</button>
-            ${builtIn && key === 'events' ? '<span class="portal-category-protected" title="Catégorie système">Système</span>' : `<button type="button" class="icon danger" data-action="p-category-delete" data-category-key="${esc(key)}" title="Supprimer la catégorie">✕</button>`}
+            ${builtIn && key === 'events' ? '<button type="button" class="icon danger portal-category-delete-disabled" disabled aria-label="La catégorie Événements ne peut pas être supprimée" title="Catégorie protégée">✕</button>' : `<button type="button" class="icon danger" data-action="p-category-delete" data-category-key="${esc(key)}" title="Supprimer la catégorie">✕</button>`}
           </div>
         </div>`;
       }).join('')}</div>
