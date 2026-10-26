@@ -273,6 +273,9 @@ async function ensureAuthSchema(env) {
   if (!(columns.results || []).some(column => column.name === "display_last_name")) {
     await env.DB.prepare("ALTER TABLE users ADD COLUMN display_last_name TEXT NOT NULL DEFAULT ''").run();
   }
+  if (!(columns.results || []).some(column => column.name === "last_login_at")) {
+    await env.DB.prepare("ALTER TABLE users ADD COLUMN last_login_at INTEGER").run();
+  }
   await env.DB.prepare("INSERT OR IGNORE INTO mrd_workspace (workspace_key, workspace_json, updated_by, updated_at) VALUES ('main', ?, 'system', ?)").bind(JSON.stringify({ roster: {}, calendar: [], tasks: [] }), Date.now()).run();
   // Migration douce vers les quatre grades officiels.
   await env.DB.prepare("UPDATE users SET grade = 'Commanding Officer' WHERE role = 'owner' AND grade <> 'Commanding Officer'").run();
@@ -543,6 +546,8 @@ export default {
           "DELETE FROM login_attempts WHERE username = ?"
         ).bind(username).run();
 
+        await env.DB.prepare("UPDATE users SET last_login_at = ? WHERE id = ?").bind(now, u.id).run();
+
         const token = randomToken(32);
         const expires = Date.now() + 30 * 60 * 1000;
 
@@ -789,10 +794,10 @@ export default {
         }
 
         const result = await env.DB.prepare(
-          `SELECT id, username, grade, role, active, created_at, accreditations, display_first_name, display_last_name, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar FROM users ORDER BY created_at DESC`
+          `SELECT id, username, grade, role, active, created_at, last_login_at, accreditations, display_first_name, display_last_name, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar FROM users ORDER BY created_at DESC`
         ).all();
         return json({ users: (result.results || []).map(u => ({
-          ...publicUser(u), created_at: u.created_at, active: !!u.active,
+          ...publicUser(u), created_at: u.created_at, last_login_at: u.last_login_at ?? null, active: !!u.active,
           accreditations: u.role === "owner" ? [...ACCREDITATIONS] : parseAccreditations(u.accreditations)
         })) }, 200, cors);
       }

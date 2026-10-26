@@ -1855,3 +1855,7 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
   .portal-category-add-fields { grid-template-columns:minmax(0,1fr); }
   .logs-intro { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* Dernière connexion dans les fiches de comptes de l’espace Accès */
+.access-last-login { display:block; margin-top:7px; color:var(--muted); font-size:10px; line-height:1.4; font-weight:500; font-variant-numeric:tabular-nums; }
