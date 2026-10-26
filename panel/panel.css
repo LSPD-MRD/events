@@ -892,6 +892,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .accreditation-manager{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;position:relative}
 .accreditation-add{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:var(--surface);color:var(--accent);font-size:23px;line-height:1;cursor:pointer;transition:background .18s,border-color .18s,transform .18s,box-shadow .18s}
 .accreditation-add:hover,.accreditation-add[aria-expanded="true"]{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);transform:translateY(-1px)}
+.accreditation-add:disabled,.accreditation-add.is-disabled{cursor:not-allowed;opacity:.38;background:var(--surface-2);border-color:var(--line);color:var(--muted);box-shadow:none;transform:none}
 .accreditation-manager-copy{display:grid;gap:1px;min-width:0}
 .accreditation-manager-copy>span{font-size:12px;font-weight:650;color:var(--text)}
 .accreditation-manager-copy small{font-size:11px;color:var(--muted)}
