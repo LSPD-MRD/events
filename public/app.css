@@ -168,3 +168,7 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
 .publication-date-tag svg{display:block;flex:0 0 13px;width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .publication-card .publication-date{display:none}
 @media(max-width:420px){.publication-card-top{align-items:flex-start;flex-wrap:wrap}.publication-date-tag{font-size:10px;padding:5px 8px}}
+
+
+/* Masquer la navigation des catégories lorsqu'une fiche événement est ouverte. */
+body.mrd-app.event-view .portal-tabs { display: none !important; }
