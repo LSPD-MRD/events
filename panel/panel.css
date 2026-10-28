@@ -1863,3 +1863,12 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
 
 /* Protected built-in portal category: show the standard disabled delete control. */
 .portal-category-delete-disabled:disabled{opacity:.32;cursor:not-allowed;pointer-events:none;box-shadow:none;transform:none;filter:saturate(.45)}
+
+
+/* Navigation rapide de l’année dans le calendrier MRD. */
+.mrd-date-year-row{display:flex;align-items:center;justify-content:center;gap:12px;margin:-3px 0 10px;padding:5px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.mrd-date-year-row>span{color:var(--muted);font:600 9px 'JetBrains Mono',monospace;letter-spacing:.1em}
+.mrd-date-year-row>span strong{color:var(--text);font:700 12px Inter,sans-serif;letter-spacing:0}
+.mrd-date-year-nav{display:grid;place-items:center;width:25px;height:25px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--text);font-size:17px;line-height:1;cursor:pointer;transition:all .15s}
+.mrd-date-year-nav:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.mrd-date-year-nav:disabled{opacity:.25;cursor:not-allowed}

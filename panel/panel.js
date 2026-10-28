@@ -207,11 +207,15 @@ const mrdDateMarkup = input => {
       cells.push('<button type="button" class="'+classes.join(' ')+'" data-mrd-date="'+iso+'" '+(disabled?'disabled':'')+' aria-label="'+mrdDateFmt.format(date)+'" '+(iso===input.value?'aria-pressed="true"':'aria-pressed="false"')+'>'+n+'</button>');
     }
     popup.dataset.month=y+'-'+String(m+1).padStart(2,'0');
-    popup.innerHTML='<div class="mrd-date-pop-head"><button type="button" class="mrd-date-nav" data-mrd-date-action="prev" aria-label="Mois précédent">‹</button><div><strong>'+mrdMonthFmt.format(first)+'</strong><small>SÉLECTIONNER UNE DATE</small></div><button type="button" class="mrd-date-nav" data-mrd-date-action="next" aria-label="Mois suivant">›</button></div><div class="mrd-date-weekdays"><span>LUN</span><span>MAR</span><span>MER</span><span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span></div><div class="mrd-date-grid">'+cells.join('')+'</div><div class="mrd-date-pop-foot"><button type="button" class="mrd-date-today" data-mrd-date-action="today">Aujourd’hui</button><button type="button" class="mrd-date-clear" data-mrd-date-action="clear">Effacer</button></div>';
+    popup.innerHTML='<div class="mrd-date-pop-head"><button type="button" class="mrd-date-nav" data-mrd-date-action="prev" aria-label="Mois précédent">‹</button><div><strong>'+mrdMonthFmt.format(first)+'</strong><small>SÉLECTIONNER UNE DATE</small></div><button type="button" class="mrd-date-nav" data-mrd-date-action="next" aria-label="Mois suivant">›</button></div><div class="mrd-date-year-row"><button type="button" class="mrd-date-year-nav" data-mrd-date-action="prev-year" aria-label="Année précédente">−</button><span>ANNÉE <strong>'+y+'</strong></span><button type="button" class="mrd-date-year-nav" data-mrd-date-action="next-year" aria-label="Année suivante">+</button></div><div class="mrd-date-weekdays"><span>LUN</span><span>MAR</span><span>MER</span><span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span></div><div class="mrd-date-grid">'+cells.join('')+'</div><div class="mrd-date-pop-foot"><button type="button" class="mrd-date-today" data-mrd-date-action="today">Aujourd’hui</button><button type="button" class="mrd-date-clear" data-mrd-date-action="clear">Effacer</button></div>';
     const prev=popup.querySelector('[data-mrd-date-action="prev"]');
     const next=popup.querySelector('[data-mrd-date-action="next"]');
+    const prevYear=popup.querySelector('[data-mrd-date-action="prev-year"]');
+    const nextYear=popup.querySelector('[data-mrd-date-action="next-year"]');
     if(min&&new Date(Date.UTC(y,m-1,1))<new Date(Date.UTC(min.getUTCFullYear(),min.getUTCMonth(),1)))prev.disabled=true;
     if(max&&new Date(Date.UTC(y,m+1,1))>new Date(Date.UTC(max.getUTCFullYear(),max.getUTCMonth(),1)))next.disabled=true;
+    if(min&&y<=min.getUTCFullYear())prevYear.disabled=true;
+    if(max&&y>=max.getUTCFullYear())nextYear.disabled=true;
     const clearButton=popup.querySelector('[data-mrd-date-action="clear"]');
     if(input.dataset.originalRequired==='true')clearButton.disabled=true;
   };
@@ -236,10 +240,15 @@ const mrdDateMarkup = input => {
     const day=e.target.closest('[data-mrd-date]');
     if(day&&!day.disabled){setValue(day.dataset.mrdDate);return;}
     const action=e.target.closest('[data-mrd-date-action]')?.dataset.mrdDateAction;
-    if(action==='prev'||action==='next'){
+    if(action==='prev'||action==='next'||action==='prev-year'||action==='next-year'){
       const current=mrdDateUTC(popup.dataset.month+'-01');
-      const next=new Date(Date.UTC(current.getUTCFullYear(),current.getUTCMonth()+(action==='next'?1:-1),1));
-      popup.dataset.month=mrdISODate(next).slice(0,7);render();
+      const yearStep=action==='next-year'?1:action==='prev-year'?-1:0;
+      const monthStep=action==='next'?1:action==='prev'?-1:0;
+      const next=new Date(Date.UTC(current.getUTCFullYear()+yearStep,current.getUTCMonth()+monthStep,1));
+      const min=mrdDateUTC(input.min),max=mrdDateUTC(input.max);
+      if(min&&next<new Date(Date.UTC(min.getUTCFullYear(),min.getUTCMonth(),1)))return;
+      if(max&&next>new Date(Date.UTC(max.getUTCFullYear(),max.getUTCMonth(),1)))return;
+      popup.dataset.month=mrdISODate(next).slice(0,7);render();positionPopup();
     }else if(action==='today'){
       const today=mrdDateToday(),d=mrdDateUTC(today);
       if((!input.min||today>=input.min)&&(!input.max||today<=input.max)){setValue(today);}
@@ -256,7 +265,8 @@ document.addEventListener('focusin',e=>{if(e.target.matches?.('input[type="date"
 const repositionMrdDatePopovers=()=>document.querySelectorAll('.mrd-date-popover:not([hidden])').forEach(p=>{const t=p._mrdDateTrigger;if(!t||!t.isConnected){p.hidden=true;return;}const r=t.getBoundingClientRect(),w=Math.min(272,window.innerWidth-24),h=Math.min(360,window.innerHeight-24);p.style.left=Math.max(12,Math.min(r.left,window.innerWidth-w-12))+'px';p.style.top=Math.max(12,Math.min(r.bottom+5,window.innerHeight-h-12))+'px';});
 window.addEventListener('resize',repositionMrdDatePopovers);window.addEventListener('scroll',repositionMrdDatePopovers,true);
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.mrd-date-control')&&!e.target.closest('.mrd-date-popover'))$$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
+  const path=e.composedPath();
+  if(!e.target.closest('.mrd-date-control')&&!path.some(node=>node instanceof Element&&node.classList?.contains('mrd-date-popover')))$('.mrd-date-popover:not([hidden])').forEach(p=>{p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');});
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){const p=$$('.mrd-date-popover:not([hidden])').at(-1);if(p){p.hidden=true;p.closest('.mrd-date-control')?.classList.remove('is-open');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.setAttribute('aria-expanded','false');p.closest('.mrd-date-control')?.querySelector('.mrd-date-trigger')?.focus();}}
