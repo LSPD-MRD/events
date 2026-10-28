@@ -159,3 +159,12 @@ body.mrd-app.event-view #event-detail .back-btn:hover {
 
 /* Desktop: modestly widen event/publication content symmetrically on both sides. */
 @media (min-width: 761px){body.mrd-app:not(.event-view) .content-wrap{width:calc(min(100vw, 1560px) + (100vw - min(100vw, 1560px))/4);max-width:none;margin-left:auto;margin-right:auto;padding-right:clamp(20px,2vw,36px)}}
+
+
+/* Date de publication : tag compact intégré à l'en-tête de la vignette. */
+.publication-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin-bottom:2px}
+.publication-card-top .publication-label{min-width:0;line-height:1.4}
+.publication-date-tag{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;max-width:100%;padding:6px 9px;border:1px solid color-mix(in srgb,var(--app-accent) 30%,var(--app-line));border-radius:999px;background:var(--app-accent-soft);color:var(--app-accent);font-size:10px;font-weight:750;line-height:1.2;letter-spacing:.015em;white-space:nowrap}
+.publication-date-tag svg{display:block;flex:0 0 13px;width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.publication-card .publication-date{display:none}
+@media(max-width:420px){.publication-card-top{align-items:flex-start;flex-wrap:wrap}.publication-date-tag{font-size:10px;padding:5px 8px}}
