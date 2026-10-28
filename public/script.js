@@ -5,6 +5,18 @@
   const content = document.getElementById('event-content');
   let filter = localStorage.getItem('mrd-event-filter') || 'all';
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const formatPublicationDate = value => {
+    if (!value) return '';
+    const raw = String(value).trim();
+    let match = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|T|\s)/);
+    let date = match ? new Date(Date.UTC(Number(match[1]), Number(match[2])-1, Number(match[3]))) : null;
+    if (!date) {
+      match = raw.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2,4})$/);
+      if (match) { let year=Number(match[3]); if(year<100) year+=2000; date=new Date(Date.UTC(year,Number(match[2])-1,Number(match[1]))); }
+    }
+    if (!date || Number.isNaN(date.getTime())) return raw;
+    return new Intl.DateTimeFormat('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(date);
+  };
   function render() {
     root.innerHTML = '';
     const fallbackEvents = [
@@ -140,7 +152,7 @@
     const customIds = categories.filter(c=>c.id.startsWith('custom-')).map(c=>c.id);
     const publicationCards = (pubs, category) => pubs.map(p => {
       const label = customIds.includes(p.kind) ? category.name.toLocaleUpperCase('fr') : (kindLabels[p.kind] || category.name.toLocaleUpperCase('fr'));
-      return '<article class="publication-card"><div class="publication-card-top"><div class="publication-label">'+esc(label)+'</div>'+(p.date?'<span class="publication-date-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17"/></svg><span>'+esc(p.date)+'</span></span>':'')+'</div><h3>'+esc(p.title)+'</h3>'+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+'<button type="button" class="publication-thumb publication-preview-trigger" data-preview="'+esc(p.id)+'" aria-label="Agrandir l’aperçu de '+esc(p.title)+'">'+(p.mime==='application/pdf'?'<span class="publication-pdf-thumb"><b>PDF</b><small>Cliquer pour agrandir</small></span>':'<img src="'+encodeURI(p.file)+'" alt="Aperçu de '+esc(p.title)+'" loading="lazy">')+'</button><div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a></div></article>';
+      return '<article class="publication-card"><div class="publication-card-top"><div class="publication-label">'+esc(label)+'</div>'+(p.date?'<span class="publication-date-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17"/></svg><span>'+esc(formatPublicationDate(p.date))+'</span></span>':'')+'</div><h3>'+esc(p.title)+'</h3>'+(p.summary?'<p>'+esc(p.summary)+'</p>':'')+'<button type="button" class="publication-thumb publication-preview-trigger" data-preview="'+esc(p.id)+'" aria-label="Agrandir l’aperçu de '+esc(p.title)+'">'+(p.mime==='application/pdf'?'<span class="publication-pdf-thumb"><b>PDF</b><small>Cliquer pour agrandir</small></span>':'<img src="'+encodeURI(p.file)+'" alt="Aperçu de '+esc(p.title)+'" loading="lazy">')+'</button><div class="publication-actions"><a href="'+encodeURI(p.file)+'" target="_blank" rel="noopener">Ouvrir le document ↗</a></div></article>';
     }).join('');
     categories.filter(c=>c.type==='publications').forEach(category => {
       let pubs;
