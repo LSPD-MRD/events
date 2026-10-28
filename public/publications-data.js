@@ -1,5 +1,14 @@
 window.MRD_PUBLICATIONS = [
   {
+    "id": "vespucci-police-station-compte-rendu-de-ceremonie-25-10-2026-mvsfd6j7",
+    "kind": "comm-interne",
+    "title": "VESPUCCI POLICE STATION | Compte rendu de cérémonie - 25/10/2026",
+    "summary": "",
+    "date": "2026-10-25",
+    "mime": "image/png",
+    "file": "public/uploads/vespucci-police-station-compte-rendu-de-ceremonie-25-10-2026-mvsfd6j7.png"
+  },
+  {
     "id": "partenariat-los-santos-police-department-x-bean-machine-coff-mvid7x32",
     "kind": "comm-interne",
     "title": "🤝☕️Partenariat | Los Santos Police Department X Bean Machine Coffee",
