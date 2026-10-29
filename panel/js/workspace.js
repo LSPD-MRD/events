@@ -324,7 +324,8 @@ function renderWsRoster() {
     })
     .join('');
   return (
-        '<div class="ws-org-board-foot"><span>MEDIA RELATIONS DIVISION</span><span><b>·</b> EFFECTIF ACTIF</span></div></section>'
+    tiers +
+    '</div><div class="ws-org-board-foot"><span>MEDIA RELATIONS DIVISION</span><span><b>·</b> EFFECTIF ACTIF</span></div></section>'
   );
 }
 let wsCalendarMonth = (() => {
