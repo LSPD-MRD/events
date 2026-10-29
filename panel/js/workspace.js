@@ -324,6 +324,7 @@ function renderWsRoster() {
     })
     .join('');
   return (
+    '<section class="ws-org-board"><div class="ws-org-chart">' +
     tiers +
     '</div><div class="ws-org-board-foot"><span>MEDIA RELATIONS DIVISION</span><span><b>·</b> EFFECTIF ACTIF</span></div></section>'
   );
