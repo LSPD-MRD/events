@@ -1,4 +1,5 @@
 const WORKER_URL = 'https://mrd-panel-test.biscuitytb2102.workers.dev';
+try { localStorage.removeItem('mrdpanel-session'); } catch {}
 const KEY = { draft: 'mrdpanel-draft', access: 'mrdpanel-config', theme: 'mrd-theme', token: 'mrdpanel-session', avatar: 'mrdpanel-profile-avatar', activeTab: 'mrdpanel-active-tab' };
 const PAGE_LABELS = { edit: 'Événement', publications: 'Publications', portal: 'Portail', logs: 'Logs', access: 'Accès', profile: 'Mon compte', effectif: 'Division' };
 const ACCREDITATION_META = {
@@ -285,6 +286,7 @@ const setLoginFieldsVisible = visible => {
   $$('.field, #login-submit', form).forEach(control => { control.hidden = !visible; });
 };
 const clearLocalSession = (message = '') => {
+  sessionStorage.removeItem(KEY.token);
   localStorage.removeItem(KEY.token);
   currentUser = null;
   setLoginFieldsVisible(true);
