@@ -7,11 +7,15 @@ import { runInNewContext } from "node:vm";
 const workerSource = await readFile(new URL("../worker.js", import.meta.url), "utf8");
 const helpersStart = workerSource.indexOf("const RESERVED =");
 const helpersEnd = workerSource.indexOf("const gh = (env, path, init = {}) =>", helpersStart);
+const safeEqualStart = workerSource.indexOf("const safeEqual =", helpersEnd);
+const safeEqualEnd = workerSource.indexOf("const DUMMY_SALT =", safeEqualStart);
 
 assert.ok(helpersStart >= 0 && helpersEnd > helpersStart, "Worker validation helpers must be discoverable");
+assert.ok(safeEqualStart >= 0 && safeEqualEnd > safeEqualStart, "Worker comparison helper must be discoverable");
 
 const validationSandbox = {};
 const validationSource = `${workerSource.slice(helpersStart, helpersEnd)}
+${workerSource.slice(safeEqualStart, safeEqualEnd)}
 globalThis.__helpers = {
   isValidAvatarDataUrl,
   isValidISODate,
