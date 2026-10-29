@@ -2,7 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
+import { runInNewContext } from "node:vm";
+
+const workerSource = await readFile(new URL("../worker.js", import.meta.url), "utf8");
+const helpersStart = workerSource.indexOf("const decodeHtmlEntities =");
+const helpersEnd = workerSource.indexOf("const gh = (env, path, init = {}) =>", helpersStart);
+
+assert.ok(helpersStart >= 0 && helpersEnd > helpersStart, "Worker validation helpers must be discoverable");
+
+const validationSandbox = {};
+const validationSource = `${workerSource.slice(helpersStart, helpersEnd)}
+globalThis.__helpers = {
   isValidAvatarDataUrl,
   isValidISODate,
   isValidPublicationFile,
@@ -12,7 +22,21 @@ import {
   okSlug,
   okText,
   safeEqual,
-} from "../worker.js";
+};`;
+
+runInNewContext(validationSource, validationSandbox, { filename: "worker-validation-helpers.js" });
+
+const {
+  isValidAvatarDataUrl,
+  isValidISODate,
+  isValidPublicationFile,
+  isValidTime,
+  okEntry,
+  okHtml,
+  okSlug,
+  okText,
+  safeEqual,
+} = validationSandbox.__helpers;
 
 const toBase64 = (bytes) => Buffer.from(bytes).toString("base64");
 
