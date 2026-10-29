@@ -213,10 +213,10 @@ async function isLoginBlocked(env, key, maximum, now) {
 }
 async function recordLoginFailure(env, key, now) {
   await env.DB.prepare(
-    \`INSERT INTO login_attempts (username, attempts, window_until) VALUES (?, 1, ?)
+    `INSERT INTO login_attempts (username, attempts, window_until) VALUES (?, 1, ?)
      ON CONFLICT(username) DO UPDATE SET
        attempts = CASE WHEN login_attempts.window_until > ? THEN login_attempts.attempts + 1 ELSE 1 END,
-       window_until = CASE WHEN login_attempts.window_until > ? THEN login_attempts.window_until ELSE ? END\`
+       window_until = CASE WHEN login_attempts.window_until > ? THEN login_attempts.window_until ELSE ? END`
   ).bind(key, now + ATTEMPT_WINDOW_MS, now, now, now + ATTEMPT_WINDOW_MS).run();
 }
 
