@@ -170,3 +170,20 @@ test("the Division organigram keeps its board and chart wrappers after text simp
   assert.ok(!source.includes("Événements planifiés</small>"));
   assert.ok(!source.includes("À suivre cette semaine</small>"));
 });
+
+test("saving a member profile reloads a valid workspace section instead of leaving the content blank", async () => {
+  const source = await readFile(new URL("../../panel/js/workspace.js", import.meta.url), "utf8");
+
+  assert.match(
+    source,
+    /wsSection = \['home', 'calendar', 'tasks'\]\.includes\(section\) \? section : 'home';/,
+  );
+
+  const rosterStart = source.indexOf("if (f.matches('.ws-roster-form'))");
+  const rosterEnd = source.indexOf("if (f.id === 'ws-event-form')", rosterStart);
+  const rosterSubmit = source.slice(rosterStart, rosterEnd);
+
+  assert.ok(rosterStart >= 0 && rosterEnd > rosterStart);
+  assert.match(rosterSubmit, /await wsReload\('home'\);/);
+  assert.doesNotMatch(rosterSubmit, /await wsReload\('roster'\);/);
+});
