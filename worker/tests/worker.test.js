@@ -5,7 +5,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 
 const workerSource = await readFile(new URL("../worker.js", import.meta.url), "utf8");
-const helpersStart = workerSource.indexOf("const decodeHtmlEntities =");
+const helpersStart = workerSource.indexOf("const RESERVED =");
 const helpersEnd = workerSource.indexOf("const gh = (env, path, init = {}) =>", helpersStart);
 
 assert.ok(helpersStart >= 0 && helpersEnd > helpersStart, "Worker validation helpers must be discoverable");
