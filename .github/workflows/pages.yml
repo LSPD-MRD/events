@@ -30,10 +30,16 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare site (exclude Worker source and repository metadata)
+        run: |
+          mkdir -p _site
+          cp index.html sitemap.xml _site/
+          cp -r panel public _site/
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
