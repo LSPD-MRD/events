@@ -153,3 +153,20 @@ test("panel API client reads the same sessionStorage key used during sign-in", a
   assert.match(source, /const token = sessionStorage\.getItem\(KEY\.token\);/);
   assert.doesNotMatch(source, /const token = localStorage\.getItem\(KEY\.token\);/);
 });
+
+test("the Division organigram keeps its board and chart wrappers after text simplification", async () => {
+  const source = await readFile(new URL("../../panel/js/workspace.js", import.meta.url), "utf8");
+  const rosterStart = source.indexOf("function renderWsRoster()");
+  const rosterEnd = source.indexOf("let wsCalendarMonth", rosterStart);
+  const roster = source.slice(rosterStart, rosterEnd);
+  const returnedMarkup = roster.slice(roster.lastIndexOf("  return ("));
+
+  assert.ok(rosterStart >= 0 && rosterEnd > rosterStart);
+  assert.ok(returnedMarkup.includes('<section class="ws-org-board"><div class="ws-org-chart">'));
+  assert.ok(returnedMarkup.includes("tiers +"));
+  assert.ok(returnedMarkup.includes('</div><div class="ws-org-board-foot">'));
+  assert.ok(source.includes("Organigramme - Chaîne de commandement"));
+  assert.ok(!source.includes("Effectif de la division</small>"));
+  assert.ok(!source.includes("Événements planifiés</small>"));
+  assert.ok(!source.includes("À suivre cette semaine</small>"));
+});
