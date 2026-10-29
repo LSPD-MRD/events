@@ -5,7 +5,7 @@ async function signIn(username, password) {
   catch { throw new Error('Connexion au serveur impossible. Vérifie l’URL du Worker, sa disponibilité et le réglage CORS.'); }
   const data = await r.json().catch(()=>({}));
   if (!r.ok) throw new Error(data.error || ('Connexion refusée (' + r.status + ')'));
-  localStorage.setItem(KEY.token, data.token);
+  sessionStorage.setItem(KEY.token, data.token);
   currentUser = data.user;
   applyProfileAvatar();
   setLoginFieldsVisible(true);
@@ -20,7 +20,8 @@ async function signIn(username, password) {
   }
 }
 async function signOut(show = true) {
-  try { if (localStorage.getItem(KEY.token)) await api.post('/auth/logout', {}); } catch {}
+  try { if (sessionStorage.getItem(KEY.token)) await api.post('/auth/logout', {}); } catch {}
+  sessionStorage.removeItem(KEY.token);
   localStorage.removeItem(KEY.token); currentUser = null;
   $('#login-screen').hidden = false;
   $('#login-pass').value = '';
@@ -47,7 +48,7 @@ function applyPermissions() {
   }
 }
 async function restoreSession() {
-  const token = localStorage.getItem(KEY.token);
+  const token = sessionStorage.getItem(KEY.token);
   if (!token) {
     setLoginFieldsVisible(true);
     $('#login-screen').hidden = false;
