@@ -12,7 +12,7 @@ const wsToday=()=>new Date().toISOString().slice(0,10);
 const wsOwner=()=>currentUser?.role==='owner'&&currentUser?.grade==='Commanding Officer';
 const wsAvatar=u=>'<span class="avatar-stack ws-avatar-stack"><span class="ws-avatar ws-avatar-fallback avatar-fallback">'+esc(wsName(u).charAt(0).toUpperCase())+'</span>'+(u?.hasAvatar?'<img class="ws-avatar avatar-lazy" data-avatar-user="'+esc(u.id)+'" loading="lazy" decoding="async" alt="">':'')+'</span>';
 async function saveWorkspace(payload){
- const result=await saveWorkspace({...payload,updatedAt:wsUpdatedAt});
+ const result=await api.post('/workspace/save',{...payload,updatedAt:wsUpdatedAt});
  if(result.workspaceUpdatedAt!=null) wsUpdatedAt=Number(result.workspaceUpdatedAt);
  return result;
 }
