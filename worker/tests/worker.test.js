@@ -31,19 +31,33 @@ test("text and event-card validation reject markup and invalid paths", () => {
   assert.equal(okText("x".repeat(300)), false);
 
   assert.equal(
-    okEntry({ status: "live", href: "open-house/", icon: "calendar", title: "Open House", desc: "Desc", date: "2026-10-29" }),
+    okEntry({
+      status: "live",
+      href: "open-house/",
+      icon: "calendar",
+      title: "Open House",
+      desc: "Desc",
+      date: "2026-10-29",
+    }),
     true,
   );
   assert.equal(
-    okEntry({ status: "live", href: "../secret/", icon: "calendar", title: "Title", desc: "Desc", date: "2026-10-29" }),
+    okEntry({
+      status: "live",
+      href: "../secret/",
+      icon: "calendar",
+      title: "Title",
+      desc: "Desc",
+      date: "2026-10-29",
+    }),
     false,
   );
 });
 
 test("HTML publication guard rejects script-capable markup", () => {
   assert.equal(okHtml('<div class="page"><p>Contenu MRD</p></div>'), true);
-  assert.equal(okHtml('<script>alert(1)</script>'), false);
-  assert.equal(okHtml('<img src=x onerror=alert(1)>'), false);
+  assert.equal(okHtml("<script>alert(1)</script>"), false);
+  assert.equal(okHtml("<img src=x onerror=alert(1)>"), false);
   assert.equal(okHtml('<a href="javascript:alert(1)">ouvrir</a>'), false);
   assert.equal(okHtml('<img src="jav&#x61;script:alert(1)">'), false);
 });
@@ -87,10 +101,9 @@ test("avatar data URLs enforce MIME signature and payload size", () => {
   assert.equal(isValidAvatarDataUrl(`data:image/png;base64,${jpeg}`), false);
   assert.equal(isValidAvatarDataUrl("data:image/svg+xml;base64,PHN2Zz4="), false);
 
-  const oversized = toBase64(Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    Buffer.alloc(300 * 1024),
-  ]));
+  const oversized = toBase64(
+    Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.alloc(300 * 1024)]),
+  );
   assert.equal(isValidAvatarDataUrl(`data:image/png;base64,${oversized}`), false);
 });
 

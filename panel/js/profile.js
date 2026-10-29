@@ -38,7 +38,7 @@ const renderProfile = () => {
     <section class="card profile-session-card">
       <header class="card-head"><h2>Compte connecté</h2><p>Informations de ta session actuelle.</p></header>
       <div class="card-body">
-        <div class="access-user"><div class="access-user-avatar">${esc(wsName(currentUser).slice(0,1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(wsName(currentUser))}</strong><span>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.role || '—')}</span></div>
+        <div class="access-user"><div class="access-user-avatar">${esc(wsName(currentUser).slice(0, 1).toUpperCase())}</div><div class="access-user-meta"><strong>${esc(wsName(currentUser))}</strong><span>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || 'Aucun grade')}</span></div><span class="role-pill">${esc(currentUser?.role || '—')}</span></div>
         <button class="btn access-logout" data-action="logout" type="button">Se déconnecter</button>
       </div>
     </section>
@@ -50,7 +50,7 @@ const renderProfile = () => {
             <div class="profile-avatar-control"><button type="button" class="profile-preview-avatar profile-avatar-edit" id="profile-preview-avatar" data-action="choose-avatar" aria-label="Choisir une photo de profil" title="Choisir une photo de profil"><span class="profile-avatar-placeholder">♙</span></button><button type="button" class="profile-avatar-pencil" data-action="choose-avatar" aria-label="Modifier la photo de profil" title="Modifier la photo de profil"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"/></svg></button></div>
             <div class="profile-edit-identity"><strong>${esc(wsName(currentUser))}</strong><small>@${esc(currentUser?.username || '')} · ${esc(currentUser?.grade || '')}</small><div class="accreditation-tags profile-accreditation-tags">${accreditationTags(currentUser?.accreditations || [])}</div><small class="profile-avatar-hint">La photo est optimisée automatiquement avant son envoi.</small></div>
           </div>
-          <div class="profile-display-fields"><label>Prénom d’affichage<input name="first" maxlength="40" value="${esc(currentUser?.displayFirstName||'')}" placeholder="Prénom"></label><label>Nom d’affichage<input name="last" maxlength="40" value="${esc(currentUser?.displayLastName||'')}" placeholder="Nom"></label></div>
+          <div class="profile-display-fields"><label>Prénom d’affichage<input name="first" maxlength="40" value="${esc(currentUser?.displayFirstName || '')}" placeholder="Prénom"></label><label>Nom d’affichage<input name="last" maxlength="40" value="${esc(currentUser?.displayLastName || '')}" placeholder="Nom"></label></div>
           <small>Le CO peut aussi gérer ces informations depuis l’espace Effectif.</small>
           <button class="btn primary profile-save-button" type="submit">Enregistrer le profil</button>
         </form>
@@ -68,11 +68,15 @@ const renderProfile = () => {
       </div>
     </section>`;
   const preview = $('#profile-preview-avatar');
-  const src = pendingProfileAvatar !== undefined ? pendingProfileAvatar : (currentUser?.avatarData || null);
+  const src =
+    pendingProfileAvatar !== undefined ? pendingProfileAvatar : currentUser?.avatarData || null;
   if (src) {
     preview.innerHTML = '<img src="' + src + '" alt="Photo de profil">';
   } else if (currentUser?.hasAvatar) {
-    preview.innerHTML = '<span class="profile-avatar-placeholder">♙</span><img class="avatar-lazy" data-avatar-user="' + esc(currentUser.id) + '" alt="" loading="lazy" decoding="async">';
+    preview.innerHTML =
+      '<span class="profile-avatar-placeholder">♙</span><img class="avatar-lazy" data-avatar-user="' +
+      esc(currentUser.id) +
+      '" alt="" loading="lazy" decoding="async">';
   } else {
     preview.innerHTML = '<span class="profile-avatar-placeholder">♙</span>';
   }
@@ -81,4 +85,3 @@ const renderProfile = () => {
   profileAvatarChanged = false;
   applyProfileAvatar();
 };
-

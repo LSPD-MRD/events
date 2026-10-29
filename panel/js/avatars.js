@@ -22,7 +22,7 @@ function fetchAvatarData(id) {
   const key = String(id || '');
   if (!key) return Promise.resolve(null);
   if (avatarDataCache.has(key)) return avatarDataCache.get(key);
-  const promise = new Promise(resolve => {
+  const promise = new Promise((resolve) => {
     avatarRequestQueue.set(key, resolve);
     if (!avatarBatchScheduled) {
       avatarBatchScheduled = true;
@@ -42,7 +42,10 @@ function revealLoadedAvatar(image) {
     return;
   }
   const previous = image.previousElementSibling;
-  if (previous?.classList.contains('avatar-fallback') || previous?.classList.contains('profile-avatar-placeholder')) {
+  if (
+    previous?.classList.contains('avatar-fallback') ||
+    previous?.classList.contains('profile-avatar-placeholder')
+  ) {
     previous.classList.add('is-hidden');
   }
   const next = image.nextElementSibling;
@@ -62,36 +65,44 @@ async function loadDeferredAvatar(image) {
     return;
   }
   image.addEventListener('load', () => revealLoadedAvatar(image), { once: true });
-  image.addEventListener('error', () => {
-    image.classList.add('is-missing');
-    image.removeAttribute('src');
-    if (image.id === 'profile-avatar') {
-      image.hidden = true;
-      const placeholder = $('#profile-avatar-placeholder');
-      if (placeholder) placeholder.hidden = false;
-    }
-  }, { once: true });
+  image.addEventListener(
+    'error',
+    () => {
+      image.classList.add('is-missing');
+      image.removeAttribute('src');
+      if (image.id === 'profile-avatar') {
+        image.hidden = true;
+        const placeholder = $('#profile-avatar-placeholder');
+        if (placeholder) placeholder.hidden = false;
+      }
+    },
+    { once: true },
+  );
   image.src = src;
   if (image.complete && image.naturalWidth) revealLoadedAvatar(image);
 }
 
-const avatarObserver = typeof IntersectionObserver === 'function'
-  ? new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        avatarObserver.unobserve(entry.target);
-        loadDeferredAvatar(entry.target);
-      });
-    }, { rootMargin: '160px' })
-  : null;
+const avatarObserver =
+  typeof IntersectionObserver === 'function'
+    ? new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            avatarObserver.unobserve(entry.target);
+            loadDeferredAvatar(entry.target);
+          });
+        },
+        { rootMargin: '160px' },
+      )
+    : null;
 
 function hydrateAvatars(root = document) {
   if (!root?.querySelectorAll) return;
   const images = [
     ...(root.matches?.('img[data-avatar-user]') ? [root] : []),
-    ...root.querySelectorAll('img[data-avatar-user]')
+    ...root.querySelectorAll('img[data-avatar-user]'),
   ];
-  images.forEach(image => {
+  images.forEach((image) => {
     if (image.dataset.avatarReady === 'true') return;
     image.dataset.avatarReady = 'true';
     if (avatarObserver) avatarObserver.observe(image);
@@ -113,10 +124,16 @@ const field = (path, label, { rows = 0, placeholder = '', hint = '' } = {}) => {
   return `<div class="field"><label for="${id}">${label}</label>${control}${hint ? `<small>${hint}</small>` : ''}</div>`;
 };
 
-const segment = (action, path, options, current) => `<div class="seg">${Object.entries(options).map(([value, label]) =>
-  `<button type="button" class="${value === current ? 'active' : ''}" data-action="${action}" data-path="${path}" data-value="${value}">${label}</button>`).join('')}</div>`;
+const segment = (action, path, options, current) =>
+  `<div class="seg">${Object.entries(options)
+    .map(
+      ([value, label]) =>
+        `<button type="button" class="${value === current ? 'active' : ''}" data-action="${action}" data-path="${path}" data-value="${value}">${label}</button>`,
+    )
+    .join('')}</div>`;
 
-const toggle = (key, label, on) => `<label class="switch"><input type="checkbox" data-s="${key}"${on ? ' checked' : ''}><span></span>${label}</label>`;
+const toggle = (key, label, on) =>
+  `<label class="switch"><input type="checkbox" data-s="${key}"${on ? ' checked' : ''}><span></span>${label}</label>`;
 
 const sectionHtml = (s, i) => `
 <details class="sec" data-i="${i}"${s._c ? '' : ' open'}>
@@ -135,17 +152,22 @@ const sectionHtml = (s, i) => `
       <div class="field"><label>Icône</label><input data-s="icon" value="${esc(s.icon)}"></div>
       <div class="field"><label>Titre</label><input data-s="title" value="${esc(s.title)}"></div>
     </div>
-    <div class="field"><label>Type de bloc</label><select data-s="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}"${k === s.type ? ' selected' : ''}>${v.label}</option>`).join('')}</select></div>
+    <div class="field"><label>Type de bloc</label><select data-s="type">${Object.entries(TYPES)
+      .map(([k, v]) => `<option value="${k}"${k === s.type ? ' selected' : ''}>${v.label}</option>`)
+      .join('')}</select></div>
     <div class="field"><label>Chapeau</label><input data-s="lead" value="${esc(s.lead)}" placeholder="Phrase d'introduction au-dessus du contenu"></div>
     <div class="field"><label>Contenu</label><textarea data-s="body" rows="6">${esc(s.body)}</textarea><small>${esc(TYPES[s.type].hint)}</small></div>
     <div class="field"><label>Encadré vert</label><input data-s="box" value="${esc(s.box)}" placeholder="🧮 | Total = **A + B**"></div>
     <div class="field"><label>Note</label><input data-s="note" value="${esc(s.note)}" placeholder="Remarque affichée sous le contenu"></div>
     ${s.type === 'text' ? `<div>${toggle('italic', 'Texte en italique', s.italic)}</div>` : ''}
-    ${s.type === 'list' ? `<div>${toggle('variant', 'Liste d\'interdictions (✕)', s.variant)}</div>` : ''}
+    ${s.type === 'list' ? `<div>${toggle('variant', "Liste d'interdictions (✕)", s.variant)}</div>` : ''}
   </div>
 </details>`;
 
-const renderSections = () => { $('#secs').innerHTML = ev.sections.map(sectionHtml).join('') || '<p class="empty">Aucune section pour le moment.</p>'; };
+const renderSections = () => {
+  $('#secs').innerHTML =
+    ev.sections.map(sectionHtml).join('') || '<p class="empty">Aucune section pour le moment.</p>';
+};
 
 const renderEditor = () => {
   $('#edit').innerHTML = `
@@ -179,7 +201,7 @@ const renderEditor = () => {
       <summary>Personnalisation avancée</summary>
       <div class="card-body">
         <div class="grid2">${field('meta.badge', 'Badge')}${field('meta.divider', 'Séparateur')}</div>
-        ${field('meta.pageTitle', 'Titre de l\'onglet', { hint: 'Vide : « Event - » suivi du titre.' })}
+        ${field('meta.pageTitle', "Titre de l'onglet", { hint: 'Vide : « Event - » suivi du titre.' })}
         ${field('meta.logo', 'Chemin du logo')}
         <div class="grid2">${field('meta.fl', 'Pied de page gauche')}${field('meta.fr', 'Pied de page droit')}</div>
       </div>
@@ -202,11 +224,17 @@ const renderEditor = () => {
         <div id="secs"></div>
         <div>
           <span class="label">Ajouter un bloc</span>
-          <div class="add-grid">${Object.entries(TYPES).map(([k, v]) => `<button class="chip" data-action="add" data-type="${k}">+ ${v.label}</button>`).join('')}</div>
+          <div class="add-grid">${Object.entries(TYPES)
+            .map(
+              ([k, v]) =>
+                `<button class="chip" data-action="add" data-type="${k}">+ ${v.label}</button>`,
+            )
+            .join('')}</div>
         </div>
       </div>
     </section>`;
-  $$('[data-p]').forEach(x => { x.value = get(ev, x.dataset.p) ?? ''; });
+  $$('[data-p]').forEach((x) => {
+    x.value = get(ev, x.dataset.p) ?? '';
+  });
   renderSections();
 };
-
