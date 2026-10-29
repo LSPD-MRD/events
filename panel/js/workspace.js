@@ -688,7 +688,7 @@ function wsTaskForm(task) {
   );
 }
 async function wsReload(section = wsSection) {
-  wsSection = section;
+  wsSection = ['home', 'calendar', 'tasks'].includes(section) ? section : 'home';
   localStorage.setItem(WS_SECTION_KEY, wsSection);
   await loadWorkspace();
 }
@@ -820,7 +820,7 @@ document.addEventListener('submit', async (e) => {
         },
       });
       toast('Fiche membre enregistrée.', 'ok');
-      await wsReload('roster');
+      await wsReload('home');
       return;
     }
     if (f.id === 'ws-event-form') {
