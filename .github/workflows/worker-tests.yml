@@ -7,6 +7,8 @@ on:
     paths:
       - "worker/**"
       - "panel/js/**"
+      - "public/script.js"
+      - ".prettierrc.json"
       - ".github/workflows/worker-tests.yml"
   pull_request:
     branches:
@@ -14,6 +16,8 @@ on:
     paths:
       - "worker/**"
       - "panel/js/**"
+      - "public/script.js"
+      - ".prettierrc.json"
       - ".github/workflows/worker-tests.yml"
 
 permissions:
@@ -44,9 +48,12 @@ jobs:
       - name: Run regression tests
         run: npm test --prefix worker
 
+      - name: Check first-party JavaScript formatting
+        run: npx --yes prettier@3.9.6 --check worker/worker.js "worker/tests/*.js" "panel/js/*.js" public/script.js
+
       - name: Check browser JavaScript syntax
         shell: bash
         run: |
-          for file in panel/js/*.js public/*.js; do
+          for file in panel/js/*.js public/script.js; do
             node --check "$file"
           done
