@@ -5,6 +5,9 @@
   const content = document.getElementById('event-content');
   let filter = localStorage.getItem('mrd-event-filter') || 'all';
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const cleanHtml = value => (window.DOMPurify && typeof value === 'string')
+    ? window.DOMPurify.sanitize(value, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style','form','meta','link','base','iframe','object','embed'], FORBID_ATTR: ['srcdoc','formaction'] })
+    : '';
   const formatPublicationDate = value => {
     if (!value) return '';
     const raw = String(value).trim();
@@ -53,7 +56,7 @@
       if (key) html = eventContent[key];
     }
     if (!html && ev.content) html = ev.content;
-    content.innerHTML = html || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title || 'Événement MRD')}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">◷ ${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée complète sera ajoutée prochainement.</p></article>`;
+    content.innerHTML = cleanHtml(html) || `<article class="detail-fallback"><span class="eyebrow">${esc(groups[ev.status] || 'ÉVÉNEMENT')}</span><h2>${esc(ev.title || 'Événement MRD')}</h2><p>${esc(ev.desc || 'Les informations détaillées seront publiées prochainement.')}</p>${ev.date ? `<p class="event-date">◷ ${esc(ev.date)}</p>` : ''}<p class="wip-note">La fiche détaillée complète sera ajoutée prochainement.</p></article>`;
     // Les anciennes fiches utilisaient un observer d'animation absent du portail actuel.
     // Retirer la classe "reveal" empêche leurs sections de rester à opacity: 0.
     content.querySelectorAll('.reveal').forEach(el => {
