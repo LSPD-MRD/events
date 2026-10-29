@@ -134,11 +134,11 @@ function renderWsHome() {
   const stats =
     '<div class="ws-stat-grid ws-home-stats"><article class="ws-stat"><span>Membres actifs</span><strong>' +
     wsMembers.length +
-    '</strong><small>Effectif de la division</small></article><article class="ws-stat"><span>Rendez-vous à venir</span><strong>' +
+    '</strong></article><article class="ws-stat"><span>Rendez-vous à venir</span><strong>' +
     ws.calendar.filter((e) => e.date >= today).length +
-    '</strong><small>Événements planifiés</small></article><article class="ws-stat"><span>Mes tâches en cours</span><strong>' +
+    '</strong></article><article class="ws-stat"><span>Mes tâches en cours</span><strong>' +
     ws.tasks.filter((t) => myProgress(t).status === 'doing').length +
-    '</strong><small>À suivre cette semaine</small></article></div>';
+    '</strong></article></div>';
   const eventRows = upcoming.length
     ? upcoming
         .map(
@@ -189,7 +189,7 @@ function renderWsHome() {
     eventRows +
     '</div></section><section class="ws-home-card"><header class="ws-home-card-head"><div><span class="ws-home-kicker">À SUIVRE</span><h2>Mes tâches</h2></div><button type="button" class="ws-home-link" data-ws-tab="tasks">Tout voir <span aria-hidden="true">↗</span></button></header><div class="ws-home-rows">' +
     taskRows +
-    '</div></section></div><section class="ws-home-org-widget"><header class="ws-home-card-head"><div><span class="ws-home-kicker">STRUCTURE DE LA DIVISION</span><h2>Organigramme MRD</h2></div><span class="ws-home-org-count">' +
+    '</div></section></div><section class="ws-home-org-widget"><header class="ws-home-card-head"><div><span class="ws-home-kicker">STRUCTURE DE LA DIVISION</span><h2>Organigramme - Chaîne de commandement</h2></div><span class="ws-home-org-count">' +
     wsMembers.length +
     ' membres</span></header>' +
     renderWsRoster() +
@@ -324,11 +324,7 @@ function renderWsRoster() {
     })
     .join('');
   return (
-    '<section class="ws-org-board"><div class="ws-org-board-head"><span class="ws-org-pulse"></span><div><strong>MRD · STRUCTURE OPÉRATIONNELLE</strong><small>CHAÎNE DE COMMANDEMENT <span>·</span> ' +
-    wsMembers.length +
-    ' MEMBRES</small></div><span class="ws-org-board-mark">LSPD / MRD</span></div><div class="ws-org-chart">' +
-    tiers +
-    '</div><div class="ws-org-board-foot"><span>MEDIA RELATIONS DIVISION</span><span>ORGANIGRAMME <b>·</b> EFFECTIF ACTIF</span></div></section>'
+        '<div class="ws-org-board-foot"><span>MEDIA RELATIONS DIVISION</span><span><b>·</b> EFFECTIF ACTIF</span></div></section>'
   );
 }
 let wsCalendarMonth = (() => {
