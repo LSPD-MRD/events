@@ -10,8 +10,14 @@ const helpersEnd = workerSource.indexOf("const gh = (env, path, init = {}) =>", 
 const safeEqualStart = workerSource.indexOf("const safeEqual =", helpersEnd);
 const safeEqualEnd = workerSource.indexOf("const DUMMY_SALT =", safeEqualStart);
 
-assert.ok(helpersStart >= 0 && helpersEnd > helpersStart, "Worker validation helpers must be discoverable");
-assert.ok(safeEqualStart >= 0 && safeEqualEnd > safeEqualStart, "Worker comparison helper must be discoverable");
+assert.ok(
+  helpersStart >= 0 && helpersEnd > helpersStart,
+  "Worker validation helpers must be discoverable",
+);
+assert.ok(
+  safeEqualStart >= 0 && safeEqualEnd > safeEqualStart,
+  "Worker comparison helper must be discoverable",
+);
 
 const validationSandbox = { atob: globalThis.atob };
 const validationSource = `${workerSource.slice(helpersStart, helpersEnd)}
