@@ -1,0 +1,59 @@
+name: Worker regression tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "worker/**"
+      - "panel/js/**"
+      - "public/script.js"
+      - ".prettierrc.json"
+      - ".github/workflows/worker-tests.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "worker/**"
+      - "panel/js/**"
+      - "public/script.js"
+      - ".prettierrc.json"
+      - ".github/workflows/worker-tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Check Worker syntax
+        run: npm run check --prefix worker
+
+      - name: Run regression tests
+        run: npm test --prefix worker
+
+      - name: Check first-party JavaScript formatting
+        run: npx --yes prettier@3.9.6 --check worker/worker.js "worker/tests/*.js" "panel/js/*.js" public/script.js
+
+      - name: Check browser JavaScript syntax
+        shell: bash
+        run: |
+          for file in panel/js/*.js public/script.js; do
+            node --check "$file"
+          done
