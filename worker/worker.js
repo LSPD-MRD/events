@@ -674,7 +674,7 @@ export default {
       }
 
       if (route === "/workspace/get") {
-        const row = await env.DB.prepare("SELECT workspace_json FROM mrd_workspace WHERE workspace_key = 'main'").first();
+        const row = await env.DB.prepare("SELECT workspace_json, updated_at FROM mrd_workspace WHERE workspace_key = 'main'").first();
         let workspace = { roster: {}, calendar: [], tasks: [] };
         try { workspace = { ...workspace, ...JSON.parse(row?.workspace_json || "{}") }; } catch {}
         const usersResult = await env.DB.prepare("SELECT id, username, grade, role, active, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, accreditations, display_first_name, display_last_name, created_at FROM users WHERE active = 1 ORDER BY created_at ASC").all();
@@ -690,17 +690,27 @@ export default {
             task.progress = Object.fromEntries(Object.entries(task.progress || {}).filter(([id]) => Number(id) === Number(user.id)));
           }
         }
-        return json({ workspace, members, canManageRoster: isOwner(user), canManageCalendar: isAdmin(user), canManageTasks: isAdmin(user) }, 200, cors);
+        return json({ workspace, workspaceUpdatedAt: Number(row?.updated_at || 0), members, canManageRoster: isOwner(user), canManageCalendar: isAdmin(user), canManageTasks: isAdmin(user) }, 200, cors);
       }
 
       if (route === "/workspace/save") {
         const action = String(b.action || "");
-        const row = await env.DB.prepare("SELECT workspace_json FROM mrd_workspace WHERE workspace_key = 'main'").first();
+        const row = await env.DB.prepare("SELECT workspace_json, updated_at FROM mrd_workspace WHERE workspace_key = 'main'").first();
+        const expectedUpdatedAt = Number(b.updatedAt);
+        const currentUpdatedAt = Number(row?.updated_at || 0);
+        if (!Number.isFinite(expectedUpdatedAt) || expectedUpdatedAt !== currentUpdatedAt) {
+          return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
+        }
         let ws = { roster: {}, calendar: [], tasks: [] };
         try { ws = { ...ws, ...JSON.parse(row?.workspace_json || "{}") }; } catch {}
+        let savedUpdatedAt = currentUpdatedAt;
         const saveWs = async target => {
-          await env.DB.prepare("UPDATE mrd_workspace SET workspace_json = ?, updated_by = ?, updated_at = ? WHERE workspace_key = 'main'")
-            .bind(JSON.stringify(target), user.username, Date.now()).run();
+          const nextUpdatedAt = Math.max(Date.now(), expectedUpdatedAt + 1);
+          const result = await env.DB.prepare("UPDATE mrd_workspace SET workspace_json = ?, updated_by = ?, updated_at = ? WHERE workspace_key = 'main' AND updated_at = ?")
+            .bind(JSON.stringify(target), user.username, nextUpdatedAt, expectedUpdatedAt).run();
+          if (!result.meta || Number(result.meta.changes || 0) !== 1) return false;
+          savedUpdatedAt = nextUpdatedAt;
+          return true;
         };
         const safeText = (value, max = 1000) => String(value || "").trim().slice(0, max);
         if (action === "roster") {
@@ -716,7 +726,7 @@ export default {
             publicNotes: safeText(data.publicNotes, 500),
             privateNotes: safeText(data.privateNotes, 1500)
           };
-          await saveWs(ws); await audit(env, user, "Fiche effectif modifiée", target.username);
+          if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors); await audit(env, user, "Fiche effectif modifiée", target.username);
         } else if (action === "event-upsert") {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer le calendrier." }, 403, cors);
           const e = b.event || {}, id = safeText(e.id, 80) || randomToken(8);
@@ -726,10 +736,10 @@ export default {
           const index = ws.calendar.findIndex(x => x.id === id);
           if (index >= 0) ws.calendar[index] = { ...ws.calendar[index], ...item, signups: ws.calendar[index].signups || [] }; else ws.calendar.push(item);
           ws.calendar.sort((a, z) => (a.date + a.time).localeCompare(z.date + z.time));
-          await saveWs(ws); await audit(env, user, "Calendrier modifié", title);
+          if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors); await audit(env, user, "Calendrier modifié", title);
         } else if (action === "event-delete") {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer le calendrier." }, 403, cors);
-          ws.calendar = ws.calendar.filter(x => x.id !== String(b.eventId)); await saveWs(ws);
+          ws.calendar = ws.calendar.filter(x => x.id !== String(b.eventId)); if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
         } else if (action === "signup") {
           const event = ws.calendar.find(x => x.id === String(b.eventId));
           if (!event) return json({ error: "Événement introuvable." }, 404, cors);
@@ -737,14 +747,14 @@ export default {
           const found = event.signups.find(x => Number(x.userId) === Number(user.id));
           if (b.join && !found) event.signups.push({ userId: user.id, notes: "", work: "" });
           if (!b.join && found) event.signups = event.signups.filter(x => Number(x.userId) !== Number(user.id));
-          await saveWs(ws);
+          if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
         } else if (action === "event-report") {
           const event = ws.calendar.find(x => x.id === String(b.eventId));
           if (!event) return json({ error: "Événement introuvable." }, 404, cors);
           const signup = (event.signups || []).find(x => Number(x.userId) === Number(user.id));
           if (!signup) return json({ error: "Inscris-toi à l’événement avant d’ajouter tes notes." }, 403, cors);
           signup.notes = safeText(b.notes, 1200); signup.work = safeText(b.work, 2000);
-          await saveWs(ws);
+          if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
         } else if (action === "task-upsert") {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer les tâches." }, 403, cors);
           const t = b.task || {}, id = safeText(t.id, 80) || randomToken(8), title = safeText(t.title, 120);
@@ -758,21 +768,21 @@ export default {
           const item = { id, title, description: safeText(t.description, 1500), dueDate: safeText(t.dueDate, 10), assignedTo, createdBy: user.id, progress: (ws.tasks.find(x => x.id === id) || {}).progress || {} };
           const index = ws.tasks.findIndex(x => x.id === id);
           if (index >= 0) ws.tasks[index] = { ...ws.tasks[index], ...item }; else ws.tasks.push(item);
-          await saveWs(ws); await audit(env, user, "Tâche modifiée", title);
+          if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors); await audit(env, user, "Tâche modifiée", title);
         } else if (action === "task-delete") {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer les tâches." }, 403, cors);
-          ws.tasks = ws.tasks.filter(x => x.id !== String(b.taskId)); await saveWs(ws);
+          ws.tasks = ws.tasks.filter(x => x.id !== String(b.taskId)); if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
         } else if (action === "task-progress") {
           const task = ws.tasks.find(x => x.id === String(b.taskId));
           if (!task) return json({ error: "Tâche introuvable." }, 404, cors);
           if (task.assignedTo && Number(task.assignedTo) !== Number(user.id) && !isAdmin(user)) return json({ error: "Cette tâche est attribuée à un autre membre." }, 403, cors);
           task.progress = task.progress || {};
           task.progress[String(user.id)] = { status: ["todo", "doing", "done"].includes(b.status) ? b.status : "todo", report: safeText(b.report, 2000), updatedAt: Date.now() };
-          await saveWs(ws);
+          if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
         } else {
           return json({ error: "Action d’espace de travail inconnue." }, 400, cors);
         }
-        return json({ ok: true }, 200, cors);
+        return json({ ok: true, workspaceUpdatedAt: savedUpdatedAt }, 200, cors);
       }
 
       if (route === "/auth/change-password") {
