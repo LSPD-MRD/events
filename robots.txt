@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /events/
+Disallow: /events/panel/
+Sitemap: https://lspd-mrd.github.io/events/sitemap.xml
