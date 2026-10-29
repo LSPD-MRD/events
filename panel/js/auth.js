@@ -148,8 +148,8 @@ document.addEventListener('drop', preventUnexpectedFileDrop);
 const avatarInput = $('#avatar-file');
 const acceptAvatarFile = async file => {
   if (!file) return;
-  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 10 * 1024 * 1024) {
-    toast('Image invalide : utilise PNG, JPG, WEBP ou GIF de 10 Mo maximum.', 'err'); return;
+  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 10 * 1024 * 1024 || (file.type === 'image/gif' && file.size > 300 * 1024)) {
+    toast(file.type === 'image/gif' && file.size > 300 * 1024 ? 'Un GIF de profil ne doit pas dépasser 300 Ko.' : 'Image invalide : utilise PNG, JPG, WEBP ou GIF de 10 Mo maximum.', 'err'); return;
   }
   try {
     // Préserve l'animation des GIF ; les formats statiques sont optimisés en WebP.
@@ -160,6 +160,7 @@ const acceptAvatarFile = async file => {
         reader.onerror = () => reject(new Error('Lecture de l’image impossible.'));
         reader.readAsDataURL(file);
       });
+      if (pendingProfileAvatar.length > 420000) throw new Error('Le GIF de profil doit faire 300 Ko maximum.');
       profileAvatarChanged = true;
       const preview = $('#profile-preview-avatar');
       if (preview) preview.innerHTML = '<img src="' + pendingProfileAvatar + '" alt="Aperçu de la photo de profil">';
@@ -188,6 +189,7 @@ const acceptAvatarFile = async file => {
       reader.onerror = () => reject(new Error('Lecture de l’image impossible.'));
       reader.readAsDataURL(blob);
     });
+    if (pendingProfileAvatar.length > 420000) throw new Error('La photo de profil optimisée doit faire 300 Ko maximum.');
     profileAvatarChanged = true;
     const preview = $('#profile-preview-avatar');
     if (preview) preview.innerHTML = '<img src="' + pendingProfileAvatar + '" alt="Aperçu de la photo de profil">';
