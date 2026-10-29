@@ -1,16 +1,20 @@
 # Panel JavaScript architecture
 
-The panel source is split into ordered classic scripts to keep the current runtime and shared lexical scope intact without introducing a build step.
+The panel uses ordered classic scripts and no build step. Keep the load order in `../index.html`: later files rely on shared helpers and state declared earlier.
 
-Load order is defined in `../index.html` and must be preserved:
+1. `core.js` — shared DOM helpers, custom selects/date picker, dialogs and common UI utilities.
+2. `editor-model.js` — event editor model, defaults, constants, API client and shared editor state.
+3. `avatars.js` — avatar request queue, lazy loading and avatar rendering.
+4. `publications.js` — publication management UI and upload/delete actions.
+5. `portal.js` — public portal settings and category management.
+6. `logs-access.js` — audit logs and account/access management.
+7. `profile.js` — account profile and avatar editing.
+8. `preview.js` — event preview iframe and preview synchronization.
+9. `editor.js` — editor state loading, navigation, draft/publish controls, theme and event-page selector.
+10. `actions.js` — delegated action map.
+11. `auth.js` — login/logout, session restoration, permissions and panel event listeners.
+12. `workspace.js` — division roster, calendar, tasks and final startup initialization.
 
-1. `core.js` — shared constants, DOM helpers, custom controls, API client, editor state and common utilities.
-2. `avatars.js` — avatar request queue, lazy loading and avatar rendering.
-3. `views.js` — editor and page rendering functions.
-4. `actions.js` — delegated action handlers.
-5. `auth.js` — login, logout, session restoration, permission checks and panel event listeners.
-6. `workspace.js` — division roster, calendar, tasks and final startup initialization.
+These files intentionally use classic `<script defer>` tags, not `type="module"`. Top-level declarations share the browser's global lexical environment; changing the order or converting to modules requires explicit imports/exports and a dedicated startup entry point.
 
-**Important:** these files intentionally use classic `<script defer>` tags, not `type="module"`. They share the same global lexical environment, and the order matters. If migrating to ES modules later, explicitly export/import shared values and move startup into a dedicated entry point first.
-
-Shared panel styling remains in `panel.css`; avoid duplicating shared component rules in page-specific CSS.
+Shared styling stays in `panel.css` so controls, cards, forms, and modals keep one consistent design system.
