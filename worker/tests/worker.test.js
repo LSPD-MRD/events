@@ -2,7 +2,27 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
+import { runInNewContext } from "node:vm";
+
+const workerSource = await readFile(new URL("../worker.js", import.meta.url), "utf8");
+const helpersStart = workerSource.indexOf("const RESERVED =");
+const helpersEnd = workerSource.indexOf("const gh = (env, path, init = {}) =>", helpersStart);
+const safeEqualStart = workerSource.indexOf("const safeEqual =", helpersEnd);
+const safeEqualEnd = workerSource.indexOf("const DUMMY_SALT =", safeEqualStart);
+
+assert.ok(
+  helpersStart >= 0 && helpersEnd > helpersStart,
+  "Worker validation helpers must be discoverable",
+);
+assert.ok(
+  safeEqualStart >= 0 && safeEqualEnd > safeEqualStart,
+  "Worker comparison helper must be discoverable",
+);
+
+const validationSandbox = { atob: globalThis.atob };
+const validationSource = `${workerSource.slice(helpersStart, helpersEnd)}
+${workerSource.slice(safeEqualStart, safeEqualEnd)}
+globalThis.__helpers = {
   isValidAvatarDataUrl,
   isValidISODate,
   isValidPublicationFile,
@@ -12,7 +32,21 @@ import {
   okSlug,
   okText,
   safeEqual,
-} from "../worker.js";
+};`;
+
+runInNewContext(validationSource, validationSandbox, { filename: "worker-validation-helpers.js" });
+
+const {
+  isValidAvatarDataUrl,
+  isValidISODate,
+  isValidPublicationFile,
+  isValidTime,
+  okEntry,
+  okHtml,
+  okSlug,
+  okText,
+  safeEqual,
+} = validationSandbox.__helpers;
 
 const toBase64 = (bytes) => Buffer.from(bytes).toString("base64");
 

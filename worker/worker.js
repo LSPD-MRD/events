@@ -2192,16 +2192,3 @@ export default {
     }
   },
 };
-
-// Pure validation helpers are exported for dependency-free regression tests.
-export {
-  isValidAvatarDataUrl,
-  isValidISODate,
-  isValidPublicationFile,
-  isValidTime,
-  okEntry,
-  okHtml,
-  okSlug,
-  okText,
-  safeEqual,
-};
