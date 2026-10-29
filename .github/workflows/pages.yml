@@ -33,7 +33,7 @@ jobs:
       - name: Prepare site (exclude Worker source and repository metadata)
         run: |
           mkdir -p _site
-          cp index.html _site/
+          cp index.html sitemap.xml _site/
           cp -r panel public _site/
 
       - name: Upload site artifact
