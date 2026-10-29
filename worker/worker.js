@@ -805,7 +805,7 @@ export default {
         await env.DB.prepare(
           "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?"
         ).bind(password_hash, salt, user.id).run();
-        const currentToken = (req.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+        const currentToken = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
         if (currentToken) {
           await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?")
             .bind(user.id, await hash(currentToken)).run();
