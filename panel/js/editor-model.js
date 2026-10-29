@@ -76,7 +76,7 @@ const api = {
   },
 
   async post(path, body = {}) {
-    const token = localStorage.getItem(KEY.token);
+    const token = sessionStorage.getItem(KEY.token);
 
     const headers = {
       'Content-Type': 'application/json'
