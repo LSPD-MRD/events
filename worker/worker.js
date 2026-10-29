@@ -297,6 +297,9 @@ async function ensureAuthSchema(env) {
   await env.DB.prepare("UPDATE users SET role = 'editor', grade = CASE WHEN grade = 'Expert Officer' THEN 'Expert Officer' ELSE 'Certified Officer' END WHERE role = 'viewer' OR (role = 'editor' AND grade NOT IN ('Certified Officer', 'Expert Officer'))").run();
 }
 
+const SESSION_MAX_MS = 12 * 60 * 60 * 1000;
+const SESSION_REFRESH_BELOW_MS = 20 * 60 * 1000;
+
 async function getUser(req, env) {
   const token = (req.headers.get("Authorization") || "")
     .replace(/^Bearer\s+/i, "");
@@ -306,12 +309,13 @@ async function getUser(req, env) {
   const th = await hash(token);
 
   const row = await env.DB.prepare(
-    `SELECT u.id, u.username, u.grade, u.role, u.active, CASE WHEN u.avatar_data IS NOT NULL AND length(u.avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, u.accreditations, u.display_first_name, u.display_last_name, s.expires_at FROM sessions s
+    `SELECT u.id, u.username, u.grade, u.role, u.active, CASE WHEN u.avatar_data IS NOT NULL AND length(u.avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar, u.accreditations, u.display_first_name, u.display_last_name, s.expires_at, s.created_at AS session_created_at FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ?`
   ).bind(th).first();
 
-  if (!row || !row.active || row.expires_at < Date.now()) {
+  const now = Date.now();
+  if (!row || !row.active || row.expires_at < now || now - Number(row.session_created_at || now) > SESSION_MAX_MS) {
     if (row) {
       await env.DB.prepare(
         "DELETE FROM sessions WHERE token_hash = ?"
@@ -321,8 +325,10 @@ async function getUser(req, env) {
     return null;
   }
 
-  // Expiration glissante : 30 minutes depuis la dernière requête authentifiée.
-  await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE token_hash = ?").bind(Date.now() + 30 * 60 * 1000, th).run();
+  // Expiration glissante, plafonnée à 12 h depuis la connexion. On limite les écritures D1.
+  if (row.expires_at - now < SESSION_REFRESH_BELOW_MS) {
+    await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE token_hash = ?").bind(now + 30 * 60 * 1000, th).run();
+  }
   return row;
 }
 
@@ -655,10 +661,10 @@ export default {
           return json({ error: "Le prénom et le nom doivent contenir 40 caractères maximum." }, 400, cors);
         }
         if (hasAvatar && avatarData !== null && (
-          avatarData.length > 14000000 ||
+          avatarData.length > 420000 ||
           !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarData)
         )) {
-          return json({ error: "Image invalide ou trop volumineuse (10 Mo maximum)." }, 400, cors);
+          return json({ error: "Image invalide ou trop volumineuse (300 Ko maximum)." }, 400, cors);
         }
         if (hasAvatar) await env.DB.prepare("UPDATE users SET avatar_data = ? WHERE id = ?").bind(avatarData, user.id).run();
         if (hasFirst || hasLast) await env.DB.prepare("UPDATE users SET display_first_name = ?, display_last_name = ? WHERE id = ?").bind(first, last, user.id).run();
@@ -799,6 +805,12 @@ export default {
         await env.DB.prepare(
           "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?"
         ).bind(password_hash, salt, user.id).run();
+        const currentToken = (req.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+        if (currentToken) {
+          await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?")
+            .bind(user.id, await hash(currentToken)).run();
+        }
+        await audit(env, user, "Mot de passe modifié", user.username);
         return json({ ok: true, message: "Mot de passe modifié." }, 200, cors);
       }
 
