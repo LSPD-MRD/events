@@ -25,18 +25,18 @@ const decodeHtmlEntities = value => value
   .replace(/&#x([0-9a-f]+);?/gi, (_, code) => { try { return String.fromCodePoint(parseInt(code, 16)); } catch { return ""; } })
   .replace(/&#(\d+);?/g, (_, code) => { try { return String.fromCodePoint(Number(code)); } catch { return ""; } })
   .replace(/&(tab|newline|colon|lpar|rpar|sol);/gi, entity => ({
-    "&tab;": "\\t", "&newline;": "\\n", "&colon;": ":", "&lpar;": "(", "&rpar;": ")", "&sol;": "/"
+    "&tab;": "\t", "&newline;": "\n", "&colon;": ":", "&lpar;": "(", "&rpar;": ")", "&sol;": "/"
   }[entity.toLowerCase()] || entity));
-const DANGEROUS_TAG = /<\\s*\\/?\\s*(script|iframe|frame|frameset|object|embed|applet|meta|base|link|form|svg|math|style|template|noscript)\\b/i;
-const DANGEROUS_ATTRIBUTE = /<[^>]*[\\s"'\\/\x60]on[a-z]{3,}\\s*=|<[^>]*\\ssrcdoc\\s*=/i;
+const DANGEROUS_TAG = /<\s*\/?\s*(script|iframe|frame|frameset|object|embed|applet|meta|base|link|form|svg|math|style|template|noscript)\b/i;
+const DANGEROUS_ATTRIBUTE = /<[^>]*[\s"'\/\x60]on[a-z]{3,}\s*=|<[^>]*\ssrcdoc\s*=/i;
 const okHtml = value => {
   if (typeof value !== "string" || value.length >= 200000) return false;
   const decoded = decodeHtmlEntities(value);
   if (DANGEROUS_TAG.test(decoded) || DANGEROUS_ATTRIBUTE.test(decoded)) return false;
   for (const tag of decoded.match(/<[^>]*>/g) || []) {
-    const compact = tag.replace(/[\\x00-\\x20]+/g, "").toLowerCase();
+    const compact = tag.replace(/[\x00-\x20]+/g, "").toLowerCase();
     if (/=["']?(javascript|vbscript):/.test(compact)) return false;
-    if (/=["']?data:(?!image\\/(png|jpe?g|webp|gif);base64,)/.test(compact)) return false;
+    if (/=["']?data:(?!image\/(png|jpe?g|webp|gif);base64,)/.test(compact)) return false;
   }
   return true;
 };
