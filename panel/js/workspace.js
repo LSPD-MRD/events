@@ -305,7 +305,7 @@ function renderWsRoster() {
         (i + 1) +
         '"><div class="ws-tier-heading"><span class="ws-tier-index">0' +
         (i + 1) +
-        '</span><div><span class="ws-tier-kicker">NIVEAU HIÉRARCHIQUE</span><h3>' +
+        '</span><div><h3>' +
         esc(grade) +
         '</h3><small>' +
         wsShort[grade] +
