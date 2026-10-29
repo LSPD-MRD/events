@@ -196,6 +196,30 @@ async function passwordHash(password, salt) {
 
 const normUser = s => String(s || "").trim().toLowerCase();
 
+const safeEqual = (left, right) => {
+  const a = String(left), b = String(right);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  }
+  return diff === 0;
+};
+const DUMMY_SALT = "mrd-dummy-salt-timing-equalizer";
+const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+
+async function isLoginBlocked(env, key, maximum, now) {
+  const row = await env.DB.prepare("SELECT attempts, window_until FROM login_attempts WHERE username = ?").bind(key).first();
+  return !!(row && row.window_until > now && row.attempts >= maximum);
+}
+async function recordLoginFailure(env, key, now) {
+  await env.DB.prepare(
+    `INSERT INTO login_attempts (username, attempts, window_until) VALUES (?, 1, ?)
+     ON CONFLICT(username) DO UPDATE SET
+       attempts = CASE WHEN login_attempts.window_until > ? THEN login_attempts.attempts + 1 ELSE 1 END,
+       window_until = CASE WHEN login_attempts.window_until > ? THEN login_attempts.window_until ELSE ? END`
+  ).bind(key, now + ATTEMPT_WINDOW_MS, now, now, now + ATTEMPT_WINDOW_MS).run();
+}
+
 const ACCREDITATIONS = ["Media Relations", "Interagency", "Public Information", "Community Affairs"];
 const gradeAccreditations = grade => ({
   "Commanding Officer": ACCREDITATIONS,
@@ -415,7 +439,7 @@ export default {
       if (route === "/auth/setup-owner") {
         if (
           !env.OWNER_SETUP_KEY ||
-          req.headers.get("X-Setup-Key") !== env.OWNER_SETUP_KEY
+          !safeEqual(req.headers.get("X-Setup-Key") || "", env.OWNER_SETUP_KEY)
         ) {
           return json(
             { error: "Clé de configuration invalide." },
@@ -507,64 +531,29 @@ export default {
 
         const now = Date.now();
 
-        const attempts = await env.DB.prepare(
-          `SELECT attempts, window_until
-           FROM login_attempts WHERE username = ?`
-        ).bind(username).first();
-
-        if (
-          attempts &&
-          attempts.window_until > now &&
-          attempts.attempts >= 8
-        ) {
-          return json(
-            {
-              error:
-                "Trop de tentatives. Réessaie dans quelques minutes."
-            },
-            429,
-            cors
-          );
+        const ip = (req.headers.get("CF-Connecting-IP") || "unknown").slice(0, 64);
+        const limits = [["u:" + username + "|" + ip, 8], ["ip:" + ip, 40], ["u:" + username, 60]];
+        await env.DB.prepare("DELETE FROM login_attempts WHERE window_until < ?").bind(now).run();
+        for (const [key, maximum] of limits) {
+          if (await isLoginBlocked(env, key, maximum, now)) {
+            return json({ error: "Trop de tentatives. Réessaie dans quelques minutes." }, 429, cors);
+          }
         }
 
         const u = await env.DB.prepare(
           "SELECT id, username, password_hash, salt, grade, role, active, created_at, accreditations, display_first_name, display_last_name, CASE WHEN avatar_data IS NOT NULL AND length(avatar_data) > 0 THEN 1 ELSE 0 END AS has_avatar FROM users WHERE username = ?"
         ).bind(username).first();
 
-        const candidate = u
-          ? await passwordHash(password, u.salt)
-          : "";
-
-        if (!u || !u.active || candidate !== u.password_hash) {
-          const next =
-            attempts && attempts.window_until > now
-              ? attempts.attempts + 1
-              : 1;
-
-          const until =
-            attempts && attempts.window_until > now
-              ? attempts.window_until
-              : now + 10 * 60 * 1000;
-
-          await env.DB.prepare(
-            `INSERT INTO login_attempts
-             (username, attempts, window_until)
-             VALUES (?, ?, ?)
-             ON CONFLICT(username) DO UPDATE SET
-               attempts = excluded.attempts,
-               window_until = excluded.window_until`
-          ).bind(username, next, until).run();
-
-          return json(
-            { error: "Identifiant ou mot de passe incorrect." },
-            401,
-            cors
-          );
+        // Calcul de hash aussi pour un identifiant inconnu afin de réduire l'énumération temporelle.
+        const candidate = await passwordHash(password, u ? u.salt : DUMMY_SALT);
+        if (!u || !u.active || !safeEqual(candidate, u.password_hash)) {
+          for (const [key] of limits) await recordLoginFailure(env, key, now);
+          return json({ error: "Identifiant ou mot de passe incorrect." }, 401, cors);
         }
 
-        await env.DB.prepare(
-          "DELETE FROM login_attempts WHERE username = ?"
-        ).bind(username).run();
+        for (const [key] of limits) {
+          await env.DB.prepare("DELETE FROM login_attempts WHERE username = ?").bind(key).run();
+        }
 
         await env.DB.prepare("UPDATE users SET last_login_at = ? WHERE id = ?").bind(now, u.id).run();
 
