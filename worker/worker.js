@@ -49,7 +49,7 @@ const okEntry = entry =>
   entry &&
   ["live", "soon", "archived"].includes(entry.status) &&
   typeof entry.href === "string" &&
-  /^([a-z0-9-]+\\/)?$/.test(entry.href) &&
+  /^([a-z0-9-]+\/)?$/.test(entry.href) &&
   ["icon", "title", "desc", "date"].every(key => okText(entry[key]));
 
 const MAX_REQUEST_BODY_BYTES = 15 * 1024 * 1024;
@@ -58,7 +58,7 @@ const MAX_AVATAR_BYTES = 300 * 1024;
 
 /** Validate a real calendar date in strict YYYY-MM-DD format. */
 const isValidISODate = value => {
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
   }
 
@@ -68,7 +68,7 @@ const isValidISODate = value => {
 
 /** Validate a 24-hour time in HH:MM format. */
 const isValidTime = value =>
-  typeof value === "string" && /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+  typeof value === "string" && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 
 /**
  * Validate declared file type against its file signature and decoded size.
@@ -124,7 +124,7 @@ const isValidPublicationFile = (
 const isValidAvatarDataUrl = value => {
   if (typeof value !== "string" || value.length > 420000) return false;
 
-  const match = /^data:image\\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  const match = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
   if (!match) return false;
 
   return isValidPublicationFile("image/" + match[1], match[2], MAX_AVATAR_BYTES);
@@ -135,7 +135,7 @@ async function readJsonBody(request) {
   const declaredLength = request.headers.get("Content-Length");
   if (
     declaredLength &&
-    /^\\d+$/.test(declaredLength) &&
+    /^\d+$/.test(declaredLength) &&
     Number(declaredLength) > MAX_REQUEST_BODY_BYTES
   ) {
     return { ok: false, status: 413 };
@@ -1433,7 +1433,7 @@ export default {
 
         const slug = (
           title.normalize("NFD")
-            .replace(/[\\u0300-\\u036f]/g, "")
+            .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-|-$/g, "") || "publication"
