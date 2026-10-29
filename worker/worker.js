@@ -45,12 +45,141 @@ const okText = v =>
   v === undefined ||
   (typeof v === "string" && v.length < 300 && !/[<>]/.test(v));
 
-const okEntry = e =>
-  e &&
-  ["live", "soon", "archived"].includes(e.status) &&
-  typeof e.href === "string" &&
-  /^([a-z0-9-]+\/)?$/.test(e.href) &&
-  ["icon", "title", "desc", "date"].every(k => okText(e[k]));
+const okEntry = entry =>
+  entry &&
+  ["live", "soon", "archived"].includes(entry.status) &&
+  typeof entry.href === "string" &&
+  /^([a-z0-9-]+\\/)?$/.test(entry.href) &&
+  ["icon", "title", "desc", "date"].every(key => okText(entry[key]));
+
+const MAX_REQUEST_BODY_BYTES = 15 * 1024 * 1024;
+const MAX_PUBLICATION_BYTES = 10 * 1024 * 1024;
+const MAX_AVATAR_BYTES = 300 * 1024;
+
+/** Validate a real calendar date in strict YYYY-MM-DD format. */
+const isValidISODate = value => {
+  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(value + "T00:00:00.000Z");
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+
+/** Validate a 24-hour time in HH:MM format. */
+const isValidTime = value =>
+  typeof value === "string" && /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+
+/**
+ * Validate declared file type against its file signature and decoded size.
+ * This checks the signature; it is not a full PDF/image parser.
+ */
+const isValidPublicationFile = (
+  mime,
+  data,
+  maxBytes = MAX_PUBLICATION_BYTES
+) => {
+  if (
+    typeof data !== "string" ||
+    data.length === 0 ||
+    data.length % 4 !== 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data)
+  ) {
+    return false;
+  }
+
+  const padding = data.endsWith("==") ? 2 : data.endsWith("=") ? 1 : 0;
+  const decodedSize = (data.length / 4) * 3 - padding;
+  if (decodedSize <= 0 || decodedSize > maxBytes) return false;
+
+  let bytes;
+  try {
+    const prefix = data.slice(0, Math.min(data.length, 64));
+    bytes = Uint8Array.from(atob(prefix), character => character.charCodeAt(0));
+  } catch {
+    return false;
+  }
+
+  const ascii = (start, end) => String.fromCharCode(...bytes.slice(start, end));
+
+  switch (mime) {
+    case "application/pdf":
+      return bytes.length >= 5 && ascii(0, 5) === "%PDF-";
+    case "image/png":
+      return [137, 80, 78, 71, 13, 10, 26, 10].every(
+        (byte, index) => bytes[index] === byte
+      );
+    case "image/jpeg":
+      return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    case "image/webp":
+      return bytes.length >= 12 && ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP";
+    case "image/gif":
+      return bytes.length >= 6 && ["GIF87a", "GIF89a"].includes(ascii(0, 6));
+    default:
+      return false;
+  }
+};
+
+/** Validate avatar data URLs before placing their bytes into a D1 row. */
+const isValidAvatarDataUrl = value => {
+  if (typeof value !== "string" || value.length > 420000) return false;
+
+  const match = /^data:image\\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!match) return false;
+
+  return isValidPublicationFile("image/" + match[1], match[2], MAX_AVATAR_BYTES);
+};
+
+/** Read JSON through a bounded stream; Content-Length alone is not trusted. */
+async function readJsonBody(request) {
+  const declaredLength = request.headers.get("Content-Length");
+  if (
+    declaredLength &&
+    /^\\d+$/.test(declaredLength) &&
+    Number(declaredLength) > MAX_REQUEST_BODY_BYTES
+  ) {
+    return { ok: false, status: 413 };
+  }
+
+  if (!request.body) return { ok: false, status: 400 };
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let size = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      size += value.byteLength;
+      if (size > MAX_REQUEST_BODY_BYTES) {
+        await reader.cancel();
+        return { ok: false, status: 413 };
+      }
+
+      chunks.push(value);
+    }
+
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return { ok: true, value: JSON.parse(text) };
+  } catch {
+    return { ok: false, status: 400 };
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // The stream may already have been cancelled because it exceeded the limit.
+    }
+  }
+}
 
 const gh = (env, path, init = {}) => {
   if (!env.OWNER || !env.REPO || !env.BRANCH || !env.GH_TOKEN) {
@@ -244,7 +373,20 @@ const publicUser = u => ({
  * CREATE TABLE IF NOT EXISTS ne corrige pas les colonnes d'une table
  * existante dont le schéma serait incompatible.
  */
+let authSchemaPromise = null;
+
 async function ensureAuthSchema(env) {
+  if (!authSchemaPromise) {
+    authSchemaPromise = ensureAuthSchemaOnce(env).catch(error => {
+      authSchemaPromise = null;
+      throw error;
+    });
+  }
+
+  return authSchemaPromise;
+}
+
+async function ensureAuthSchemaOnce(env) {
   const statements = [
     `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -420,12 +562,24 @@ export default {
     }
 
     const route = new URL(req.url).pathname;
-    let b = {};
+    const parsedBody = await readJsonBody(req);
 
-    try {
-      b = await req.json();
-    } catch {
-      return json({ error: "Requête illisible." }, 400, cors);
+    if (!parsedBody.ok) {
+      const status = parsedBody.status;
+      return json(
+        {
+          error: status === 413
+            ? "Requête trop volumineuse (limite de 15 Mio)."
+            : "Requête JSON illisible."
+        },
+        status,
+        cors
+      );
+    }
+
+    const b = parsedBody.value;
+    if (!b || typeof b !== "object" || Array.isArray(b)) {
+      return json({ error: "Le corps de la requête doit être un objet JSON." }, 400, cors);
     }
 
     let operation = "initialisation";
@@ -649,12 +803,10 @@ export default {
         if (first.length > 40 || last.length > 40 || /[<>]/.test(first + last)) {
           return json({ error: "Le prénom et le nom doivent contenir 40 caractères maximum." }, 400, cors);
         }
-        if (hasAvatar && avatarData !== null && (
-          avatarData.length > 420000 ||
-          !/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatarData)
-        )) {
+        if (hasAvatar && avatarData !== null && !isValidAvatarDataUrl(avatarData)) {
           return json({ error: "Image invalide ou trop volumineuse (300 Ko maximum)." }, 400, cors);
         }
+
         if (hasAvatar) await env.DB.prepare("UPDATE users SET avatar_data = ? WHERE id = ?").bind(avatarData, user.id).run();
         if (hasFirst || hasLast) await env.DB.prepare("UPDATE users SET display_first_name = ?, display_last_name = ? WHERE id = ?").bind(first, last, user.id).run();
         const updated = await env.DB.prepare("SELECT id, username, grade, role, active, avatar_data, accreditations, display_first_name, display_last_name FROM users WHERE id = ?").bind(user.id).first();
@@ -729,10 +881,29 @@ export default {
           if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors); await audit(env, user, "Fiche effectif modifiée", target.username);
         } else if (action === "event-upsert") {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer le calendrier." }, 403, cors);
-          const e = b.event || {}, id = safeText(e.id, 80) || randomToken(8);
-          const title = safeText(e.title, 120), date = safeText(e.date, 10);
-          if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: "Un titre et une date valide sont obligatoires." }, 400, cors);
-          const item = { id, title, date, time: safeText(e.time, 10), description: safeText(e.description, 1500), location: safeText(e.location, 160), createdBy: user.id, signups: Array.isArray(e.signups) ? e.signups : [] };
+          const e = b.event || {};
+          const id = safeText(e.id, 80) || randomToken(8);
+          const title = safeText(e.title, 120);
+          const date = typeof e.date === "string" ? e.date.trim() : "";
+          const time = typeof e.time === "string" ? e.time.trim() : "";
+
+          if (!title || !isValidISODate(date)) {
+            return json({ error: "Un titre et une date valide sont obligatoires." }, 400, cors);
+          }
+          if (time && !isValidTime(time)) {
+            return json({ error: "L’heure doit être au format HH:MM." }, 400, cors);
+          }
+
+          const item = {
+            id,
+            title,
+            date,
+            time,
+            description: safeText(e.description, 1500),
+            location: safeText(e.location, 160),
+            createdBy: user.id,
+            signups: Array.isArray(e.signups) ? e.signups : []
+          };
           const index = ws.calendar.findIndex(x => x.id === id);
           if (index >= 0) ws.calendar[index] = { ...ws.calendar[index], ...item, signups: ws.calendar[index].signups || [] }; else ws.calendar.push(item);
           ws.calendar.sort((a, z) => (a.date + a.time).localeCompare(z.date + z.time));
@@ -757,15 +928,33 @@ export default {
           if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors);
         } else if (action === "task-upsert") {
           if (!isAdmin(user)) return json({ error: "Seuls le CO et l’ACO peuvent gérer les tâches." }, 403, cors);
-          const t = b.task || {}, id = safeText(t.id, 80) || randomToken(8), title = safeText(t.title, 120);
+          const t = b.task || {};
+          const id = safeText(t.id, 80) || randomToken(8);
+          const title = safeText(t.title, 120);
+          const dueDate = t.dueDate == null || t.dueDate === ""
+            ? ""
+            : typeof t.dueDate === "string" ? t.dueDate.trim() : null;
+
           if (!title) return json({ error: "Le titre de la tâche est obligatoire." }, 400, cors);
+          if (dueDate === null || (dueDate && !isValidISODate(dueDate))) {
+            return json({ error: "La date d’échéance doit être une date valide." }, 400, cors);
+          }
+
           const assignedTo = t.assignedTo === "" || t.assignedTo == null ? null : Number(t.assignedTo);
           if (assignedTo !== null) {
             if (!Number.isInteger(assignedTo)) return json({ error: "Responsable invalide." }, 400, cors);
             const assignee = await env.DB.prepare("SELECT id, active FROM users WHERE id = ?").bind(assignedTo).first();
             if (!assignee || !assignee.active) return json({ error: "Le responsable doit être un compte actif." }, 400, cors);
           }
-          const item = { id, title, description: safeText(t.description, 1500), dueDate: safeText(t.dueDate, 10), assignedTo, createdBy: user.id, progress: (ws.tasks.find(x => x.id === id) || {}).progress || {} };
+          const item = {
+            id,
+            title,
+            description: safeText(t.description, 1500),
+            dueDate,
+            assignedTo,
+            createdBy: user.id,
+            progress: (ws.tasks.find(x => x.id === id) || {}).progress || {}
+          };
           const index = ws.tasks.findIndex(x => x.id === id);
           if (index >= 0) ws.tasks[index] = { ...ws.tasks[index], ...item }; else ws.tasks.push(item);
           if (!(await saveWs(ws))) return json({ error: "L’espace de travail a été modifié ailleurs. Recharge les données puis réessaie." }, 409, cors); await audit(env, user, "Tâche modifiée", title);
@@ -1211,15 +1400,50 @@ export default {
         if (settingsFile) { const a = settingsFile.text.indexOf("{"), z = settingsFile.text.lastIndexOf("}"); if (a >= 0 && z > a) categorySettings = JSON.parse(settingsFile.text.slice(a, z + 1)); }
         const customKind = typeof b.kind === "string" && /^custom-[a-z0-9-]{1,64}$/.test(b.kind) &&
           Array.isArray(categorySettings?.categories) && categorySettings.categories.some(c => c.id === b.kind && c.type === "publications");
-        const extByMime = { "application/pdf": "pdf", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
-        if (!(kinds.includes(b.kind) || customKind) || !okText(b.title) || !b.title.trim() || !extByMime[b.mime] || typeof b.data !== "string" || b.data.length > 14200000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b.data)) return json({ error: "Fichier ou données invalides (maximum 10 Mo)." }, 400, cors);
-        const slug = (b.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "publication").slice(0, 60) + "-" + Date.now().toString(36);
+        const extByMime = {
+          "application/pdf": "pdf",
+          "image/png": "png",
+          "image/jpeg": "jpg",
+          "image/webp": "webp"
+        };
+        const title = typeof b.title === "string" ? b.title.trim() : "";
+        const summary = b.summary == null ? "" : b.summary;
+        const date = b.date == null ? "" : b.date;
+        const validKind = kinds.includes(b.kind) || customKind;
+
+        if (
+          !validKind ||
+          !title ||
+          title.length > 120 ||
+          /[<>]/.test(title) ||
+          typeof summary !== "string" ||
+          summary.length > 500 ||
+          /[<>]/.test(summary) ||
+          typeof date !== "string" ||
+          (date !== "" && !isValidISODate(date)) ||
+          !extByMime[b.mime] ||
+          !isValidPublicationFile(b.mime, b.data)
+        ) {
+          return json(
+            { error: "Métadonnées invalides ou fichier non conforme (10 Mo maximum)." },
+            400,
+            cors
+          );
+        }
+
+        const slug = (
+          title.normalize("NFD")
+            .replace(/[\\u0300-\\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "publication"
+        ).slice(0, 60) + "-" + Date.now().toString(36);
         const path = "public/uploads/" + slug + "." + extByMime[b.mime];
         const upload = await gh(env, path, { method: "PUT", body: JSON.stringify({ message: "Publication MRD : " + b.title.slice(0, 100), content: b.data, branch: env.BRANCH }) });
         if (!upload.ok) throw new Error("Échec du dépôt du fichier : GitHub HTTP " + upload.status);
         const listFile = await read(env, "public/publications-data.js");
         let list = []; if (listFile) { const start=listFile.text.indexOf("["); const end=listFile.text.lastIndexOf("]"); if(start>=0&&end>start) list=JSON.parse(listFile.text.slice(start,end+1)); }
-        list.unshift({ id: slug, kind: b.kind, title: b.title.trim().slice(0,120), summary: String(b.summary||"").slice(0,500), date: String(b.date||"").slice(0,20), mime: b.mime, file: path });
+        list.unshift({ id: slug, kind: b.kind, title, summary, date, mime: b.mime, file: path });
         await write(env, "public/publications-data.js", "window.MRD_PUBLICATIONS = " + JSON.stringify(list, null, 2) + ";\n", "Publication MRD " + slug + " (" + user.username + ")");
         await audit(env, user, "Publication créée", b.title.trim().slice(0, 120) + " · " + b.kind);
         return json({ ok: true, file: path }, 200, cors);
@@ -1389,4 +1613,17 @@ export default {
       );
     }
   }
+};
+
+// Pure validation helpers are exported for dependency-free regression tests.
+export {
+  isValidAvatarDataUrl,
+  isValidISODate,
+  isValidPublicationFile,
+  isValidTime,
+  okEntry,
+  okHtml,
+  okSlug,
+  okText,
+  safeEqual
 };
