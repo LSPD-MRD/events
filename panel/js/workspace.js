@@ -1,5 +1,5 @@
 // MRD Effectif / calendrier / tâches
-let ws={roster:{},calendar:[],tasks:[]}, wsMembers=[], wsPerm={};
+let ws={roster:{},calendar:[],tasks:[]}, wsMembers=[], wsPerm={}, wsUpdatedAt=0;
 const WS_SECTION_KEY='mrd-division-section-v1';
 const WS_CALENDAR_MONTH_KEY='mrd-effectif-calendar-month';
 let wsSection=(()=>{const saved=localStorage.getItem(WS_SECTION_KEY);return ['home','calendar','tasks'].includes(saved)?saved:'home';})();
@@ -11,8 +11,14 @@ const wsDate=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-dig
 const wsToday=()=>new Date().toISOString().slice(0,10);
 const wsOwner=()=>currentUser?.role==='owner'&&currentUser?.grade==='Commanding Officer';
 const wsAvatar=u=>'<span class="avatar-stack ws-avatar-stack"><span class="ws-avatar ws-avatar-fallback avatar-fallback">'+esc(wsName(u).charAt(0).toUpperCase())+'</span>'+(u?.hasAvatar?'<img class="ws-avatar avatar-lazy" data-avatar-user="'+esc(u.id)+'" loading="lazy" decoding="async" alt="">':'')+'</span>';
+async function saveWorkspace(payload){
+ const result=await saveWorkspace({...payload,updatedAt:wsUpdatedAt});
+ if(result.workspaceUpdatedAt!=null) wsUpdatedAt=Number(result.workspaceUpdatedAt);
+ return result;
+}
 async function loadWorkspace(){
  const d=await api.post('/workspace/get',{});
+ wsUpdatedAt=Number(d.workspaceUpdatedAt||0);
  ws=d.workspace||{roster:{},calendar:[],tasks:[]};wsMembers=d.members||[];
  wsPerm={roster:!!d.canManageRoster,calendar:!!d.canManageCalendar,tasks:!!d.canManageTasks};
  const me=wsMembers.find(u=>Number(u.id)===Number(currentUser?.id));if(me)currentUser={...currentUser,...me};
@@ -114,18 +120,18 @@ document.addEventListener('click',async e=>{
  if(action==='cancel-form'){const f=b.closest('form');if(f)f.hidden=true;return;}
  if(action==='edit-event'){const item=ws.calendar.find(x=>String(x.id)===String(id));$('#ws-event-details')?.remove();$('#ws-event-form')?.remove();$('#ws-content').insertAdjacentHTML('afterbegin',wsEventForm(item));$('#ws-event-form').hidden=false;initMrdDatePickers($('#ws-event-form'));$('#ws-event-form').scrollIntoView({behavior:'smooth',block:'center'});return;}
  if(action==='edit-task'){const item=ws.tasks.find(x=>x.id===id);$('#ws-task-form')?.remove();$('#ws-content').insertAdjacentHTML('afterbegin',wsTaskForm(item));$('#ws-task-form').hidden=false;return;}
- if(action==='delete-event'||action==='delete-task'){if(!await confirmDialog('Cette suppression est définitive.',{title:'Confirmer la suppression',confirmText:'Supprimer',danger:true}))return;await api.post('/workspace/save',action==='delete-event'?{action:'event-delete',eventId:id}:{action:'task-delete',taskId:id});await wsReload();return;}
- if(action==='join'||action==='leave'){await api.post('/workspace/save',{action:'signup',eventId:id,join:action==='join'});toast(action==='join'?'Inscription confirmée.':'Désinscription enregistrée.','ok');await wsReload('calendar');}
+ if(action==='delete-event'||action==='delete-task'){if(!await confirmDialog('Cette suppression est définitive.',{title:'Confirmer la suppression',confirmText:'Supprimer',danger:true}))return;await saveWorkspace(action==='delete-event'?{action:'event-delete',eventId:id}:{action:'task-delete',taskId:id});await wsReload();return;}
+ if(action==='join'||action==='leave'){await saveWorkspace({action:'signup',eventId:id,join:action==='join'});toast(action==='join'?'Inscription confirmée.':'Désinscription enregistrée.','ok');await wsReload('calendar');}
  }catch(err){toast(err.message,'err');}
 });
 document.addEventListener('submit',async e=>{
  const f=e.target;
  try{
- if(f.matches('.ws-roster-form')){e.preventDefault();const d=new FormData(f),id=Number(f.dataset.id);await api.post('/users/profile',{id,displayFirstName:d.get('first'),displayLastName:d.get('last')});await api.post('/workspace/save',{action:'roster',userId:id,roster:{order:Number(d.get('order')||0),arrivalDate:d.get('arrival')||'',promotionDate:d.get('promotion')||'',publicNotes:d.get('publicNotes'),privateNotes:d.get('privateNotes')}});toast('Fiche membre enregistrée.','ok');await wsReload('roster');return;}
- if(f.id==='ws-event-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-upsert',event:{id:f.dataset.id,title:d.get('title'),date:d.get('date'),time:d.get('time'),location:d.get('location'),description:d.get('description')}});toast('Événement enregistré.','ok');await wsReload('calendar');return;}
- if(f.matches('.ws-report-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'event-report',eventId:f.dataset.id,notes:d.get('notes'),work:d.get('work')});toast('Compte rendu enregistré.','ok');await wsReload('calendar');return;}
- if(f.id==='ws-task-form'){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-upsert',task:{id:f.dataset.id,title:d.get('title'),dueDate:d.get('dueDate'),assignedTo:d.get('assignedTo'),description:d.get('description')}});toast('Tâche enregistrée.','ok');await wsReload('tasks');return;}
- if(f.matches('.ws-task-progress-form')){e.preventDefault();const d=new FormData(f);await api.post('/workspace/save',{action:'task-progress',taskId:f.dataset.id,status:d.get('status'),report:d.get('report')});toast('Avancement enregistré.','ok');await wsReload('tasks');return;}
+ if(f.matches('.ws-roster-form')){e.preventDefault();const d=new FormData(f),id=Number(f.dataset.id);await api.post('/users/profile',{id,displayFirstName:d.get('first'),displayLastName:d.get('last')});await saveWorkspace({action:'roster',userId:id,roster:{order:Number(d.get('order')||0),arrivalDate:d.get('arrival')||'',promotionDate:d.get('promotion')||'',publicNotes:d.get('publicNotes'),privateNotes:d.get('privateNotes')}});toast('Fiche membre enregistrée.','ok');await wsReload('roster');return;}
+ if(f.id==='ws-event-form'){e.preventDefault();const d=new FormData(f);await saveWorkspace({action:'event-upsert',event:{id:f.dataset.id,title:d.get('title'),date:d.get('date'),time:d.get('time'),location:d.get('location'),description:d.get('description')}});toast('Événement enregistré.','ok');await wsReload('calendar');return;}
+ if(f.matches('.ws-report-form')){e.preventDefault();const d=new FormData(f);await saveWorkspace({action:'event-report',eventId:f.dataset.id,notes:d.get('notes'),work:d.get('work')});toast('Compte rendu enregistré.','ok');await wsReload('calendar');return;}
+ if(f.id==='ws-task-form'){e.preventDefault();const d=new FormData(f);await saveWorkspace({action:'task-upsert',task:{id:f.dataset.id,title:d.get('title'),dueDate:d.get('dueDate'),assignedTo:d.get('assignedTo'),description:d.get('description')}});toast('Tâche enregistrée.','ok');await wsReload('tasks');return;}
+ if(f.matches('.ws-task-progress-form')){e.preventDefault();const d=new FormData(f);await saveWorkspace({action:'task-progress',taskId:f.dataset.id,status:d.get('status'),report:d.get('report')});toast('Avancement enregistré.','ok');await wsReload('tasks');return;}
  if(f.id==='display-profile-form'){e.preventDefault();const d=new FormData(f),payload={displayFirstName:d.get('first'),displayLastName:d.get('last')};if(profileAvatarChanged)payload.avatarData=pendingProfileAvatar;const r=await api.post('/auth/profile',payload);currentUser={...currentUser,...r.user,avatarData:r.avatarData||null,hasAvatar:!!r.avatarData};avatarDataCache.set(String(currentUser.id),Promise.resolve(r.avatarData||null));pendingProfileAvatar=undefined;profileAvatarChanged=false;applyPermissions();renderProfile();toast('Profil enregistré.','ok');return;}
  }catch(err){e.preventDefault();toast(err.message||'Enregistrement impossible.','err');}
 });
