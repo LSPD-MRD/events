@@ -84,7 +84,11 @@ const renderAccess = async () => {
       </section>`
           : ''
       }
-      ${
+      <section class="card access-stats">
+        <header class="card-head"><span class="access-kicker">FRÉQUENTATION</span><h2>Visiteurs uniques</h2><p>Portail public et panel · périodes glissantes</p></header>
+        <div class="card-body"><div id="access-visit-stats" class="visit-stats">Chargement des statistiques…</div></div>
+      </section>
+      ${ 
         accessManager
           ? `<section class="card access-accounts">
         <header class="card-head access-card-head"><div><span class="access-kicker">GESTION DE L’ÉQUIPE</span><h2>Comptes & autorisations</h2></div><span class="access-count-mark">01</span></header>
@@ -102,6 +106,16 @@ const renderAccess = async () => {
           : `<section class="card access-restricted"><div class="access-restricted-icon">♙</div><div><h2>Gestion des comptes</h2><p>La création et la désactivation des comptes sont réservées au Owner.</p></div></section>`
       }
     </div>`;
+  const statsRoot = $('#access-visit-stats');
+  if (statsRoot) {
+    api.post('/stats/summary', {}).then(({ stats }) => {
+      if (!statsRoot.isConnected) return;
+      statsRoot.innerHTML = [24, 48, 72].map(hours => {
+        const key = 'h' + hours;
+        return '<div class="visit-period"><small>' + hours + ' heures</small><div><span>Portail public</span><strong>' + Number(stats?.portal?.[key] || 0) + '</strong></div><div><span>Panel admin</span><strong>' + Number(stats?.panel?.[key] || 0) + '</strong></div></div>';
+      }).join('');
+    }).catch(() => { if (statsRoot.isConnected) statsRoot.textContent = 'Statistiques indisponibles. Vérifiez le déploiement du Worker.'; });
+  }
   if (accessManager) {
     try {
       const data = await api.post('/users/list', {});
