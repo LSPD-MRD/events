@@ -1872,3 +1872,6 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
 .mrd-date-year-nav{display:grid;place-items:center;width:25px;height:25px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--text);font-size:17px;line-height:1;cursor:pointer;transition:all .15s}
 .mrd-date-year-nav:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .mrd-date-year-nav:disabled{opacity:.25;cursor:not-allowed}
+
+/* Fréquentation : cartes compactes dans Accès */
+.access-stats{min-width:0}.visit-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.visit-period{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}.visit-period>small{display:block;color:var(--muted);margin-bottom:12px;font-weight:600}.visit-period>div{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:12px}.visit-period strong{font-size:20px;font-variant-numeric:tabular-nums}@media(max-width:650px){.visit-stats{grid-template-columns:1fr}}
