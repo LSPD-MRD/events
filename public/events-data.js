@@ -23,7 +23,7 @@ const EVENTS = [
     "desc": "Escape game immersif au commissariat : retrouver Tuna et démasquer le responsable."
   },
   {
-    "status": "soon",
+    "status": "archived",
     "href": "marathon/",
     "icon": "🏃",
     "title": "MARATHON",
