@@ -113,84 +113,108 @@ const renderAccess = async () => {
     const renderChart = () => {
       if (!statsRoot.isConnected || !latestStats) return;
       const { stats, updatedAt } = latestStats;
-      const points = selectedHours;
       const sites = [
         { key: 'portal', label: 'Portail public', color: '#25a66a' },
         { key: 'panel', label: 'Panel admin', color: '#3987df' },
       ];
-      const width = 640;
-      const height = 164;
-      const left = 28;
-      const right = 12;
-      const top = 16;
-      const bottom = 28;
+      const width = 800;
+      const height = 250;
+      const left = 34;
+      const right = 14;
+      const top = 20;
+      const bottom = 32;
       const plotWidth = width - left - right;
       const plotHeight = height - top - bottom;
-      const maximum = Math.max(1, ...sites.flatMap(site =>
-        (stats?.[site.key]?.hourly || []).slice(-points).map(point => Number(point.count) || 0)
-      ));
-      const x = index => left + index * plotWidth / (points - 1);
+      const hour = 3600000;
+      const currentHour = Math.floor(Date.now() / hour) * hour;
+      const series = sites.map(site => {
+        const raw = Array.isArray(stats?.[site.key]?.hourly) ? stats[site.key].hourly : [];
+        const lookup = new Map(raw.map(point => [Number(point.time), Number(point.count) || 0]));
+        return Array.from({ length: selectedHours }, (_, i) => {
+          const time = currentHour - (selectedHours - 1 - i) * hour;
+          return { time, count: lookup.get(time) || 0 };
+        });
+      });
+      const maximum = Math.max(1, ...series.flatMap(data => data.map(point => point.count)));
+      const x = index => left + index * plotWidth / (selectedHours - 1);
       const y = count => top + plotHeight * (1 - count / maximum);
-      statsRoot.innerHTML = sites.map(site => {
-        const data = (stats?.[site.key]?.hourly || []).slice(-points);
-        const path = data.map((point, index) =>
+      const grid = [0, 1, 2, 3, 4].map(i => {
+        const yy = top + plotHeight * i / 4;
+        return '<line x1="' + left + '" y1="' + yy + '" x2="' + (width - right) +
+          '" y2="' + yy + '" stroke="currentColor" opacity=".12"/>' +
+          '<text x="' + (left - 8) + '" y="' + (yy + 4) +
+          '" text-anchor="end" fill="currentColor" opacity=".55" font-size="11">' +
+          Math.round(maximum * (1 - i / 4)) + '</text>';
+      }).join('');
+      const paths = sites.map((site, i) => {
+        const d = series[i].map((point, index) =>
           (index ? 'L' : 'M') + x(index).toFixed(2) + ' ' + y(point.count).toFixed(2)
         ).join(' ');
-        const total = Number(stats?.[site.key]?.['h' + selectedHours] || 0);
-        const ticks = [0, 1, 2, 3].map(i => {
-          const yy = top + plotHeight * i / 3;
-          return '<line x1="' + left + '" y1="' + yy + '" x2="' + (width - right) +
-            '" y2="' + yy + '" stroke="currentColor" opacity=".1"/>';
-        }).join('');
-        return '<section class="visit-chart-card" style="--visit-color:' + site.color + '">' +
-          '<div class="visit-chart-heading"><span><i class="visit-legend-dot"></i>' + site.label +
-          '</span><strong>' + total + '</strong></div>' +
-          '<div class="visit-chart-wrap"><svg class="visit-chart" viewBox="0 0 ' + width + ' ' +
-          height + '" role="img" aria-label="Évolution horaire des visiteurs uniques : ' + site.label + '">' +
-          ticks + '<path d="' + path + '" fill="none" stroke="' + site.color +
-          '" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '<line class="visit-crosshair" y1="' + top + '" y2="' + (height - bottom) +
-          '" stroke="' + site.color + '" stroke-dasharray="3 4" visibility="hidden"/>' +
-          '<circle class="visit-focus-dot" r="5" fill="' + site.color +
-          '" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>' +
-          '<rect class="visit-hit-area" x="' + left + '" y="' + top + '" width="' + plotWidth +
-          '" height="' + plotHeight + '" fill="transparent"/>' +
-          '<text x="' + left + '" y="' + (height - 5) + '" fill="currentColor" opacity=".6" font-size="11">' +
-          selectedHours + 'h auparavant</text><text x="' + (width - right) +
-          '" y="' + (height - 5) + '" text-anchor="end" fill="currentColor" opacity=".6" font-size="11">Maintenant</text></svg>' +
-          '<div class="visit-tooltip" hidden></div></div>' +
-          '<div class="visit-chart-foot"><span>' + total + ' visiteur' + (total > 1 ? 's' : '') +
-          ' unique' + (total > 1 ? 's' : '') + ' sur ' + selectedHours + 'h</span>' +
-          '<small>Actualisé à ' + new Date(updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) +
-          '</small></div></section>';
+        return '<path d="' + d + '" fill="none" stroke="' + site.color +
+          '" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<circle class="visit-focus-dot" data-site="' + site.key +
+          '" r="5" fill="' + site.color +
+          '" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>';
       }).join('');
-      statsRoot.querySelectorAll('.visit-chart-card').forEach((card, siteIndex) => {
-        const data = (stats?.[sites[siteIndex].key]?.hourly || []).slice(-points);
-        const svg = card.querySelector('svg');
-        const area = card.querySelector('.visit-hit-area');
-        const dot = card.querySelector('.visit-focus-dot');
-        const line = card.querySelector('.visit-crosshair');
-        const tip = card.querySelector('.visit-tooltip');
-        const clear = () => { dot.setAttribute('visibility', 'hidden'); line.setAttribute('visibility', 'hidden'); tip.hidden = true; };
-        area.addEventListener('pointermove', event => {
-          if (!data.length) return;
-          const rect = svg.getBoundingClientRect();
-          const relativeX = (event.clientX - rect.left) / rect.width * width;
-          const index = Math.max(0, Math.min(data.length - 1, Math.round((relativeX - left) / plotWidth * (points - 1))));
-          const point = data[index];
+      const totals = sites.map(site => {
+        const total = Number(stats?.[site.key]?.['h' + selectedHours] || 0);
+        return '<div class="visit-chart-total"><span style="color:' + site.color +
+          '">●</span><span>' + site.label + '</span><strong>' + total +
+          '</strong><small>visiteurs uniques</small></div>';
+      }).join('');
+      const validUpdatedAt = Number(updatedAt);
+      const dateLabel = Number.isFinite(validUpdatedAt) && validUpdatedAt > 0
+        ? new Date(validUpdatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        : 'non communiquée par le Worker';
+      statsRoot.innerHTML = '<section class="visit-combined">' +
+        '<div class="visit-combined-legend"><span><i style="background:#25a66a"></i>Portail public</span>' +
+        '<span><i style="background:#3987df"></i>Panel admin</span></div>' +
+        '<div class="visit-chart-wrap"><svg class="visit-chart" viewBox="0 0 ' + width + ' ' + height +
+        '" role="img" aria-label="Visiteurs uniques par heure sur le portail public et le panel">' +
+        grid + paths +
+        '<line class="visit-crosshair" y1="' + top + '" y2="' + (height - bottom) +
+        '" stroke="currentColor" opacity=".4" stroke-dasharray="4 4" visibility="hidden"/>' +
+        '<rect class="visit-hit-area" x="' + left + '" y="' + top +
+        '" width="' + plotWidth + '" height="' + plotHeight + '" fill="transparent"/>' +
+        '<text x="' + left + '" y="' + (height - 7) + '" fill="currentColor" opacity=".6" font-size="11">' +
+        selectedHours + 'h auparavant</text><text x="' + (width - right) +
+        '" y="' + (height - 7) + '" text-anchor="end" fill="currentColor" opacity=".6" font-size="11">Maintenant</text></svg>' +
+        '<div class="visit-tooltip" hidden></div></div>' +
+        '<div class="visit-combined-totals">' + totals + '</div>' +
+        '<div class="visit-chart-foot"><small>Actualisation : ' + dateLabel +
+        '</small><small>Chaque point représente les visiteurs distincts de cette heure.</small></div></section>';
+      const svg = statsRoot.querySelector('svg');
+      const area = statsRoot.querySelector('.visit-hit-area');
+      const dots = statsRoot.querySelectorAll('.visit-focus-dot');
+      const line = statsRoot.querySelector('.visit-crosshair');
+      const tip = statsRoot.querySelector('.visit-tooltip');
+      const clear = () => {
+        dots.forEach(dot => dot.setAttribute('visibility', 'hidden'));
+        line.setAttribute('visibility', 'hidden');
+        tip.hidden = true;
+      };
+      area.addEventListener('pointermove', event => {
+        const rect = svg.getBoundingClientRect();
+        const relativeX = (event.clientX - rect.left) / rect.width * width;
+        const index = Math.max(0, Math.min(selectedHours - 1,
+          Math.round((relativeX - left) / plotWidth * (selectedHours - 1))));
+        dots.forEach((dot, i) => {
           dot.setAttribute('cx', x(index));
-          dot.setAttribute('cy', y(point.count));
+          dot.setAttribute('cy', y(series[i][index].count));
           dot.setAttribute('visibility', 'visible');
-          line.setAttribute('x1', x(index));
-          line.setAttribute('x2', x(index));
-          line.setAttribute('visibility', 'visible');
-          tip.hidden = false;
-          tip.textContent = new Date(point.time).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) +
-            ' · ' + point.count + ' visiteur' + (point.count > 1 ? 's' : '');
-          tip.style.left = Math.max(15, Math.min(85, x(index) / width * 100)) + '%';
         });
-        area.addEventListener('pointerleave', clear);
+        line.setAttribute('x1', x(index));
+        line.setAttribute('x2', x(index));
+        line.setAttribute('visibility', 'visible');
+        const time = new Date(series[0][index].time).toLocaleString('fr-FR', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+        tip.textContent = time + ' · Portail : ' + series[0][index].count +
+          ' · Panel : ' + series[1][index].count;
+        tip.hidden = false;
+        tip.style.left = Math.max(20, Math.min(80, x(index) / width * 100)) + '%';
       });
+      area.addEventListener('pointerleave', clear);
     };
     const buttons = $$('.visit-range-btn', $('#access'));
     buttons.forEach(button => button.addEventListener('click', () => {
