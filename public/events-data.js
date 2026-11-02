@@ -11,7 +11,7 @@ const EVENTS = [
     "status": "archived",
     "href": "cache-cache/",
     "icon": "🔦",
-    "title": "HIDE & SEEK VESPUCCI",
+    "title": "HIDE & SEEK TEST",
     "desc": "Cache-cache en 3 rounds dans la nouvelle Vespucci Police Station.",
     "date": "📅 XX XX 2026 · 21h15 (après RC)"
   },
