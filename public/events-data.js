@@ -3,7 +3,7 @@ const EVENTS = [
     "status": "soon",
     "href": "cache-cache/",
     "icon": "🔦",
-    "title": "HIDE & SEEK MRPD",
+    "title": "HIDE & SEEK VESPUCCI",
     "desc": "Cache-cache en 3 rounds dans la nouvelle Vespucci Police Station.",
     "date": "📅 XX XX 2026 · 21h15 (après RC)"
   },
