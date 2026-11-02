@@ -1,6 +1,14 @@
 const EVENTS = [
   {
     "status": "soon",
+    "href": "hide-and-seek/",
+    "icon": "🔦",
+    "title": "HIDE & SEEK LSPD",
+    "desc": "Cache-cache en 3 rounds dans le poste Vespucci.",
+    "date": "Vendredi 06/11/26"
+  },
+  {
+    "status": "soon",
     "href": "cache-cache/",
     "icon": "🔦",
     "title": "HIDE & SEEK VESPUCCI",
