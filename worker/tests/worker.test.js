@@ -187,3 +187,15 @@ test("saving a member profile reloads a valid workspace section instead of leavi
   assert.match(rosterSubmit, /await wsReload\('home'\);/);
   assert.doesNotMatch(rosterSubmit, /await wsReload\('roster'\);/);
 });
+
+test("event save publishes only the generated page content and uses one context-aware action", async () => {
+  const source = await readFile(new URL("../../panel/js/editor.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../../panel/index.html", import.meta.url), "utf8");
+  assert.match(source, /const isPublishedEvent =/);
+  assert.match(source, /published \? 'Enregistrer' : 'Enregistrer & poster'/);
+  assert.match(source, /html: eventContentForPublication\(ev\)/);
+  assert.match(source, /document\.querySelector\('\.page'\)/);
+  assert.match(source, /return content\.outerHTML;/);
+  assert.match(html, /id="publish" data-action="publish">Enregistrer & poster<\/button>/);
+  assert.match(html, /id="save-menu-trigger"[^>]*hidden/);
+});
