@@ -1875,3 +1875,23 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
 
 /* Fréquentation : cartes compactes dans Accès */
 .access-stats{min-width:0}.visit-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.visit-period{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}.visit-period>small{display:block;color:var(--muted);margin-bottom:12px;font-weight:600}.visit-period>div{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:12px}.visit-period strong{font-size:20px;font-variant-numeric:tabular-nums}@media(max-width:650px){.visit-stats{grid-template-columns:1fr}}
+
+/* Courbes de fréquentation MRD */
+.access-stats .card-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.visit-range{display:flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.visit-range-btn{border:0;border-radius:7px;background:transparent;color:var(--muted);padding:7px 11px;font:600 11px Inter,sans-serif;cursor:pointer}
+.visit-range-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px #0002}
+.visit-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.visit-chart-card{min-width:0;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2)}
+.visit-chart-heading,.visit-chart-foot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.visit-chart-heading span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+.visit-chart-heading strong{font-size:26px;font-variant-numeric:tabular-nums}
+.visit-legend-dot{width:9px;height:9px;border-radius:50%;background:var(--visit-color)}
+.visit-chart-wrap{position:relative;margin-top:10px}
+.visit-chart{width:100%;height:auto;display:block;overflow:visible}
+.visit-hit-area{cursor:crosshair}
+.visit-tooltip{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;padding:7px 10px;border-radius:8px;background:var(--text);color:var(--surface);font-size:11px;font-weight:600;pointer-events:none;z-index:2}
+.visit-tooltip[hidden]{display:none}
+.visit-chart-foot{margin-top:12px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.visit-chart-foot small{font-size:10px}
+@media(max-width:800px){.visit-stats{grid-template-columns:1fr}}
