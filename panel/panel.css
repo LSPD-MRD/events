@@ -1907,3 +1907,11 @@ button.ws-home-row:hover .ws-home-row-copy strong{color:var(--accent)}
 .visit-chart-total>strong{font-size:22px;color:var(--text);font-variant-numeric:tabular-nums}
 .visit-chart-total>small{font-size:11px}
 @media(max-width:600px){.visit-combined{padding:10px}.visit-combined-totals{gap:8px}.visit-chart-total{flex-wrap:wrap}}
+
+/* Statistiques : typographie équilibrée et horodatage aligné à droite */
+.visit-combined .visit-combined-totals{gap:16px 28px;align-items:center}
+.visit-combined .visit-chart-total{font-size:12px;line-height:1.5;align-items:center;gap:7px}
+.visit-combined .visit-chart-total>strong{font-size:15px;font-weight:700;line-height:1.4}
+.visit-combined .visit-chart-total>small{font-size:11px}
+.visit-combined .visit-chart-foot{justify-content:flex-end;text-align:right;margin-top:12px}
+.visit-combined .visit-chart-foot small{font-size:11px}
