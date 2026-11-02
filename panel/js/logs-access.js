@@ -181,8 +181,7 @@ const renderAccess = async () => {
         '" y="' + (height - 7) + '" text-anchor="end" fill="currentColor" opacity=".6" font-size="11">Maintenant</text></svg>' +
         '<div class="visit-tooltip" hidden></div></div>' +
         '<div class="visit-combined-totals">' + totals + '</div>' +
-        '<div class="visit-chart-foot"><small>Actualisation : ' + dateLabel +
-        '</small><small>Chaque point représente les visiteurs distincts de cette heure.</small></div></section>';
+        '<div class="visit-chart-foot"><small>Actualisation : ' + dateLabel + '</small></div></section>';
       const svg = statsRoot.querySelector('svg');
       const area = statsRoot.querySelector('.visit-hit-area');
       const dots = statsRoot.querySelectorAll('.visit-focus-dot');
