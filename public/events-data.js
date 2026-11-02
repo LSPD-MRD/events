@@ -1,6 +1,6 @@
 const EVENTS = [
   {
-    "status": "soon",
+    "status": "live",
     "href": "hide-and-seek/",
     "icon": "🔦",
     "title": "HIDE & SEEK LSPD",
