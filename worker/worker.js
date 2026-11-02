@@ -456,6 +456,13 @@ async function ensureAuthSchemaOnce(env) {
       target TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS visit_events (
+      site TEXT NOT NULL,
+      visitor_hash TEXT NOT NULL,
+      seen_at INTEGER NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_visit_events_site_time ON visit_events(site, seen_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_visit_events_time ON visit_events(seen_at)`,
     `CREATE TABLE IF NOT EXISTS mrd_workspace (
       workspace_key TEXT PRIMARY KEY,
       workspace_json TEXT NOT NULL,
@@ -576,6 +583,16 @@ async function audit(env, user, action, target) {
   }
 }
 
+
+async function recordVisit(env, site, visitor) {
+  const digest = await hash(site + ":" + visitor);
+  const now = Date.now();
+  // Limiter les écritures répétées à une visite par heure et par navigateur/compte.
+  await env.DB.prepare(
+    "INSERT INTO visit_events (site, visitor_hash, seen_at) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM visit_events WHERE site = ? AND visitor_hash = ? AND seen_at >= ?)"
+  ).bind(site, digest, now, site, digest, now - 60 * 60 * 1000).run();
+}
+
 export default {
   async fetch(req, env) {
     const origin = req.headers.get("Origin") || "";
@@ -638,6 +655,15 @@ export default {
     try {
       // Crée les tables absentes et applique les migrations compatibles.
       await ensureAuthSchema(env);
+
+      if (route === "/stats/visit") {
+        const visitor = String(b.visitor || "");
+        if (!/^[a-f0-9-]{36}$/.test(visitor) || !/^[a-f0-9-]{36}$/.test(visitor.replace(/-/g, "-"))) {
+          return json({ error: "Identifiant de visite invalide." }, 400, cors);
+        }
+        await recordVisit(env, "portal", visitor);
+        return json({ ok: true }, 200, cors);
+      }
 
       /*
        * CONFIGURATION INITIALE DU PROPRIÉTAIRE
@@ -836,6 +862,7 @@ export default {
       }
 
       if (route === "/auth/me") {
+        await recordVisit(env, "panel", String(user.id));
         return json({ user: publicUser(user) }, 200, cors);
       }
 
@@ -1538,6 +1565,19 @@ export default {
 
         await audit(env, user, "Compte désactivé supprimé", targetUser.username);
         return json({ ok: true, deleted: true }, 200, cors);
+      }
+
+      if (route === "/stats/summary") {
+        if (!canManageAccounts(user)) return json({ error: "Accès refusé." }, 403, cors);
+        const now = Date.now();
+        const result = await env.DB.prepare(
+          "SELECT site, COUNT(DISTINCT CASE WHEN seen_at >= ? THEN visitor_hash END) AS h24, COUNT(DISTINCT CASE WHEN seen_at >= ? THEN visitor_hash END) AS h48, COUNT(DISTINCT CASE WHEN seen_at >= ? THEN visitor_hash END) AS h72 FROM visit_events WHERE seen_at >= ? GROUP BY site"
+        ).bind(now - 86400000, now - 172800000, now - 259200000, now - 259200000).all();
+        const stats = { portal: { h24: 0, h48: 0, h72: 0 }, panel: { h24: 0, h48: 0, h72: 0 } };
+        for (const row of result.results || []) if (stats[row.site]) {
+          stats[row.site] = { h24: row.h24, h48: row.h48, h72: row.h72 };
+        }
+        return json({ stats }, 200, cors);
       }
 
       if (route === "/logs/list") {
