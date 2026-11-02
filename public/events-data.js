@@ -37,7 +37,7 @@ const EVENTS = [
     "desc": "Portes ouvertes multi-divisions avec mini-jeux, démonstrations et système de points."
   },
   {
-    "status": "soon",
+    "status": "archived",
     "href": "soiree-a-points/",
     "icon": "💯",
     "title": "SOIRÉE À POINTS",
