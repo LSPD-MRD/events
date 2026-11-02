@@ -8,7 +8,7 @@ const EVENTS = [
     "date": "Vendredi 06/11/26"
   },
   {
-    "status": "soon",
+    "status": "archived",
     "href": "cache-cache/",
     "icon": "🔦",
     "title": "HIDE & SEEK VESPUCCI",
