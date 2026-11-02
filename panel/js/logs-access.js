@@ -85,7 +85,7 @@ const renderAccess = async () => {
           : ''
       }
       <section class="card access-stats">
-        <header class="card-head"><span class="access-kicker">FRÉQUENTATION</span><h2>Visiteurs uniques</h2><p>Portail public et panel · périodes glissantes</p></header>
+        <header class="card-head"><div><span class="access-kicker">FRÉQUENTATION</span><h2>Visiteurs uniques</h2><p>Portail public et panel · périodes glissantes</p></div><div class="visit-range" role="group" aria-label="Période"><button type="button" class="visit-range-btn active" data-hours="24" aria-pressed="true">24h</button><button type="button" class="visit-range-btn" data-hours="48" aria-pressed="false">48h</button><button type="button" class="visit-range-btn" data-hours="72" aria-pressed="false">72h</button></div></header>
         <div class="card-body"><div id="access-visit-stats" class="visit-stats">Chargement des statistiques…</div></div>
       </section>
       ${ 
@@ -108,13 +108,107 @@ const renderAccess = async () => {
     </div>`;
   const statsRoot = $('#access-visit-stats');
   if (statsRoot) {
-    api.post('/stats/summary', {}).then(({ stats }) => {
-      if (!statsRoot.isConnected) return;
-      statsRoot.innerHTML = [24, 48, 72].map(hours => {
-        const key = 'h' + hours;
-        return '<div class="visit-period"><small>' + hours + ' heures</small><div><span>Portail public</span><strong>' + Number(stats?.portal?.[key] || 0) + '</strong></div><div><span>Panel admin</span><strong>' + Number(stats?.panel?.[key] || 0) + '</strong></div></div>';
+    let selectedHours = 24;
+    let latestStats = null;
+    const renderChart = () => {
+      if (!statsRoot.isConnected || !latestStats) return;
+      const { stats, updatedAt } = latestStats;
+      const points = selectedHours;
+      const sites = [
+        { key: 'portal', label: 'Portail public', color: '#25a66a' },
+        { key: 'panel', label: 'Panel admin', color: '#3987df' },
+      ];
+      const width = 640;
+      const height = 164;
+      const left = 28;
+      const right = 12;
+      const top = 16;
+      const bottom = 28;
+      const plotWidth = width - left - right;
+      const plotHeight = height - top - bottom;
+      const maximum = Math.max(1, ...sites.flatMap(site =>
+        (stats?.[site.key]?.hourly || []).slice(-points).map(point => Number(point.count) || 0)
+      ));
+      const x = index => left + index * plotWidth / (points - 1);
+      const y = count => top + plotHeight * (1 - count / maximum);
+      statsRoot.innerHTML = sites.map(site => {
+        const data = (stats?.[site.key]?.hourly || []).slice(-points);
+        const path = data.map((point, index) =>
+          (index ? 'L' : 'M') + x(index).toFixed(2) + ' ' + y(point.count).toFixed(2)
+        ).join(' ');
+        const total = Number(stats?.[site.key]?.['h' + selectedHours] || 0);
+        const ticks = [0, 1, 2, 3].map(i => {
+          const yy = top + plotHeight * i / 3;
+          return '<line x1="' + left + '" y1="' + yy + '" x2="' + (width - right) +
+            '" y2="' + yy + '" stroke="currentColor" opacity=".1"/>';
+        }).join('');
+        return '<section class="visit-chart-card" style="--visit-color:' + site.color + '">' +
+          '<div class="visit-chart-heading"><span><i class="visit-legend-dot"></i>' + site.label +
+          '</span><strong>' + total + '</strong></div>' +
+          '<div class="visit-chart-wrap"><svg class="visit-chart" viewBox="0 0 ' + width + ' ' +
+          height + '" role="img" aria-label="Évolution horaire des visiteurs uniques : ' + site.label + '">' +
+          ticks + '<path d="' + path + '" fill="none" stroke="' + site.color +
+          '" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<line class="visit-crosshair" y1="' + top + '" y2="' + (height - bottom) +
+          '" stroke="' + site.color + '" stroke-dasharray="3 4" visibility="hidden"/>' +
+          '<circle class="visit-focus-dot" r="5" fill="' + site.color +
+          '" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>' +
+          '<rect class="visit-hit-area" x="' + left + '" y="' + top + '" width="' + plotWidth +
+          '" height="' + plotHeight + '" fill="transparent"/>' +
+          '<text x="' + left + '" y="' + (height - 5) + '" fill="currentColor" opacity=".6" font-size="11">' +
+          selectedHours + 'h auparavant</text><text x="' + (width - right) +
+          '" y="' + (height - 5) + '" text-anchor="end" fill="currentColor" opacity=".6" font-size="11">Maintenant</text></svg>' +
+          '<div class="visit-tooltip" hidden></div></div>' +
+          '<div class="visit-chart-foot"><span>' + total + ' visiteur' + (total > 1 ? 's' : '') +
+          ' unique' + (total > 1 ? 's' : '') + ' sur ' + selectedHours + 'h</span>' +
+          '<small>Actualisé à ' + new Date(updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) +
+          '</small></div></section>';
       }).join('');
-    }).catch(() => { if (statsRoot.isConnected) statsRoot.textContent = 'Statistiques indisponibles. Vérifiez le déploiement du Worker.'; });
+      statsRoot.querySelectorAll('.visit-chart-card').forEach((card, siteIndex) => {
+        const data = (stats?.[sites[siteIndex].key]?.hourly || []).slice(-points);
+        const svg = card.querySelector('svg');
+        const area = card.querySelector('.visit-hit-area');
+        const dot = card.querySelector('.visit-focus-dot');
+        const line = card.querySelector('.visit-crosshair');
+        const tip = card.querySelector('.visit-tooltip');
+        const clear = () => { dot.setAttribute('visibility', 'hidden'); line.setAttribute('visibility', 'hidden'); tip.hidden = true; };
+        area.addEventListener('pointermove', event => {
+          if (!data.length) return;
+          const rect = svg.getBoundingClientRect();
+          const relativeX = (event.clientX - rect.left) / rect.width * width;
+          const index = Math.max(0, Math.min(data.length - 1, Math.round((relativeX - left) / plotWidth * (points - 1))));
+          const point = data[index];
+          dot.setAttribute('cx', x(index));
+          dot.setAttribute('cy', y(point.count));
+          dot.setAttribute('visibility', 'visible');
+          line.setAttribute('x1', x(index));
+          line.setAttribute('x2', x(index));
+          line.setAttribute('visibility', 'visible');
+          tip.hidden = false;
+          tip.textContent = new Date(point.time).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) +
+            ' · ' + point.count + ' visiteur' + (point.count > 1 ? 's' : '');
+          tip.style.left = Math.max(15, Math.min(85, x(index) / width * 100)) + '%';
+        });
+        area.addEventListener('pointerleave', clear);
+      });
+    };
+    const buttons = $$('.visit-range-btn', $('#access'));
+    buttons.forEach(button => button.addEventListener('click', () => {
+      selectedHours = Number(button.dataset.hours);
+      buttons.forEach(item => {
+        const active = item === button;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-pressed', String(active));
+      });
+      renderChart();
+    }));
+    const loadStats = () => api.post('/stats/summary', {}).then(data => {
+      latestStats = data;
+      renderChart();
+    }).catch(() => {
+      if (statsRoot.isConnected) statsRoot.textContent = 'Statistiques indisponibles. Vérifiez la version du Worker Cloudflare.';
+    });
+    loadStats();
   }
   if (accessManager) {
     try {
