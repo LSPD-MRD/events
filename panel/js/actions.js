@@ -126,7 +126,7 @@ const actions = {
         load({ ...saved, slug });
         setTab('edit');
         toast(
-          'Brouillon chargé. La version publique reste inchangée jusqu’à « Enregistrer et publier ».',
+          'Brouillon chargé. Clique sur « Enregistrer » pour mettre à jour la page publique.',
           'ok',
         );
         return;
