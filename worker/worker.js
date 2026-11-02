@@ -590,7 +590,7 @@ async function recordVisit(env, site, visitor) {
   // Limiter les écritures répétées à une visite par heure et par navigateur/compte.
   await env.DB.prepare(
     "INSERT INTO visit_events (site, visitor_hash, seen_at) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM visit_events WHERE site = ? AND visitor_hash = ? AND seen_at >= ?)"
-  ).bind(site, digest, now, site, digest, now - 60 * 60 * 1000).run();
+  ).bind(site, digest, now, site, digest, now - 5 * 60 * 1000).run();
 }
 
 export default {
@@ -1568,16 +1568,38 @@ export default {
       }
 
       if (route === "/stats/summary") {
-        if (!canManageAccounts(user)) return json({ error: "Accès refusé." }, 403, cors);
-        const now = Date.now();
-        const result = await env.DB.prepare(
-          "SELECT site, COUNT(DISTINCT CASE WHEN seen_at >= ? THEN visitor_hash END) AS h24, COUNT(DISTINCT CASE WHEN seen_at >= ? THEN visitor_hash END) AS h48, COUNT(DISTINCT CASE WHEN seen_at >= ? THEN visitor_hash END) AS h72 FROM visit_events WHERE seen_at >= ? GROUP BY site"
-        ).bind(now - 86400000, now - 172800000, now - 259200000, now - 259200000).all();
-        const stats = { portal: { h24: 0, h48: 0, h72: 0 }, panel: { h24: 0, h48: 0, h72: 0 } };
-        for (const row of result.results || []) if (stats[row.site]) {
-          stats[row.site] = { h24: row.h24, h48: row.h48, h72: row.h72 };
+        if (!canManageAccounts(user)) {
+          return json({ error: "Accès refusé." }, 403, cors);
         }
-        return json({ stats }, 200, cors);
+        const now = Date.now();
+        const hour = 60 * 60 * 1000;
+        const since = Math.floor(now / hour) * hour - 72 * hour;
+        const rows = await env.DB.prepare(
+          "SELECT site, visitor_hash, seen_at FROM visit_events WHERE seen_at >= ? ORDER BY seen_at"
+        ).bind(since).all();
+        const stats = {
+          portal: { h24: 0, h48: 0, h72: 0, hourly: [] },
+          panel: { h24: 0, h48: 0, h72: 0, hourly: [] },
+        };
+        for (const site of Object.keys(stats)) {
+          const visits = (rows.results || []).filter((row) => row.site === site);
+          for (const hours of [24, 48, 72]) {
+            stats[site]["h" + hours] = new Set(
+              visits.filter((row) => row.seen_at >= now - hours * hour).map((row) => row.visitor_hash)
+            ).size;
+          }
+          for (let i = 71; i >= 0; i--) {
+            const bucket = Math.floor(now / hour) * hour - i * hour;
+            stats[site].hourly.push({
+              time: bucket,
+              count: new Set(
+                visits.filter((row) => row.seen_at >= bucket && row.seen_at < bucket + hour)
+                  .map((row) => row.visitor_hash)
+              ).size,
+            });
+          }
+        }
+        return json({ stats, updatedAt: now }, 200, cors);
       }
 
       if (route === "/logs/list") {
