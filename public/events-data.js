@@ -16,7 +16,7 @@ const EVENTS = [
     "date": "📅 XX XX 2026 · 21h15 (après RC)"
   },
   {
-    "status": "soon",
+    "status": "archived",
     "href": "escape-game/",
     "icon": "🤫",
     "title": "CODE SILENCE",
