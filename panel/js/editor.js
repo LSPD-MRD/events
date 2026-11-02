@@ -10,6 +10,7 @@ const load = (x) => {
   slugTouched = !!x.slug;
   renderEditor();
   refresh();
+  updateEventSaveAction();
 };
 
 const mutate = (f) => {
@@ -86,6 +87,14 @@ const setTab = async (name) => {
     toast('Les logs sont réservés aux administrateurs et au Commanding Officer.', 'err');
     return setTab('edit');
   }
+  if (name === 'edit') {
+    try {
+      list = await loadList();
+      updateEventSaveAction();
+    } catch (error) {
+      console.warn('Liste des événements indisponible :', error);
+    }
+  }
   if (name === 'publications') await renderPublications();
   if (name === 'logs') await renderLogs();
   if (name === 'portal') {
@@ -111,6 +120,30 @@ const setTab = async (name) => {
   }
 };
 
+const isPublishedEvent = () =>
+  !!ev?.slug && list.some((entry) => entry.href === ev.slug + '/');
+
+const updateEventSaveAction = () => {
+  const button = $('#publish');
+  const trigger = $('#save-menu-trigger');
+  const menu = $('#save-menu');
+  if (!button) return;
+  const published = isPublishedEvent();
+  button.textContent = published ? 'Enregistrer' : 'Enregistrer & poster';
+  button.dataset.action = 'publish';
+  if (trigger) trigger.hidden = true;
+  if (menu) menu.hidden = true;
+};
+
+const eventContentForPublication = (event) => {
+  const document = new DOMParser().parseFromString(page(event), 'text/html');
+  const content = document.querySelector('.page');
+  if (!content) throw new Error('Impossible de générer le contenu de la page.');
+  // Le Worker publie uniquement .page : ne pas lui envoyer le <head>
+  // (link/style), refusé à juste titre par sa validation HTML.
+  return content.outerHTML;
+};
+
 const saveDraft = async () => {
   if (!ev.slug || !ev.meta.title) return toast('Le titre et l’adresse sont obligatoires.', 'err');
   const button = $('#publish');
@@ -122,7 +155,7 @@ const saveDraft = async () => {
     toast('Modifications enregistrées sans changer la page publique.', 'ok');
   } finally {
     button.disabled = false;
-    button.textContent = 'Enregistrer';
+    updateEventSaveAction();
   }
 };
 
@@ -143,17 +176,21 @@ const publish = async () => {
   try {
     await api.post('/publish', {
       slug: ev.slug,
-      html: page(ev),
+      html: eventContentForPublication(ev),
       config: json(ev),
       card: cardOf(ev),
     });
     try {
       await api.post('/draft/save', { slug: ev.slug, config: json(ev), card: cardOf(ev) });
     } catch {}
+    const card = cardOf(ev);
+    const existingIndex = list.findIndex((entry) => entry.href === card.href);
+    if (existingIndex < 0) list.unshift(card);
+    else list[existingIndex] = card;
     toast('Enregistré et publié. Mise à jour en ligne dans environ une minute.', 'ok');
   } finally {
     button.disabled = false;
-    button.textContent = 'Enregistrer';
+    updateEventSaveAction();
   }
 };
 
