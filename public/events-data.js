@@ -36,7 +36,7 @@ const EVENTS = [
     "desc": "Shift du soir avec système de points et classement des participants."
   },
   {
-    "status": "soon",
+    "status": "archived",
     "href": "concert/",
     "icon": "🎤",
     "title": "FREDDY JOHNS’ LIVE",
