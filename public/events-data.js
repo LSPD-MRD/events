@@ -30,7 +30,7 @@ const EVENTS = [
     "desc": "Défi d’endurance organisé par la Media Relations Division. Informations détaillées à venir."
   },
   {
-    "status": "soon",
+    "status": "archived",
     "href": "open-house/",
     "icon": "🎉",
     "title": "OPEN HOUSE",
