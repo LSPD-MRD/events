@@ -120,8 +120,7 @@ const setTab = async (name) => {
   }
 };
 
-const isPublishedEvent = () =>
-  !!ev?.slug && list.some((entry) => entry.href === ev.slug + '/');
+const isPublishedEvent = () => !!ev?.slug && list.some((entry) => entry.href === ev.slug + '/');
 
 const updateEventSaveAction = () => {
   const button = $('#publish');
