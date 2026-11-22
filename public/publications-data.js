@@ -1,5 +1,14 @@
 window.MRD_PUBLICATIONS = [
   {
+    "id": "vespucci-police-station-compte-rendu-de-ceremonie-22-11-2026-mwsfl7xn",
+    "kind": "news",
+    "title": "🔵 VESPUCCI POLICE STATION | Compte rendu de cérémonie - 22/11/2026",
+    "summary": "",
+    "date": "2026-11-22",
+    "mime": "image/png",
+    "file": "public/uploads/vespucci-police-station-compte-rendu-de-ceremonie-22-11-2026-mwsfl7xn.png"
+  },
+  {
     "id": "vespucci-police-station-compte-rendu-de-ceremonie-15-11-2026-mwifcfhg",
     "kind": "comm-interne",
     "title": "🔵 VESPUCCI POLICE STATION | Compte rendu de cérémonie -  15/11/2026",
